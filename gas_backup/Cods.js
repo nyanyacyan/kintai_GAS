@@ -1,5 +1,7 @@
+ファイルを読み込みする
+
 function doGet() {
-  return HtmlService.createHtmlOutputFromFile('form');
+  return HtmlService.createTemplateFromFile('form').evaluate();
 }
 
 // マスターデータを取得する関数

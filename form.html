@@ -4,7 +4,11 @@
   <base target="_top">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP&display=swap" rel="stylesheet">
-  <style>
+
+    <!-- CSS 読み込み -->
+  <?!= include('style'); ?>
+
+  <!-- <style>
     body {
       font-family: 'Noto Sans JP', sans-serif;
       background-color: #f9f9f9;
@@ -341,6 +345,30 @@
     user-select: none;
   }
 
+  /* 写真アップロード欄のスタイル */
+  #photos {
+    font-size: 1.5rem;
+    margin-top: 0.5rem;
+  }
+
+  #photos:invalid {
+    border: 2px solid red;
+  }
+
+  .preview-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+
+  .preview-container img {
+    width: 100px;
+    height: auto;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+
   .work-input {
     width: 6rem;
     font-size: 2rem;
@@ -352,7 +380,7 @@
 </style>
 
 
-  </style>
+  </style> -->
   <script>
     let masterData = {};
     let formData = {};
@@ -693,7 +721,7 @@ function createTimeInputs(name) {
 let isEditMode = false;
 
 function showConfirmation(isEdit = false) {
-  isEditMode = isEdit; 
+  isEditMode = isEdit;
   const company = masterData.company.find(c => c.id === formData.companyId)?.name || '（未選択）';
   const staff = masterData.staff.find(s => s.id === formData.staffId)?.name || '（未選択）';
   const site = masterData.site.find(s => s.id === formData.site)?.name || '（未選択）';
@@ -754,12 +782,12 @@ buttonRow.innerHTML = isEdit
 //   const companyId = document.getElementById('company').value;
 //   const staffId = document.getElementById('staff').value;
 //   const siteId = document.getElementById('site').value;
-// 
+//
 //   if (!date || !companyId || !staffId || !siteId) {
 //     document.getElementById('historyRecords').innerHTML = '<em>履歴を表示するにはすべての項目を選択してください。</em>';
 //     return;
 //   }
-// 
+//
 //   google.script.run.withSuccessHandler(displayHistory).getPreviousRecords(date, companyId, staffId, siteId);
 // }
 
@@ -774,7 +802,7 @@ function loadPreviousRecords() {
   if (date && companyId && staffId && siteId) {
     // ✅ 即フィードバック表示（読み込み中）
     container.innerHTML = '<em style="color: gray;">📂 送信履歴を取得中です...</em>';
-    
+
     // 非同期呼び出し
     google.script.run.withSuccessHandler(displayHistory).getPreviousRecords(date, companyId, staffId, siteId);
   } else {
@@ -1030,7 +1058,7 @@ function showEditConfirmationModal() {
       hasError = true;
       isRowInvalid = true;
     }
-    
+
     [manInput, overtimeInput].forEach(input => {
         const val = parseFloat(input.value || 0);
         if (input.value && !isValidQuarterHour(val)) {
@@ -1471,6 +1499,40 @@ function toggleSection(id) {
   <div id="partner" class="checkbox-group"></div>
   <div id="error-partner" class="error-message"></div>
 </div>
+
+  <!-- ファイル選択 -->
+  <div>
+    <label for="uploadPhotos" class="section-label">写真を添付（最大5枚）</label>
+    <input type="file" id="uploadPhotos" multiple accept="image/*">
+  </div>
+
+  <!-- プレビューエリア -->
+  <div id="previewArea" style="margin-top:1rem; display:flex; gap:1rem; flex-wrap:wrap;"></div>
+
+  <script>
+    const fileInput = document.getElementById('uploadPhotos');
+    const previewArea = document.getElementById('previewArea');
+
+    fileInput.addEventListener('change', () => {
+      previewArea.innerHTML = ''; // 一度クリア
+      const files = Array.from(fileInput.files).slice(0, 5); // 最大5枚まで
+
+      files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = e => {
+          const img = document.createElement('img');
+          img.src = e.target.result;
+          img.style.maxWidth = '150px';
+          img.style.maxHeight = '150px';
+          img.style.objectFit = 'cover';
+          img.style.border = '1px solid #ccc';
+          img.style.borderRadius = '6px';
+          previewArea.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+  </script>
 
 
   <div>

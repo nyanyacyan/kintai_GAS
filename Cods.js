@@ -1,5 +1,7 @@
-function doGet() {
-  return HtmlService.createHtmlOutputFromFile('form');
+function doGet(e) {
+  const t = HtmlService.createTemplateFromFile('form');
+  t.isLocal = false; // 本番なら false, ローカル確認なら true
+  return t.evaluate();
 }
 
 // マスターデータを取得する関数
