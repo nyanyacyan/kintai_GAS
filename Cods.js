@@ -4,6 +4,11 @@ function doGet(e) {
   return t.evaluate();
 }
 
+// Code.gs
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
+}
+
 // マスターデータを取得する関数
 function getMasterData() {
   const ss = SpreadsheetApp.openById('1mXMe5UFKDVPpB4VSens3s_NBYMrfA-e6zbaN3gSBuZA');
