@@ -1,0 +1,1509 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      background-color: #f9f9f9;
+      padding: 2rem;
+      max-width: 800px;
+      margin: auto;
+      font-size: 20px;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      color: #333;
+      font-size: 1.6rem;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 1rem;
+      margin-bottom: 0.25rem;
+      font-size: 1rem;
+    }
+
+
+    /* 一括指定の中から checkbox を除外 */
+    select, input:not([type="checkbox"]), button {
+      width: 100%;
+      padding: 2rem;
+      font-size: 4rem;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+      background-color: white;
+    }
+
+
+    /* 元請会社・TTC担当者・現場名・作業者・協力会社名のラベル（見出し）サイズ調整 */
+    .section-label {
+      font-size: 2rem;   /* ← お好みで大きさ調整 */
+      font-weight: bold;
+    }
+
+
+    /* チェックボックスは個別に小さく指定 */
+    input[type="checkbox"] {
+      width: 2rem;
+      height: 2rem;
+      margin: 0;
+    }
+
+
+    /* チェックボックスの作業者名の文字サイズだけを調整 */
+    .checkbox-wrapper span {
+      font-size: 3.25rem; /* ← ここをお好みのサイズに調整 */
+    }
+
+
+    select:invalid {
+      color: #aaa;
+    }
+    .checkbox-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+
+    .checkbox-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background-color: #fff;
+      cursor: pointer;
+      font-size: 3.25rem; /* ✅ 親の大きさ */
+    }
+
+
+    .checkbox-wrapper span {
+      font-size: 3.25rem;  /* ✅ 修正: remrem → rem */
+      font-weight: normal; /* ✅ 明示的に太字を解除 */
+      white-space: nowrap;
+    }
+
+
+    .checkbox-wrapper input[type="checkbox"]:checked + span {
+      color: #0066cc;
+      font-size: 3.25rem;        /* ✅ サイズを揃える */
+      font-weight: normal;       /* ✅ 太字にしない */
+      font-family: 'Noto Sans JP', sans-serif;
+      white-space: nowrap;
+    }
+
+
+    .time-inputs {
+      display: none;
+      margin-top: 0.5rem;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .time-inputs input {
+      width: 48%;
+      margin-bottom: 0.5rem;
+    }
+    @media (min-width: 600px) {
+      .time-inputs input {
+        width: 23%;
+      }
+    }
+    button {
+      background-color: #0066cc;
+      color: white;
+      border: none;
+      margin-top: 1.5rem;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background-color: #004999;
+    }
+    #confirmationModal {
+      display: none;
+      position: fixed;
+      z-index: 999;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      justify-content: center;
+      align-items: center;
+    }
+    #confirmationBox {
+      background: #fff;
+      padding: 2rem;
+      border-radius: 10px;
+      max-width: 600px;
+      width: 90%;
+    }
+    #confirmationText {
+      margin-bottom: 1.5rem;
+      white-space: pre-wrap;
+    }
+
+
+    #customDate {
+      font-size: 4rem;
+      padding: 2rem;
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+      background-color: white;
+    }
+
+    .custom-date-input {
+      font-size: 4rem;
+      padding: 2rem;
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+      background-color: white;
+    }
+
+
+
+    .button-row {
+      text-align: right;
+    }
+    .button-row button {
+      margin-left: 1rem;
+    }
+    #dateToggleWrapper {
+      margin-top: 1rem;
+    }
+    .date-toggle-button {
+      display: inline-block;
+      font-weight: bold;
+      font-size: 2.25rem;
+      padding: 0.75rem 1rem;
+      border: 2px solid #0066cc;
+      color: #0066cc;
+      border-radius: 6px;
+      cursor: pointer;
+      background-color: #f0f8ff;
+      text-align: center;
+    }
+    .date-toggle-button:hover {
+      background-color: #e0f0ff;
+    }
+    .date-toggle-button input[type="checkbox"] {
+      display: none;
+    }
+    .date-toggle-button.checked {
+      background-color: #0066cc;
+      color: white;
+    }
+    #dateContainer {
+      display: none;
+      margin-top: 0.5rem;
+    }
+
+
+
+
+#loadingOverlay {
+  display: none;
+  position: fixed;
+  z-index: 10000;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.7);
+  justify-content: center;
+  align-items: center;
+}
+
+
+.loader {
+  border: 6px solid #f3f3f3;
+  border-top: 6px solid #0066cc;
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  animation: spin 1s linear infinite;
+}
+
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+.error-message {
+  color: red;
+  font-size: 0.9rem;
+  margin-top: 0.25rem;
+}
+
+
+.input-error {
+  border: 2px solid red !important;
+  background-color: #fff0f0;
+}
+
+  /* テーブル内の文字（ヘッダー）サイズも微調整する場合 */
+  #historyModal table th {
+    font-size: 1.4rem;
+    padding: 0.4rem;
+  }
+
+  #historyModal table td {
+    padding: 0.4rem;
+    text-align: center;
+  }
+
+/* 編集フォームのテーブルスタイル */
+#historyModal table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #ccc;
+}
+
+#historyModal th {
+  background-color: #f0f8ff;  /* タイトル背景色 */
+  font-weight: bold;
+  font-size: 1.4rem;
+  padding: 0.75rem;
+  text-align: center;
+  border: 1px solid #ccc;
+}
+
+#historyModal td {
+  padding: 0.6rem;
+  text-align: center;
+  border: 1px solid #ddd;
+  font-size: 1.3rem;
+}
+
+/* 偶数行だけ背景色つける（視認性UP） */
+#historyModal tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.toggle-header {
+  display: inline-block;
+  font-weight: bold;
+  font-size: 2.25rem;
+  padding: 1rem 1rem;
+  border: 2px solid #0066cc;
+  color: #0066cc;
+  border-radius: 10px;
+  cursor: pointer;
+  background-color: #f0f8ff;
+  text-align: center;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 2rem;
+}
+.toggle-header:hover {
+  background-color: #e0f0ff;
+}
+
+
+.toggle-header.inner {
+  font-size: 1.4rem;
+  background-color: #e6f2ff;
+  margin-top: 1rem;
+}
+
+.toggle-section {
+  display: none;
+  padding-left: 1rem;
+  margin-top: 0.5rem;
+}
+
+<style>
+  .work-input-group {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+
+  .work-label {
+    padding: 1rem 2rem;
+    background-color: #f2f2f2;
+    border: 1px solid #ccc;
+    border-radius: 0.5rem;
+    font-size: 1.5rem;
+    text-align: center;
+    min-width: 5rem;
+    user-select: none;
+  }
+
+  .work-input {
+    width: 6rem;
+    font-size: 2rem;
+    padding: 1rem;
+    text-align: center;
+    border: 1px solid #ccc;
+    border-radius: 0.5rem;
+  }
+</style>
+
+
+  </style>
+  <script>
+    let masterData = {};
+    let formData = {};
+    let isSubmitted = false;
+
+
+    function isValidQuarterHour(value) {
+      return Number.isFinite(value) && Math.round(value * 100) % 25 === 0;
+    }
+
+
+    function toggleDateInput(el) {
+      const button = document.getElementById('dateToggleButton');
+      const checked = el.checked;
+      document.getElementById('dateContainer').style.display = checked ? 'block' : 'none';
+      button.classList.toggle('checked', checked);
+    }
+
+
+function closeConfirmation() {
+  const confirmationText = document.getElementById('confirmationText').textContent;
+  const isSent = confirmationText.includes('✅ 送信が完了しました！');
+  document.getElementById('confirmationModal').style.display = 'none';
+
+  if (isSent) {
+    // 送信完了後にモーダルを閉じる場合
+    if (!isEditMode) {
+      // 新規入力モードだったらフォームをリセット
+      resetForm();
+    }
+    // 編集モードの場合は、完了後にモーダルが閉じるだけなので何もしない
+  } else {
+    // 「修正する」ボタンで確認モーダルから戻る場合
+    if (isEditMode) {
+      // 編集モーダルを再表示するだけ（入力値が保持されます）
+      document.getElementById('historyModal').style.display = 'flex';
+    }
+    // 新規入力の場合は元々入力フォームが見えているので何もしない
+  }
+}
+
+function handleModalClickOutside(event) {
+  const confirmationBox = document.getElementById('confirmationBox');
+
+  // モーダルの外側がクリックされた場合のみ処理
+  if (!confirmationBox.contains(event.target)) {
+    const confirmationText = document.getElementById('confirmationText').textContent;
+    const isSent = confirmationText.includes('✅ 送信が完了しました！');
+    document.getElementById('confirmationModal').style.display = 'none';
+
+    if (isSent) {
+      if (!isEditMode) {
+        resetForm();
+      }
+    } else if (isEditMode) {
+      // 編集モードで「修正する」ために戻る場合
+      // 編集モーダルを再表示するだけにする
+      document.getElementById('historyModal').style.display = 'flex';
+    }
+  }
+}
+    function resetForm() {
+      document.getElementById('company').selectedIndex = 0;
+      document.getElementById('staff').innerHTML = '';
+      document.getElementById('site').innerHTML = '<option value="" disabled selected>選択してください</option>';
+      document.getElementById('worker').innerHTML = '';
+      document.getElementById('partner').innerHTML = '';
+      document.getElementById('customDateToggle').checked = false;
+      document.getElementById('customDate').value = '';
+      toggleDateInput(document.getElementById('customDateToggle'));
+      formData = {};
+      isSubmitted = false;
+      const companySelect = document.getElementById('company');
+      companySelect.innerHTML = '<option value="" disabled selected>選択してください</option>';
+      masterData.company.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = c.name;
+        companySelect.appendChild(opt);
+      });
+      // ✅ 履歴ボタンの再接続（HTML再描画で onclick が消えている場合に備えて）
+      const historyBtn = document.getElementById('showHistoryButton');
+      if (historyBtn) {
+        historyBtn.onclick = () => showHistoryModal();
+      }
+    }
+
+function openHistoryModal() {
+  document.getElementById('modalHistoryDate').value = new Date().toISOString().split("T")[0];
+  document.getElementById('modalHistoryContent').innerHTML = '';
+  document.getElementById('historyModal').style.display = 'flex';
+}
+
+function closeHistoryModal() {
+  document.getElementById('historyModal').style.display = 'none';
+}
+
+
+function updateStaffOptions() {
+  const staffSelect = document.getElementById('staff');
+  const companyId = document.getElementById('company').value;
+  staffSelect.innerHTML = '<option value="" disabled selected>選択してください</option>';
+
+
+  if (!companyId) return;
+
+
+  masterData.staff
+    .filter(staff => staff.companies.includes(companyId))
+    .forEach(staff => {
+      const opt = document.createElement('option');
+      opt.value = staff.id;
+      opt.textContent = staff.name;
+      staffSelect.appendChild(opt);
+    });
+
+
+  updateSiteOptions(); // スタッフが変わったら現場も再絞り込み
+}
+
+
+// ✅ ここに追加！
+function updateSiteOptions() {
+  const staffId = document.getElementById('staff').value;
+  const companyId = document.getElementById('company').value;
+  const siteSelect = document.getElementById('site');
+  siteSelect.innerHTML = '<option value="" disabled selected>選択してください</option>';
+
+
+  if (!staffId || !companyId) return;
+
+
+  masterData.site
+    .filter(site => site.staffId === staffId && site.companyIds.includes(companyId))
+    .forEach(site => {
+      const opt = document.createElement('option');
+      opt.value = site.id;
+      opt.textContent = site.name;
+      siteSelect.appendChild(opt);
+    });
+}
+
+
+    function confirmSend() {
+      document.getElementById('loadingOverlay').style.display = 'flex';
+      google.script.run.withSuccessHandler(() => {
+        isSubmitted = true;
+        document.getElementById('loadingOverlay').style.display = 'none';
+        document.getElementById('confirmationText').textContent = '✅ 送信が完了しました！\n別の場所をタップしてフォームに戻ってください。';
+        document.querySelector('#confirmationBox .button-row button:nth-child(1)').style.display = 'none';
+      }).saveFormResponse(formData);
+    }
+
+
+    function sanitize(str) {
+      return str.replace(/[^a-zA-Z0-9\u3040-\u30ff\u4e00-\u9faf]/g, '_');
+    }
+
+
+function createTimeInputs(name) {
+  const container = document.createElement('div');
+  container.className = 'time-inputs';
+  container.id = `inputs-${name}`;
+
+  const labelMap = { man: '人工', overtime: '残業' };
+
+  ['man', 'overtime'].forEach(type => {
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.min = '0';
+    input.step = '0.25';
+    input.inputMode = 'decimal';
+    input.placeholder = labelMap[type];  // 入力欄内に「人工」「残業」
+    input.name = `${name}-${type}`;
+    input.dataset.type = type;
+    input.dataset.name = name;
+
+    // ✅ クラス名を worker-input / partner-input に動的付与
+    const prefix = name.startsWith('modal-worker') ? 'worker' :
+                   name.startsWith('modal-partner') ? 'partner' : '';
+    input.className = `work-input ${prefix}-input`;
+    container.appendChild(input);
+  });
+
+  return container;
+}
+
+
+    function toggleTimeInputs(checkbox, name) {
+      const inputs = document.getElementById(`inputs-${name}`);
+      if (inputs) inputs.style.display = checkbox.checked ? 'flex' : 'none';
+    }
+
+
+    function submitForm() {
+      document.querySelectorAll('.error-message').forEach(div => div.textContent = '');
+      document.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
+
+
+      let hasError = false;
+      let firstErrorElement = null;
+
+
+      const companySelect = document.getElementById('company');
+      const staffSelect = document.getElementById('staff');
+      const siteSelect = document.getElementById('site');
+      const customDateToggle = document.getElementById('customDateToggle');
+      const customDate = document.getElementById('customDate');
+
+
+      if (!companySelect.value) {
+        document.getElementById('error-company').textContent = '※元請会社を選択してください。';
+        companySelect.classList.add('input-error');
+        hasError = true;
+        if (!firstErrorElement) firstErrorElement = companySelect;
+      }
+      if (!staffSelect.value) {
+        document.getElementById('error-staff').textContent = '※TTC担当者を選択してください。';
+        staffSelect.classList.add('input-error');
+        hasError = true;
+        if (!firstErrorElement) firstErrorElement = staffSelect;
+      }
+      if (!siteSelect.value) {
+        document.getElementById('error-site').textContent = '※現場名を選択してください。';
+        siteSelect.classList.add('input-error');
+        hasError = true;
+        if (!firstErrorElement) firstErrorElement = siteSelect;
+      }
+      if (customDateToggle.checked && !customDate.value) {
+        document.getElementById('error-date').textContent = '※出面日付を入力してください。';
+        customDate.classList.add('input-error');
+        hasError = true;
+        if (!firstErrorElement) firstErrorElement = customDate;
+      }
+
+
+      const workerGroup = document.getElementById('worker');
+      const partnerGroup = document.getElementById('partner');
+      let workerChecked = false;
+      let partnerChecked = false;
+
+
+      formData = {
+        companyId: companySelect.value,
+        staffId: staffSelect.value,
+        site: siteSelect.value,
+        date: customDateToggle.checked ? customDate.value : '',
+        workers: [],
+        partners: []
+      };
+
+
+      document.querySelectorAll("input[name='worker']:checked").forEach(cb => {
+        workerChecked = true;
+        const name = cb.value;
+        const safeName = sanitize(name);
+        const prefix = `worker-${safeName}`;
+        // const inputs = ['day', 'evening', 'night', 'overtime'].map(type => {
+        const inputs = ['man', 'overtime'].map(type => {
+          const el = document.querySelector(`input[name='${prefix}-${type}']`);
+          return { el, value: parseFloat(el?.value || 0) };
+        });
+        let total = 0;
+        let invalid = false;
+        inputs.forEach(({ el, value }) => {
+          total += value;
+          if (value && !isValidQuarterHour(value)) {
+            el.classList.add('input-error');
+            invalid = true;
+          }
+        });
+        if (total === 0 || invalid) {
+          document.getElementById('error-worker').textContent = invalid
+            ? '※勤務時間は0.25単位で入力してください。'
+            : '※作業者の勤務時間を入力してください。';
+          workerGroup.classList.add('input-error');
+          hasError = true;
+          if (!firstErrorElement) firstErrorElement = workerGroup;
+        }
+        // formData.workers.push({ name, day: inputs[0].value, evening: inputs[1].value, night: inputs[2].value, overtime: inputs[3].value });
+        formData.workers.push({ name, man: inputs[0].value, overtime: inputs[1].value });
+      });
+
+
+      document.querySelectorAll("input[name='partner']:checked").forEach(cb => {
+        partnerChecked = true;
+        const name = cb.value;
+        const safeName = sanitize(name);
+        const prefix = `partner-${safeName}`;
+        // const inputs = ['day', 'evening', 'night', 'overtime'].map(type => {
+        const inputs = ['man', 'overtime'].map(type => {
+          const el = document.querySelector(`input[name='${prefix}-${type}']`);
+          return { el, value: parseFloat(el?.value || 0) };
+        });
+        let total = 0;
+        let invalid = false;
+        inputs.forEach(({ el, value }) => {
+          total += value;
+          if (value && !isValidQuarterHour(value)) {
+            el.classList.add('input-error');
+            invalid = true;
+          }
+        });
+        if (total === 0 || invalid) {
+          document.getElementById('error-partner').textContent = invalid
+            ? '※勤務時間は0.25単位で入力してください。'
+            : '※協力会社名の勤務時間を入力してください。';
+          partnerGroup.classList.add('input-error');
+          hasError = true;
+          if (!firstErrorElement) firstErrorElement = partnerGroup;
+        }
+        // formData.partners.push({ name, day: inputs[0].value, evening: inputs[1].value, night: inputs[2].value, overtime: inputs[3].value });
+        formData.partners.push({ name, man: inputs[0].value, overtime: inputs[1].value });
+      });
+
+
+      if (!workerChecked && !partnerChecked) {
+        document.getElementById('error-worker').textContent = '※作業者または協力会社を1件以上選択してください。';
+        document.getElementById('error-partner').textContent = '※作業者または協力会社を1件以上選択してください。';
+        workerGroup.classList.add('input-error');
+        partnerGroup.classList.add('input-error');
+        hasError = true;
+        if (!firstErrorElement) firstErrorElement = workerGroup;
+      }
+
+
+      if (hasError) {
+        if (firstErrorElement) {
+          firstErrorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        return;
+      }
+
+
+      showConfirmation(false);
+    }
+
+let isEditMode = false;
+
+function showConfirmation(isEdit = false) {
+  isEditMode = isEdit; 
+  const company = masterData.company.find(c => c.id === formData.companyId)?.name || '（未選択）';
+  const staff = masterData.staff.find(s => s.id === formData.staffId)?.name || '（未選択）';
+  const site = masterData.site.find(s => s.id === formData.site)?.name || '（未選択）';
+
+
+  let message = `出面日付：${formData.date || new Date().toLocaleDateString('ja-JP')}<br>
+元請会社：${company}<br>
+TTC担当者：${staff}<br>
+現場名：${site}`;
+
+
+  // 項目名と単位を表示用に整形
+  const styleValueWithLabel = (label, value, isOvertime = false) => {
+    const unit = isOvertime ? 'h' : '人工';
+    const display = value && value > 0
+      ? `<span style="color: red; font-weight: bold;">${value}${unit}</span>`
+      : `<span style="color: #999;">0${unit}</span>`;
+    return `${label}：${display}`;
+  };
+
+  if (formData.workers.length > 0) {
+    message += `<br><br><strong>作業者：</strong>`;
+    formData.workers.forEach(w => {
+      // message += `<br>　${w.name}（${styleValueWithLabel('日勤', w.day)} ${styleValueWithLabel('夕勤', w.evening)} ${styleValueWithLabel('夜勤', w.night)} ${styleValueWithLabel('残業', w.overtime, true)}）`;
+      message += `<br>　${w.name}（${styleValueWithLabel('人工', w.man)} ${styleValueWithLabel('残業', w.overtime, true)}）`;
+    });
+  }
+
+
+  if (formData.partners.length > 0) {
+    message += `<br><br><strong>協力会社：</strong>`;
+    formData.partners.forEach(p => {
+      // message += `<br>　${p.name}（${styleValueWithLabel('日勤', p.day)} ${styleValueWithLabel('夕勤', p.evening)} ${styleValueWithLabel('夜勤', p.night)} ${styleValueWithLabel('残業', p.overtime, true)}）`;
+      message += `<br>　${p.name}（${styleValueWithLabel('人工', p.man)} ${styleValueWithLabel('残業', p.overtime, true)}）`;
+    });
+  }
+
+
+  document.getElementById('confirmationText').innerHTML = message;
+  document.getElementById('confirmationModal').style.display = 'flex';
+
+
+const buttonRow = document.querySelector('#confirmationBox .button-row');
+buttonRow.innerHTML = isEdit
+  ? `
+    <button type="button" onclick="submitEditFromModal()">✅ 確定して編集内容を送信</button>
+    <button onclick="closeConfirmation()">← 修正する</button>
+  `
+  : `
+    <button onclick="confirmSend()">✅ 確定して送信</button>
+    <button onclick="closeConfirmation()">戻る</button>
+  `;
+
+}
+
+// function loadPreviousRecords() {
+//   const date = document.getElementById('customDate').value;
+//   const companyId = document.getElementById('company').value;
+//   const staffId = document.getElementById('staff').value;
+//   const siteId = document.getElementById('site').value;
+// 
+//   if (!date || !companyId || !staffId || !siteId) {
+//     document.getElementById('historyRecords').innerHTML = '<em>履歴を表示するにはすべての項目を選択してください。</em>';
+//     return;
+//   }
+// 
+//   google.script.run.withSuccessHandler(displayHistory).getPreviousRecords(date, companyId, staffId, siteId);
+// }
+
+function loadPreviousRecords() {
+  const date = document.getElementById('historyDate').value;
+  const companyId = document.getElementById('company').value;
+  const staffId = document.getElementById('staff').value;
+  const siteId = document.getElementById('site').value;
+
+  const container = document.getElementById('historyRecords');
+
+  if (date && companyId && staffId && siteId) {
+    // ✅ 即フィードバック表示（読み込み中）
+    container.innerHTML = '<em style="color: gray;">📂 送信履歴を取得中です...</em>';
+    
+    // 非同期呼び出し
+    google.script.run.withSuccessHandler(displayHistory).getPreviousRecords(date, companyId, staffId, siteId);
+  } else {
+    container.innerHTML = '<em style="color: gray;">※送信履歴を表示するには履歴対象日付・元請・担当者・現場をすべて選択してください。</em>';
+  }
+}
+
+function loadModalHistory() {
+  const date = document.getElementById('modalHistoryDate').value;
+  const companyId = document.getElementById('company').value;
+  const staffId = document.getElementById('staff').value;
+  const siteId = document.getElementById('site').value;
+  const container = document.getElementById('modalHistoryContent');
+
+  if (!date || !companyId || !staffId || !siteId) {
+    container.innerHTML = '<em style="color:red;">すべての項目を選択してください（元請・担当・現場・日付）</em>';
+    return;
+  }
+
+  document.getElementById('loadingOverlay').style.display = 'flex'; // ✅ 表示ON
+  container.innerHTML = ''; // 内容初期化
+
+  google.script.run.withSuccessHandler(records => {
+    document.getElementById('loadingOverlay').style.display = 'none'; // ✅ 表示OFF
+    lastFetchedRecords = records;
+    if (records.length === 0) {
+      container.innerHTML = '<em>履歴が見つかりませんでした。</em>';
+      return;
+    }
+
+    let html = '<table style="width:100%; border-collapse: collapse;">';
+    html += '<tr><th>種別</th><th>名前</th><th>人工</th><th>残業</th></tr>';
+    records.forEach(r => {
+      html += `<tr>
+        <td>${r.type}</td>
+        <td>${r.name}</td>
+        <td>${r.man}</td>
+        <td>${r.overtime}</td>
+      </tr>`;
+    });
+    html += '</table>';
+    html += `<button onclick="showEditFormInModal()">編集する</button>`;
+    container.innerHTML = html;
+  }).getPreviousRecords(date, companyId, staffId, siteId);
+}
+
+let lastFetchedRecords = [];
+
+function displayHistory(records) {
+  const container = document.getElementById('historyRecords');
+  const editButton = document.getElementById('editButton');
+  lastFetchedRecords = records;
+
+  if (!records || records.length === 0) {
+    container.innerHTML = '<em>履歴は見つかりませんでした。</em>';
+    editButton.style.display = 'none';
+    return;
+  }
+
+  let html = '<table style="width:100%; border-collapse: collapse;">';
+  html += '<tr><th>種別</th><th>名前</th><th>人工</th><th>残業</th></tr>';
+  records.forEach(r => {
+    html += `<tr>
+      <td>${r.type}</td>
+      <td>${r.name}</td>
+      <td>${r.man}</td>
+      <td>${r.overtime}</td>
+    </tr>`;
+  });
+  html += '</table>';
+  container.innerHTML = html;
+
+  editButton.style.display = 'inline-block'; // 編集ボタンを表示
+}
+
+function showEditForm() {
+  const container = document.getElementById('editFormContainer');
+  if (!lastFetchedRecords || lastFetchedRecords.length === 0) return;
+
+  let html = '<h3>編集フォーム</h3>';
+  html += '<table style="width:100%; border-collapse: collapse;">';
+  html += '<tr><th>種別</th><th>名前</th><th>人工</th><th>残業</th></tr>';
+  lastFetchedRecords.forEach((r, i) => {
+    html += `<tr>
+      <td>${r.type}</td>
+      <td>${r.name}</td>
+      <td><input type="number" step="0.25" value="${r.day}" id="edit-day-${i}" /></td>
+      <td><input type="number" step="0.25" value="${r.evening}" id="edit-evening-${i}" /></td>
+      <td><input type="number" step="0.25" value="${r.night}" id="edit-night-${i}" /></td>
+      <td><input type="number" step="0.25" value="${r.overtime}" id="edit-overtime-${i}" /></td>
+    </tr>`;
+  });
+  html += '</table>';
+  html += `<button onclick="submitEdit()">再送信（更新）</button>`;
+
+  container.innerHTML = html;
+}
+
+function showEditFormInModal() {
+  const container = document.getElementById('modalHistoryContent');
+
+  let html = '<h3>編集フォーム</h3>';
+  html += '<table style="width:100%; border-collapse: collapse;">';
+  // html += '<tr><th>種別</th><th>名前</th><th>日勤</th><th>夕勤</th><th>夜勤</th><th>残業</th></tr>';
+  html += '<tr><th>種別</th><th>名前</th><th>人工</th><th>残業</th></tr>';
+  lastFetchedRecords.forEach((r, i) => {
+    html += `<tr>
+      <td>${r.type}</td>
+      <td>${r.name}</td>
+      <td><input type="number" step="0.25" class="work-input" placeholder="人工" value="${r.man}" id="edit-man-${i}" /></td>
+      <td><input type="number" step="0.25" class="work-input" placeholder="残業" value="${r.overtime}" id="edit-overtime-${i}" /></td>
+
+    </tr>`;
+  });
+  html += '</table>';
+  html += `<button onclick="showEditConfirmationModal()">再送信（更新）</button>`;
+  container.innerHTML = html;
+  renderAdditionalInputs(); // ✅ 履歴外の追加候補を表示
+}
+
+function submitEdit() {
+  const edited = lastFetchedRecords.map((r, i) => ({
+    ...r,
+    man: parseFloat(document.getElementById(`edit-man-${i}`).value || 0),
+    overtime: parseFloat(document.getElementById(`edit-overtime-${i}`).value || 0),
+  }));
+
+  const meta = {
+    date: document.getElementById('customDate').value,
+    companyId: document.getElementById('company').value,
+    staffId: document.getElementById('staff').value,
+    siteId: document.getElementById('site').value,
+  };
+
+  google.script.run.withSuccessHandler(() => {
+    document.getElementById('loadingOverlay').style.display = 'none'; // 🔄 追加
+    alert("再送信しました！");
+    loadPreviousRecords();
+    document.getElementById('editFormContainer').innerHTML = '';
+  }).updateEditedRecords(meta, edited);
+}
+
+function showEditConfirmationModal() {
+  isEditMode = true;
+  // 既存のエラー表示をすべてクリア
+  document.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
+  document.querySelectorAll('.edit-error-message').forEach(el => el.remove());
+
+  let hasError = false;
+  const editedRecords = []; // 更新後の全データを格納する配列
+
+  // --- 1. 既存レコードのバリデーションとデータ収集 ---
+  lastFetchedRecords.forEach((r, i) => {
+    const manInput = document.getElementById(`edit-man-${i}`);
+    const overtimeInput = document.getElementById(`edit-overtime-${i}`);
+
+    if (!manInput || !overtimeInput) return; // 念のため要素存在チェック
+
+    const man = parseFloat(manInput.value || 0);
+    const overtime = parseFloat(overtimeInput.value || 0);
+    let isRowInvalid = false;
+
+    // 0.25単位チェック
+    [manInput, overtimeInput].forEach(input => {
+      const val = parseFloat(input.value || 0);
+      if (input.value && !isValidQuarterHour(val)) {
+        input.classList.add('input-error');
+        const errMsg = document.createElement('div');
+        errMsg.textContent = '※0.25単位で入力してください。';
+        errMsg.className = 'edit-error-message';
+        errMsg.style.color = 'red';
+        input.parentElement.appendChild(errMsg);
+        hasError = true;
+        isRowInvalid = true;
+      }
+    });
+
+    if (!isRowInvalid) {
+      editedRecords.push({ ...r, man, overtime });
+    }
+  });
+
+  // --- 2. 追加作業者のバリデーションとデータ収集 ---
+  document.querySelectorAll('.additional-worker:checked').forEach(cb => {
+    const name = cb.value;
+    const safeName = sanitize(name);
+    // dataset を使って正しく要素を取得
+    const manInput = document.querySelector(`input[data-name="modal-worker-${safeName}"][data-type="man"]`);
+    const overtimeInput = document.querySelector(`input[data-name="modal-worker-${safeName}"][data-type="overtime"]`);
+
+    if (!manInput || !overtimeInput) return;
+
+    const man = parseFloat(manInput.value || 0);
+    const overtime = parseFloat(overtimeInput.value || 0);
+    let isRowInvalid = false;
+
+    // 合計0チェック
+    if ((man + overtime) <= 0) {
+      [manInput, overtimeInput].forEach(input => input.classList.add('input-error'));
+      const errMsg = document.createElement('div');
+      errMsg.className = 'edit-error-message';
+      errMsg.textContent = '※勤務時間を入力してください。';
+      errMsg.style.color = 'red';
+      // エラーメッセージを適切な場所に追加
+      manInput.closest('.time-inputs').insertAdjacentElement('afterend', errMsg);
+      hasError = true;
+      isRowInvalid = true;
+    }
+
+    // 0.25単位チェック
+    [manInput, overtimeInput].forEach(input => {
+      const val = parseFloat(input.value || 0);
+      if (input.value && !isValidQuarterHour(val)) {
+        input.classList.add('input-error');
+        // 既にエラーメッセージがなければ追加
+        if (!manInput.closest('.checkbox-wrapper').querySelector('.edit-error-message')) {
+          const errMsg = document.createElement('div');
+          errMsg.className = 'edit-error-message';
+          errMsg.textContent = '※0.25単位で入力してください。';
+          errMsg.style.color = 'red';
+          input.closest('.time-inputs').insertAdjacentElement('afterend', errMsg);
+        }
+        hasError = true;
+        isRowInvalid = true;
+      }
+    });
+
+    if (!isRowInvalid) {
+      editedRecords.push({ type: '作業者', name, man, overtime });
+    }
+  });
+
+  // --- 3. 追加協力会社のバリデーションとデータ収集 (作業者とほぼ同じ) ---
+  document.querySelectorAll('.additional-partner:checked').forEach(cb => {
+    const name = cb.value;
+    const safeName = sanitize(name);
+    const manInput = document.querySelector(`input[data-name="modal-partner-${safeName}"][data-type="man"]`);
+    const overtimeInput = document.querySelector(`input[data-name="modal-partner-${safeName}"][data-type="overtime"]`);
+
+    if (!manInput || !overtimeInput) return;
+
+    const man = parseFloat(manInput.value || 0);
+    const overtime = parseFloat(overtimeInput.value || 0);
+    let isRowInvalid = false;
+
+    if ((man + overtime) <= 0) {
+      [manInput, overtimeInput].forEach(input => input.classList.add('input-error'));
+      const errMsg = document.createElement('div');
+      errMsg.className = 'edit-error-message';
+      errMsg.textContent = '※勤務時間を入力してください。';
+      errMsg.style.color = 'red';
+      manInput.closest('.time-inputs').insertAdjacentElement('afterend', errMsg);
+      hasError = true;
+      isRowInvalid = true;
+    }
+    
+    [manInput, overtimeInput].forEach(input => {
+        const val = parseFloat(input.value || 0);
+        if (input.value && !isValidQuarterHour(val)) {
+            input.classList.add('input-error');
+            if (!manInput.closest('.checkbox-wrapper').querySelector('.edit-error-message')) {
+                 const errMsg = document.createElement('div');
+                 errMsg.className = 'edit-error-message';
+                 errMsg.textContent = '※0.25単位で入力してください。';
+                 errMsg.style.color = 'red';
+                 input.closest('.time-inputs').insertAdjacentElement('afterend', errMsg);
+            }
+            hasError = true;
+            isRowInvalid = true;
+        }
+    });
+
+    if (!isRowInvalid) {
+      editedRecords.push({ type: '協力会社', name, man, overtime });
+    }
+  });
+
+  // --- 4. バリデーション結果に応じて処理 ---
+  if (hasError) {
+    // エラーがある場合は、モーダルを開いたまま処理を中断
+    return;
+  }
+
+  // --- 5. エラーがない場合のみ、モーダルを閉じて確認画面へ ---
+  document.getElementById('historyModal').style.display = 'none';
+
+  // 送信用のformDataを構築
+  formData = {
+    date: document.getElementById('modalHistoryDate').value,
+    companyId: document.getElementById('company').value,
+    staffId: document.getElementById('staff').value,
+    site: document.getElementById('site').value,
+    workers: editedRecords.filter(r => r.type === '作業者').map(({ name, man, overtime }) => ({ name, man, overtime })),
+    partners: editedRecords.filter(r => r.type === '協力会社').map(({ name, man, overtime }) => ({ name, man, overtime }))
+  };
+
+  // 確認画面を表示
+  showConfirmation(true);
+}
+
+// 以下の関数をまるごと置き換えてください
+function submitEditFromModal() {
+  document.getElementById('loadingOverlay').style.display = 'flex';
+
+  const edited = [];
+  lastFetchedRecords.forEach((r, i) => {
+    const manInput = document.getElementById(`edit-man-${i}`);
+    const overtimeInput = document.getElementById(`edit-overtime-${i}`);
+    if (manInput && overtimeInput) {
+        edited.push({
+            ...r,
+            man: parseFloat(manInput.value || 0),
+            overtime: parseFloat(overtimeInput.value || 0),
+        });
+    }
+  });
+
+  document.querySelectorAll('.additional-worker:checked').forEach(cb => {
+    const name = cb.value;
+    const safeName = sanitize(name);
+    const inputs = document.querySelectorAll(`.worker-input[data-name="modal-worker-${safeName}"]`);
+    const entry = { type: '作業者', name };
+    inputs.forEach(input => {
+      const raw = input.value;
+      entry[input.dataset.type] = raw === '' ? 0 : parseFloat(raw);
+    });
+    edited.push(entry);
+  });
+
+  document.querySelectorAll('.additional-partner:checked').forEach(cb => {
+    const name = cb.value;
+    const safeName = sanitize(name);
+    const inputs = document.querySelectorAll(`.partner-input[data-name="modal-partner-${safeName}"]`);
+    const entry = { type: '協力会社', name };
+    inputs.forEach(input => {
+      const raw = input.value;
+      entry[input.dataset.type] = raw === '' ? 0 : parseFloat(raw);
+    });
+    edited.push(entry);
+  });
+
+  const meta = {
+    date: document.getElementById('modalHistoryDate').value,
+    companyId: document.getElementById('company').value,
+    staffId: document.getElementById('staff').value,
+    siteId: document.getElementById('site').value,
+  };
+
+  google.script.run.withSuccessHandler(() => {
+    document.getElementById('loadingOverlay').style.display = 'none';
+    document.getElementById('confirmationText').textContent = '✅ 送信が完了しました！\n別の場所をタップしてフォームに戻ってください。';
+
+    // ボタンエリアを「閉じる」ボタンで上書き
+    const buttonRow = document.querySelector('#confirmationBox .button-row');
+    buttonRow.innerHTML = '<button onclick="closeConfirmation()">閉じる</button>';
+
+    setTimeout(() => {
+      if (isEditMode) {
+        // 編集モードでの送信が完了したら、履歴モーダルを非表示にする
+        document.getElementById('historyModal').style.display = 'none';
+      }
+    }, 300);
+
+  }).updateEditedRecords(meta, edited);
+}
+
+/*
+function deleteRecord(index) {
+  const confirmDelete = confirm(`「${lastFetchedRecords[index].name}」の明細を削除しますか？`);
+  if (!confirmDelete) return;
+
+  const meta = {
+    date: document.getElementById('modalHistoryDate').value,
+    companyId: document.getElementById('company').value,
+    staffId: document.getElementById('staff').value,
+    siteId: document.getElementById('site').value,
+  };
+
+  const record = lastFetchedRecords[index];
+
+  google.script.run.withSuccessHandler(() => {
+    alert("削除しました");
+    closeHistoryModal(); // 一度閉じて
+    openHistoryModal();  // 再読み込み
+  }).deleteRecordFromSheet(meta, record);
+}
+*/
+
+function confirmEditSend() {
+  const edited = lastFetchedRecords.map((r, i) => ({
+    ...r,
+    day: parseFloat(document.getElementById(`edit-day-${i}`).value || 0),
+    evening: parseFloat(document.getElementById(`edit-evening-${i}`).value || 0),
+    night: parseFloat(document.getElementById(`edit-night-${i}`).value || 0),
+    overtime: parseFloat(document.getElementById(`edit-overtime-${i}`).value || 0),
+  }));
+
+  // 追加チェック分も含む場合ここに追加OK
+
+  const meta = {
+    date: document.getElementById('modalHistoryDate').value,
+    companyId: document.getElementById('company').value,
+    staffId: document.getElementById('staff').value,
+    siteId: document.getElementById('site').value,
+  };
+
+  document.getElementById('loadingOverlay').style.display = 'flex';
+
+  google.script.run.withSuccessHandler(() => {
+    document.getElementById('loadingOverlay').style.display = 'none';
+    alert("送信が完了しました！");
+    closeConfirmation();
+    closeHistoryModal();
+  }).updateEditedRecords(meta, edited);
+}
+
+
+function updateWorkerAndPartner() {
+  const staffId = document.getElementById('staff').value;
+
+
+  const workerContainer = document.getElementById('worker');
+  const partnerContainer = document.getElementById('partner');
+  workerContainer.innerHTML = '';
+  partnerContainer.innerHTML = '';
+  const registeredNames = new Set(lastFetchedRecords.map(r => `${r.type}:${r.name}`));  // 作業者:山田 など
+
+
+  // 作業者の表示
+  masterData.worker
+    .filter(w => w.staffIds.includes(staffId))
+    .filter(w => !registeredNames.has(`作業者:${w.name}`))  // ✅ 登録済は除外
+    .forEach(w => {
+      const safeName = sanitize(w.name);
+      const wrapper = document.createElement('label');
+      wrapper.className = 'checkbox-wrapper';
+
+
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.name = 'worker';
+      checkbox.value = w.name;
+      checkbox.onchange = () => toggleTimeInputs(checkbox, `worker-${safeName}`);
+
+
+      const span = document.createElement('span');
+      span.textContent = w.name;
+
+
+      wrapper.appendChild(checkbox);
+      wrapper.appendChild(span);
+      workerContainer.appendChild(wrapper);
+      workerContainer.appendChild(createTimeInputs(`worker-${safeName}`));
+    });
+
+
+  // ✅ 協力会社の表示（関数内に含めること！）
+  masterData.partner
+    .filter(p => p.staffIds.includes(staffId))
+    .filter(p => !registeredNames.has(`協力会社:${p.name}`))  // ✅ 登録済は除外
+    .forEach(p => {
+      const safeName = sanitize(p.name);
+      const wrapper = document.createElement('label');
+      wrapper.className = 'checkbox-wrapper';
+
+
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.name = 'partner';
+      checkbox.value = p.name;
+      checkbox.onchange = () => toggleTimeInputs(checkbox, `partner-${safeName}`);
+
+
+      const span = document.createElement('span');
+      span.textContent = p.name;
+
+
+      wrapper.appendChild(checkbox);
+      wrapper.appendChild(span);
+      partnerContainer.appendChild(wrapper);
+      partnerContainer.appendChild(createTimeInputs(`partner-${safeName}`));
+    });
+}
+
+
+
+window.onload = function () {
+  google.script.run.withSuccessHandler(data => {
+    masterData = data;
+
+    // 元請会社のセレクト作成
+    const companySelect = document.getElementById('company');
+    companySelect.innerHTML = '<option value="" disabled selected>選択してください</option>';
+    masterData.company.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = c.name;
+      companySelect.appendChild(opt);
+    });
+
+    // 担当者・現場名などのイベント登録
+    document.getElementById("company").addEventListener("change", updateStaffOptions);
+    document.getElementById("company").addEventListener("change", updateSiteOptions);
+    document.getElementById("staff").addEventListener("change", updateSiteOptions);
+    document.getElementById("staff").addEventListener("change", updateWorkerAndPartner);
+
+    // ✅ 編集機能など追加イベント
+    const historyDateInput = document.getElementById("historyDate");
+    if (historyDateInput) {
+      historyDateInput.addEventListener("change", loadPreviousRecords);
+    }
+  }).getMasterData();
+};
+
+function openHistoryModal() {
+  document.getElementById('modalHistoryDate').value = new Date().toISOString().split("T")[0];
+  document.getElementById('modalHistoryContent').innerHTML = '';
+  document.getElementById('historyModal').style.display = 'flex';
+}
+
+function closeHistoryModal() {
+  document.getElementById('historyModal').style.display = 'none';
+  updateWorkerAndPartner();  // ✅ 閉じたら候補更新
+}
+
+function renderAdditionalInputs() {
+  const workerContainer = document.getElementById('additionalWorkerInputs');
+  const partnerContainer = document.getElementById('additionalPartnerInputs');
+  workerContainer.innerHTML = '';
+  partnerContainer.innerHTML = '';
+
+  const staffId = document.getElementById('staff').value;
+  if (!staffId) return;
+
+  const registered = new Set(lastFetchedRecords.map(r => `${r.type}:${r.name}`));
+
+  // 🔽 編集テーブルに表示されている作業者／協力会社の名前も除外対象に追加
+  document.querySelectorAll('#edit-table tbody tr').forEach(row => {
+    const type = row.querySelector('td:nth-child(1)').textContent.trim();
+    const name = row.querySelector('td:nth-child(2)').textContent.trim();
+    registered.add(`${type}:${name}`);
+  });
+
+  const createCheckboxBlock = (type, name, container) => {
+    const safeName = sanitize(name);
+    const wrapper = document.createElement('label');
+    wrapper.className = 'checkbox-wrapper';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = `additional-${type}`;
+    checkbox.value = name;
+    checkbox.onchange = () => toggleTimeInputs(checkbox, `modal-${type}-${safeName}`);
+
+    const span = document.createElement('span');
+    span.textContent = name;
+
+    wrapper.appendChild(checkbox);
+    wrapper.appendChild(span);
+    container.appendChild(wrapper);
+
+    const inputs = createTimeInputs(`modal-${type}-${safeName}`);
+    container.appendChild(inputs);
+  };
+
+  // ✅ 作業者の見出し
+  // const workerHeader = document.createElement('h4');
+  // workerHeader.textContent = '作業者';
+  // workerContainer.appendChild(workerHeader);
+
+  masterData.worker
+    .filter(w => w.staffIds.includes(staffId))
+    .filter(w => !registered.has(`作業者:${w.name}`)) // ✅ 重複回避
+    .forEach(w => createCheckboxBlock('worker', w.name, workerContainer));
+
+  // ✅ 協力会社の見出し
+  // const partnerHeader = document.createElement('h4');
+  // partnerHeader.textContent = '協力会社';
+  // partnerContainer.appendChild(partnerHeader);
+
+  masterData.partner
+    .filter(p => p.staffIds.includes(staffId))
+    .filter(p => !registered.has(`協力会社:${p.name}`)) // ✅ 重複回避
+    .forEach(p => createCheckboxBlock('partner', p.name, partnerContainer));
+}
+
+
+function toggleSection(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const isShown = el.style.display === 'block';
+  el.style.display = isShown ? 'none' : 'block';
+}
+
+  </script>
+</head>
+<body>
+<div id="dateToggleWrapper">
+  <label class="date-toggle-button" id="dateToggleButton">
+    <input type="checkbox" id="customDateToggle" onchange="toggleDateInput(this)">
+    ※当日より前の出面入力の場合はこちらをタップ
+  </label>
+  <div id="dateContainer">
+    <label for="customDate" class="section-label">出面日付</label>
+    <input type="date" id="customDate">
+    <div id="error-date" class="error-message"></div>
+  </div>
+</div>
+
+
+  <div>
+    <label for="company"  class="section-label">元請会社</label>
+    <select id="company">
+      <option value="" disabled selected>選択してください</option>
+    </select>
+    <div id="error-company" class="error-message"></div>
+  </div>
+
+
+  <div>
+    <label for="staff"  class="section-label">TTC担当者</label>
+    <select id="staff">
+      <option value="" disabled selected>選択してください</option>
+    </select>
+    <div id="error-staff" class="error-message"></div>
+  </div>
+
+
+  <div>
+    <label for="site"  class="section-label">現場名</label>
+    <select id="site">
+      <option value="" disabled selected>選択してください</option>
+    </select>
+    <div id="error-site" class="error-message"></div>
+  </div>
+
+<!-- ✅ モーダル表示トリガー -->
+<div style="margin-top: 2rem;">
+  <label class="date-toggle-button" onclick="openHistoryModal()">
+    ※送信履歴を確認したい場合はこちらをタップ
+  </label>
+</div>
+
+<!-- ✅ 履歴モーダル本体 -->
+<div id="historyModal" style="display: none; position: fixed; z-index: 9999; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center;">
+  <div style="background: white; padding: 2rem; border-radius: 10px; width: 90%; max-width: 800px; max-height: 90vh; overflow-y: auto;">
+    <h3>何日の送信履歴を確認しますか？</h3>
+    <input type="date" id="modalHistoryDate" class="custom-date-input" />
+    <button onclick="loadModalHistory()">送信履歴を取得</button>
+    <div id="modalHistoryContent" style="margin-top: 1rem;"></div>
+    <!-- ✅ 新規追加フォーム（モーダル下部に追加） -->
+    <div class="toggle-header" onclick="toggleSection('toggleAddArea')">＋ 新しい作業者／協力会社を追加</div>
+    <div id="toggleAddArea" class="toggle-section">
+      <div class="toggle-header inner" onclick="toggleSection('workerSection')">▶ 作業者</div>
+      <div id="workerSection" class="toggle-section inner">
+       <div id="additionalWorkerInputs"></div>
+      </div>
+
+      <div class="toggle-header inner" onclick="toggleSection('partnerSection')">▶ 協力会社</div>
+      <div id="partnerSection" class="toggle-section inner">
+        <div id="additionalPartnerInputs"></div>
+      </div>
+    </div>
+    <button onclick="closeHistoryModal()" style="margin-top: 1rem;">閉じる</button>
+  </div>
+</div>
+
+<!--
+  <div>
+  <label class="section-label">送信履歴</label>
+  <div id="historyRecords" style="margin-top: 1rem; border: 1px solid #ccc; padding: 1rem;  border-radius: 6px; background-color: #fff;"></div>
+  </div>
+
+<div style="margin-bottom: 1rem;">
+  <label for="historyDate">履歴対象日付</label>
+  <input type="date" id="historyDate" style="font-size: 2rem; padding: 0.5rem; width: 100%;">
+</div>
+
+<div id="editSection" style="margin-top: 2rem;">
+  <button id="editButton" onclick="showEditForm()" style="display: none;">編集する</button>
+  <div id="editFormContainer"></div>
+</div>
+-->
+
+  <div>
+  <label  class="section-label">作業者</label>
+  <div id="worker" class="checkbox-group"></div>
+  <div id="error-worker" class="error-message"></div>
+</div>
+
+
+<div>
+  <label  class="section-label">協力会社名</label>
+  <div id="partner" class="checkbox-group"></div>
+  <div id="error-partner" class="error-message"></div>
+</div>
+
+
+  <div>
+    <button onclick="submitForm()">送信</button>
+  </div>
+
+
+<!-- 確認モーダル -->
+<div id="confirmationModal" onclick="handleModalClickOutside(event)">
+  <div id="confirmationBox" onclick="event.stopPropagation()">
+    <div id="confirmationText">この内容で送信しますか？</div>
+    <div class="button-row">
+      <button onclick="confirmSend()">✅ 確定して送信</button>
+      <button onclick="closeConfirmation()">戻る</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ローディングオーバーレイ（統合版） -->
+<div id="loadingOverlay">
+  <div class="loader"></div>
+  <div style="margin-top: 1rem; font-size: 1.2rem; color: #0066cc;">送信中...</div>
+</div>
+
+
+
+
+
+
+</body>
+
+
+
+
+</html>
