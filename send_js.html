@@ -1,3 +1,289 @@
 <script>
 
+
+  // ------------------------------------------
+  // 送信ボタンクリック時：入力値の検証と formData の組み立て、確認モーダル表示
+  // ------------------------------------------
+  function submitForm() {
+    // 既存エラー表示をクリア
+    document.querySelectorAll('.error-message').forEach(div => div.textContent = '');
+    document.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
+
+
+    let hasError = false;
+    let firstErrorElement = null;
+
+    // 入力要素の参照
+    const companySelect = document.getElementById('company');
+    const staffSelect = document.getElementById('staff');
+    const siteSelect = document.getElementById('site');
+    const customDateToggle = document.getElementById('customDateToggle');
+    const customDate = document.getElementById('customDate');
+
+    // 必須チェック（会社/担当/現場/日付）
+    if (!companySelect.value) {
+      document.getElementById('error-company').textContent = '※元請会社を選択してください。';
+      companySelect.classList.add('input-error');
+      hasError = true;
+      if (!firstErrorElement) firstErrorElement = companySelect;
+    }
+    if (!staffSelect.value) {
+      document.getElementById('error-staff').textContent = '※TTC担当者を選択してください。';
+      staffSelect.classList.add('input-error');
+      hasError = true;
+      if (!firstErrorElement) firstErrorElement = staffSelect;
+    }
+    if (!siteSelect.value) {
+      document.getElementById('error-site').textContent = '※現場名を選択してください。';
+      siteSelect.classList.add('input-error');
+      hasError = true;
+      if (!firstErrorElement) firstErrorElement = siteSelect;
+    }
+    if (customDateToggle.checked && !customDate.value) {
+      document.getElementById('error-date').textContent = '※出面日付を入力してください。';
+      customDate.classList.add('input-error');
+      hasError = true;
+      if (!firstErrorElement) firstErrorElement = customDate;
+    }
+
+
+    const workerGroup = document.getElementById('worker');
+    const partnerGroup = document.getElementById('partner');
+    let workerChecked = false;
+    let partnerChecked = false;
+
+    // formData の下地を作成
+    formData = {
+      companyId: companySelect.value,
+      staffId: staffSelect.value,
+      site: siteSelect.value,
+      date: customDateToggle.checked ? customDate.value : '',
+      workers: [],
+      partners: []
+    };
+
+    // 作業者のチェック行を収集
+    document.querySelectorAll("input[name='worker']:checked").forEach(cb => {
+      workerChecked = true;
+      const name = cb.value;
+      const safeName = sanitize(name);
+      const prefix = `worker-${safeName}`;
+      // const inputs = ['day', 'evening', 'night', 'overtime'].map(type => {
+      const inputs = ['man', 'overtime'].map(type => {
+        const el = document.querySelector(`input[name='${prefix}-${type}']`);
+        return { el, value: parseFloat(el?.value || 0) };
+      });
+      let total = 0;
+      let invalid = false;
+      inputs.forEach(({ el, value }) => {
+        total += value;
+        if (value && !isValidQuarterHour(value)) {
+          el.classList.add('input-error');
+          invalid = true;
+        }
+      });
+      if (total === 0 || invalid) {
+        document.getElementById('error-worker').textContent = invalid
+          ? '※勤務時間は0.25単位で入力してください。'
+          : '※作業者の勤務時間を入力してください。';
+        workerGroup.classList.add('input-error');
+        hasError = true;
+        if (!firstErrorElement) firstErrorElement = workerGroup;
+      }
+      // formData.workers.push({ name, day: inputs[0].value, evening: inputs[1].value, night: inputs[2].value, overtime: inputs[3].value });
+      formData.workers.push({ name, man: inputs[0].value, overtime: inputs[1].value });
+    });
+
+    // 作業者のチェック行を収集
+    document.querySelectorAll("input[name='partner']:checked").forEach(cb => {
+      partnerChecked = true;
+      const name = cb.value;
+      const safeName = sanitize(name);
+      const prefix = `partner-${safeName}`;
+      // const inputs = ['day', 'evening', 'night', 'overtime'].map(type => {
+      const inputs = ['man', 'overtime'].map(type => {
+        const el = document.querySelector(`input[name='${prefix}-${type}']`);
+        return { el, value: parseFloat(el?.value || 0) };
+      });
+
+      // 合計/刻みの検証
+      let total = 0;
+      let invalid = false;
+      inputs.forEach(({ el, value }) => {
+        total += value;
+        if (value && !isValidQuarterHour(value)) {
+          el.classList.add('input-error');
+          invalid = true;
+        }
+      });
+      if (total === 0 || invalid) {
+        document.getElementById('error-partner').textContent = invalid
+          ? '※勤務時間は0.25単位で入力してください。'
+          : '※協力会社名の勤務時間を入力してください。';
+        partnerGroup.classList.add('input-error');
+        hasError = true;
+        if (!firstErrorElement) firstErrorElement = partnerGroup;
+      }
+      // formData.partners.push({ name, day: inputs[0].value, evening: inputs[1].value, night: inputs[2].value, overtime: inputs[3].value });
+      formData.partners.push({ name, man: inputs[0].value, overtime: inputs[1].value });
+    });
+
+    // 作業者・協力会社のどちらか一方でも選択されていない場合はエラー
+    if (!workerChecked && !partnerChecked) {
+      document.getElementById('error-worker').textContent = '※作業者または協力会社を1件以上選択してください。';
+      document.getElementById('error-partner').textContent = '※作業者または協力会社を1件以上選択してください。';
+      workerGroup.classList.add('input-error');
+      partnerGroup.classList.add('input-error');
+      hasError = true;
+      if (!firstErrorElement) firstErrorElement = workerGroup;
+    }
+
+
+    if (hasError) {
+      if (firstErrorElement) {
+        firstErrorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
+    }
+
+
+    showConfirmation(false);
+  }
+
+  let isEditMode = false;
+
+
+
+  // ------------------------------------------
+  // 確認モーダルの表示＆内容組み立て
+  // 編集モードの場合はボタン表示を変更
+  // ------------------------------------------
+  function showConfirmation(isEdit = false) {
+    isEditMode = isEdit;
+    const company = masterData.company.find(c => c.id === formData.companyId)?.name || '（未選択）';
+    const staff = masterData.staff.find(s => s.id === formData.staffId)?.name || '（未選択）';
+    const site = masterData.site.find(s => s.id === formData.site)?.name || '（未選択）';
+
+
+    let message = `出面日付：${formData.date || new Date().toLocaleDateString('ja-JP')}<br>
+元請会社：${company}<br>
+TTC担当者：${staff}<br>
+現場名：${site}`;
+
+
+    // 項目名と単位を表示用に整形
+    const styleValueWithLabel = (label, value, isOvertime = false) => {
+      const unit = isOvertime ? 'h' : '人工';
+      const display = value && value > 0
+        ? `<span style="color: red; font-weight: bold;">${value}${unit}</span>`
+        : `<span style="color: #999;">0${unit}</span>`;
+      return `${label}：${display}`;
+    };
+
+    if (formData.workers.length > 0) {
+      message += `<br><br><strong>作業者：</strong>`;
+      formData.workers.forEach(w => {
+        // message += `<br>　${w.name}（${styleValueWithLabel('日勤', w.day)} ${styleValueWithLabel('夕勤', w.evening)} ${styleValueWithLabel('夜勤', w.night)} ${styleValueWithLabel('残業', w.overtime, true)}）`;
+        message += `<br>　${w.name}（${styleValueWithLabel('人工', w.man)} ${styleValueWithLabel('残業', w.overtime, true)}）`;
+      });
+    }
+
+
+    if (formData.partners.length > 0) {
+      message += `<br><br><strong>協力会社：</strong>`;
+      formData.partners.forEach(p => {
+        // message += `<br>　${p.name}（${styleValueWithLabel('日勤', p.day)} ${styleValueWithLabel('夕勤', p.evening)} ${styleValueWithLabel('夜勤', p.night)} ${styleValueWithLabel('残業', p.overtime, true)}）`;
+        message += `<br>　${p.name}（${styleValueWithLabel('人工', p.man)} ${styleValueWithLabel('残業', p.overtime, true)}）`;
+      });
+    }
+
+
+    document.getElementById('confirmationText').innerHTML = message;
+    document.getElementById('confirmationModal').style.display = 'flex';
+
+
+    const buttonRow = document.querySelector('#confirmationBox .button-row');
+    buttonRow.innerHTML = isEdit
+      ? `
+    <button type="button" onclick="submitEditFromModal()">✅ 確定して編集内容を送信</button>
+    <button onclick="closeConfirmation()">← 修正する</button>
+  `
+      : `
+    <button onclick="confirmSend()">✅ 確定して送信</button>
+    <button onclick="closeConfirmation()">戻る</button>
+  `;
+
+  }
+
+
+  // ------------------------------------------
+  // 送信確定処理：Apps Script サーバー関数 saveFormResponse(formData) を呼ぶ
+  // ローディングの表示/非表示、完了メッセージの描き換えなど
+  // ------------------------------------------
+  function confirmSend() {
+    document.getElementById('loadingOverlay').style.display = 'flex';
+    google.script.run.withSuccessHandler(() => {
+      isSubmitted = true;
+      document.getElementById('loadingOverlay').style.display = 'none';
+      document.getElementById('confirmationText').textContent = '✅ 送信が完了しました！\n別の場所をタップしてフォームに戻ってください。';
+      document.querySelector('#confirmationBox .button-row button:nth-child(1)').style.display = 'none';
+    }).saveFormResponse(formData);
+  }
+
+
+  // ------------------------------------------
+  // モーダル外クリックで確認モーダルを閉じる（UX改善）
+  // 編集中は元の編集モーダルへ戻す
+  // ------------------------------------------
+  function handleModalClickOutside(event) {
+    const confirmationBox = document.getElementById('confirmationBox');
+
+    // モーダルの外側がクリックされた場合のみ処理
+    if (!confirmationBox.contains(event.target)) {
+      const confirmationText = document.getElementById('confirmationText').textContent;
+      const isSent = confirmationText.includes('✅ 送信が完了しました！');
+      document.getElementById('confirmationModal').style.display = 'none';
+
+      if (isSent) {
+        if (!isEditMode) {
+          resetForm();
+        }
+      } else if (isEditMode) {
+        // 編集モードで「修正する」ために戻る場合
+        // 編集モーダルを再表示するだけにする
+        document.getElementById('historyModal').style.display = 'flex';
+      }
+    }
+  }
+
+
+
+  // ------------------------------------------
+  // 送信確認モーダルを閉じるときの処理
+  // （送信完了後はフォームをリセット／編集中は履歴モーダルへ戻す等）
+  // ------------------------------------------
+  function closeConfirmation() {
+    const confirmationText = document.getElementById('confirmationText').textContent;
+    const isSent = confirmationText.includes('✅ 送信が完了しました！');
+    document.getElementById('confirmationModal').style.display = 'none';
+
+    if (isSent) {
+      // 送信完了後にモーダルを閉じる場合
+      if (!isEditMode) {
+        // 新規入力モードだったらフォームをリセット
+        resetForm();
+      }
+      // 編集モードの場合は、完了後にモーダルが閉じるだけなので何もしない
+    } else {
+      // 「修正する」ボタンで確認モーダルから戻る場合
+      if (isEditMode) {
+        // 編集モーダルを再表示するだけ（入力値が保持されます）
+        document.getElementById('historyModal').style.display = 'flex';
+      }
+      // 新規入力の場合は元々入力フォームが見えているので何もしない
+    }
+  }
+
+
+
 </script>

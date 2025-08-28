@@ -1,4 +1,18 @@
 <script>
+/* ------------------------------------------
+ * フォーム描画まわり（候補生成・連動・UIトグル）
+ *
+ * 依存：
+ *  - グローバル変数 : masterData, lastFetchedRecords, formData, isSubmitted
+ *    （init_js で let 宣言しておく）
+ *  - ユーティリティ : sanitize(), isValidQuarterHour()
+ *    （check_js or utils.js に定義）
+ * 役割：
+ *  - 会社/担当者/現場の連動
+ *  - 作業者/協力会社のチェックボックスと時間入力の生成
+ *  - 日付トグル、セクションの開閉、フォームリセット
+ * ------------------------------------------*/
+
 
   // ------------------------------------------
   // 過去日入力のON/OFF（トグル）に応じて日付入力欄の表示切替
@@ -9,6 +23,133 @@
     document.getElementById('dateContainer').style.display = checked ? 'block' : 'none';
     button.classList.toggle('checked', checked);
   }
+
+
+
+  // ------------------------------------------
+  // 会社選択に応じて担当者セレクトを絞り込み＆現場セレクトも更新
+  // ------------------------------------------
+  function updateStaffOptions() {
+    const staffSelect = document.getElementById('staff');
+    const companyId = document.getElementById('company').value;
+    staffSelect.innerHTML = '<option value="" disabled selected>選択してください</option>';
+
+
+    if (!companyId) return;
+
+
+    masterData.staff
+      .filter(staff => staff.companies.includes(companyId))
+      .forEach(staff => {
+        const opt = document.createElement('option');
+        opt.value = staff.id;
+        opt.textContent = staff.name;
+        staffSelect.appendChild(opt);
+      });
+
+
+    updateSiteOptions(); // スタッフが変わったら現場も再絞り込み
+  }
+
+
+
+  // ------------------------------------------
+  // 会社＋担当者の選択に応じて現場セレクトを絞り込み
+  // ------------------------------------------
+  function updateSiteOptions() {
+    const staffId = document.getElementById('staff').value;
+    const companyId = document.getElementById('company').value;
+    const siteSelect = document.getElementById('site');
+    siteSelect.innerHTML = '<option value="" disabled selected>選択してください</option>';
+
+
+    if (!staffId || !companyId) return;
+
+
+    masterData.site
+      .filter(site => site.staffId === staffId && site.companyIds.includes(companyId))
+      .forEach(site => {
+        const opt = document.createElement('option');
+        opt.value = site.id;
+        opt.textContent = site.name;
+        siteSelect.appendChild(opt);
+      });
+  }
+
+
+
+  // ------------------------------------------
+  // 担当者選択に応じて、作業者/協力会社の候補リストを描画
+  // （履歴モーダルを開閉すると候補が変わるため、その都度更新）
+  // ------------------------------------------
+  function updateWorkerAndPartner() {
+    const staffId = document.getElementById('staff').value;
+
+
+    const workerContainer = document.getElementById('worker');
+    const partnerContainer = document.getElementById('partner');
+    workerContainer.innerHTML = '';
+    partnerContainer.innerHTML = '';
+    const registeredNames = new Set(lastFetchedRecords.map(r => `${r.type}:${r.name}`));  // 作業者:山田 など
+
+
+    // 作業者の表示
+    masterData.worker
+      .filter(w => w.staffIds.includes(staffId))
+      .filter(w => !registeredNames.has(`作業者:${w.name}`))  // ✅ 登録済は除外
+      .forEach(w => {
+        const safeName = sanitize(w.name);
+        const wrapper = document.createElement('label');
+        wrapper.className = 'checkbox-wrapper';
+
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.name = 'worker';
+        checkbox.value = w.name;
+        checkbox.onchange = () => toggleTimeInputs(checkbox, `worker-${safeName}`);
+
+
+        const span = document.createElement('span');
+        span.textContent = w.name;
+
+
+        wrapper.appendChild(checkbox);
+        wrapper.appendChild(span);
+        workerContainer.appendChild(wrapper);
+        workerContainer.appendChild(createTimeInputs(`worker-${safeName}`));
+      });
+
+
+    // ✅ 協力会社の表示（関数内に含めること！）
+    masterData.partner
+      .filter(p => p.staffIds.includes(staffId))
+      .filter(p => !registeredNames.has(`協力会社:${p.name}`))  // ✅ 登録済は除外
+      .forEach(p => {
+        const safeName = sanitize(p.name);
+        const wrapper = document.createElement('label');
+        wrapper.className = 'checkbox-wrapper';
+
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.name = 'partner';
+        checkbox.value = p.name;
+        checkbox.onchange = () => toggleTimeInputs(checkbox, `partner-${safeName}`);
+
+
+        const span = document.createElement('span');
+        span.textContent = p.name;
+
+
+        wrapper.appendChild(checkbox);
+        wrapper.appendChild(span);
+        partnerContainer.appendChild(wrapper);
+        partnerContainer.appendChild(createTimeInputs(`partner-${safeName}`));
+      });
+  }
+
+
 
   // ------------------------------------------
   // 画面全体を初期状態に戻す（送信完了後などに使用）
@@ -40,53 +181,6 @@
     }
   }
 
-  // ------------------------------------------
-  // 会社選択に応じて担当者セレクトを絞り込み＆現場セレクトも更新
-  // ------------------------------------------
-  function updateStaffOptions() {
-    const staffSelect = document.getElementById('staff');
-    const companyId = document.getElementById('company').value;
-    staffSelect.innerHTML = '<option value="" disabled selected>選択してください</option>';
-
-
-    if (!companyId) return;
-
-
-    masterData.staff
-      .filter(staff => staff.companies.includes(companyId))
-      .forEach(staff => {
-        const opt = document.createElement('option');
-        opt.value = staff.id;
-        opt.textContent = staff.name;
-        staffSelect.appendChild(opt);
-      });
-
-
-    updateSiteOptions(); // スタッフが変わったら現場も再絞り込み
-  }
-
-  // ------------------------------------------
-  // 会社＋担当者の選択に応じて現場セレクトを絞り込み
-  // ------------------------------------------
-  function updateSiteOptions() {
-    const staffId = document.getElementById('staff').value;
-    const companyId = document.getElementById('company').value;
-    const siteSelect = document.getElementById('site');
-    siteSelect.innerHTML = '<option value="" disabled selected>選択してください</option>';
-
-
-    if (!staffId || !companyId) return;
-
-
-    masterData.site
-      .filter(site => site.staffId === staffId && site.companyIds.includes(companyId))
-      .forEach(site => {
-        const opt = document.createElement('option');
-        opt.value = site.id;
-        opt.textContent = site.name;
-        siteSelect.appendChild(opt);
-      });
-  }
 
 
 </script>

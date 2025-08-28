@@ -1,3 +1,145 @@
 <script>
 
+  // ------------------------------------------
+  // 編集モーダル→確認モーダル→送信の最終段階
+  // 実際に updateEditedRecords(meta, edited) を呼び出す
+  // ------------------------------------------
+  function submitEditFromModal() {
+    document.getElementById('loadingOverlay').style.display = 'flex';
+
+    const edited = [];
+    lastFetchedRecords.forEach((r, i) => {
+      const manInput = document.getElementById(`edit-man-${i}`);
+      const overtimeInput = document.getElementById(`edit-overtime-${i}`);
+      if (manInput && overtimeInput) {
+        edited.push({
+          ...r,
+          man: parseFloat(manInput.value || 0),
+          overtime: parseFloat(overtimeInput.value || 0),
+        });
+      }
+    });
+
+    document.querySelectorAll('.additional-worker:checked').forEach(cb => {
+      const name = cb.value;
+      const safeName = sanitize(name);
+      const inputs = document.querySelectorAll(`.worker-input[data-name="modal-worker-${safeName}"]`);
+      const entry = { type: '作業者', name };
+      inputs.forEach(input => {
+        const raw = input.value;
+        entry[input.dataset.type] = raw === '' ? 0 : parseFloat(raw);
+      });
+      edited.push(entry);
+    });
+
+    document.querySelectorAll('.additional-partner:checked').forEach(cb => {
+      const name = cb.value;
+      const safeName = sanitize(name);
+      const inputs = document.querySelectorAll(`.partner-input[data-name="modal-partner-${safeName}"]`);
+      const entry = { type: '協力会社', name };
+      inputs.forEach(input => {
+        const raw = input.value;
+        entry[input.dataset.type] = raw === '' ? 0 : parseFloat(raw);
+      });
+      edited.push(entry);
+    });
+
+    const meta = {
+      date: document.getElementById('modalHistoryDate').value,
+      companyId: document.getElementById('company').value,
+      staffId: document.getElementById('staff').value,
+      siteId: document.getElementById('site').value,
+    };
+
+    google.script.run.withSuccessHandler(() => {
+      document.getElementById('loadingOverlay').style.display = 'none';
+      document.getElementById('confirmationText').textContent = '✅ 送信が完了しました！\n別の場所をタップしてフォームに戻ってください。';
+
+      // ボタンエリアを「閉じる」ボタンで上書き
+      const buttonRow = document.querySelector('#confirmationBox .button-row');
+      buttonRow.innerHTML = '<button onclick="closeConfirmation()">閉じる</button>';
+
+      setTimeout(() => {
+        if (isEditMode) {
+          // 編集モードでの送信が完了したら、履歴モーダルを非表示にする
+          document.getElementById('historyModal').style.display = 'none';
+        }
+      }, 300);
+
+    }).updateEditedRecords(meta, edited);
+  }
+
+
+  // ------------------------------------------
+  // 入力値バリデーション：0.25単位（15分刻み）かどうかを判定
+  // ------------------------------------------
+  function isValidQuarterHour(value) {
+    return Number.isFinite(value) && Math.round(value * 100) % 25 === 0;
+  }
+
+
+  // ------------------------------------------
+  // 名前などを安全にID化するためのサニタイズ
+  // ------------------------------------------
+  function sanitize(str) {
+    return str.replace(/[^a-zA-Z0-9\u3040-\u30ff\u4e00-\u9faf]/g, '_');
+  }
+
+
+
+  // ------------------------------------------
+  // チェックされた人（作業者/協力会社）に紐づく「人工/残業」入力欄を生成して返す
+  // ------------------------------------------
+  function createTimeInputs(name) {
+    const container = document.createElement('div');
+    container.className = 'time-inputs';
+    container.id = `inputs-${name}`;
+
+    const labelMap = { man: '人工', overtime: '残業' };
+
+    ['man', 'overtime'].forEach(type => {
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.min = '0';
+      input.step = '0.25';
+      input.inputMode = 'decimal';
+      input.placeholder = labelMap[type];  // 入力欄内に「人工」「残業」
+      input.name = `${name}-${type}`;
+      input.dataset.type = type;
+      input.dataset.name = name;
+
+      // ✅ クラス名を worker-input / partner-input に動的付与
+      const prefix = name.startsWith('modal-worker') ? 'worker' :
+        name.startsWith('modal-partner') ? 'partner' : '';
+      input.className = `work-input ${prefix}-input`;
+      container.appendChild(input);
+    });
+
+    return container;
+  }
+
+
+  // ------------------------------------------
+  // チェックボックスON/OFFに応じて、その行の「人工/残業」入力欄の表示切替
+  // ------------------------------------------
+  function toggleTimeInputs(checkbox, name) {
+    const inputs = document.getElementById(`inputs-${name}`);
+    if (inputs) inputs.style.display = checkbox.checked ? 'flex' : 'none';
+  }
+
+
+
+  // ------------------------------------------
+  // シンプルな開閉トグル（見出しクリックでセクション開閉）
+  // ------------------------------------------
+  function toggleSection(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const isShown = el.style.display === 'block';
+    el.style.display = isShown ? 'none' : 'block';
+  }
+
+
+
+
 </script>

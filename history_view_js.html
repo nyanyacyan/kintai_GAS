@@ -1,3 +1,394 @@
 <script>
 
+  /* ------------------------------------------
+   * 履歴表示＆編集モーダルまわり
+   *
+   * 依存：
+   *  - グローバル変数 : masterData, lastFetchedRecords, formData, isEditMode
+   *    （init_js で let 宣言しておく）
+   *  - ユーティリティ : sanitize(), isValidQuarterHour()
+   *    （check_js / utils に定義）
+   *  - フォーム系関数 : createTimeInputs(), toggleTimeInputs(), updateWorkerAndPartner()
+   *    （form_js に定義）
+   *  - 送信系関数 : showConfirmation(), closeConfirmation()
+   *    （send_js に定義）
+   * 参照するHTML要素ID：
+   *  - #historyModal, #modalHistoryDate, #modalHistoryContent, #loadingOverlay
+   *  - #historyRecords, #editButton
+   * ------------------------------------------*/
+
+  // ------------------------------------------
+  // 履歴モーダルを開く（デフォルト日付を今日に、内容は空に）
+  // ------------------------------------------
+  function openHistoryModal() {
+    document.getElementById('modalHistoryDate').value = new Date().toISOString().split("T")[0];
+    document.getElementById('modalHistoryContent').innerHTML = '';
+    document.getElementById('historyModal').style.display = 'flex';
+  }
+
+
+  // ------------------------------------------
+  // 履歴モーダルを閉じる
+  // ------------------------------------------
+  function closeHistoryModal() {
+    document.getElementById('historyModal').style.display = 'none';
+  }
+
+
+  // ------------------------------------------
+  // 画面の「履歴」欄（モーダル外）に表を描画
+  // ------------------------------------------
+  function displayHistory(records) {
+    const container = document.getElementById('historyRecords');
+    const editButton = document.getElementById('editButton');
+    lastFetchedRecords = records;
+
+    if (!records || records.length === 0) {
+      container.innerHTML = '<em>履歴は見つかりませんでした。</em>';
+      editButton.style.display = 'none';
+      return;
+    }
+
+    let html = '<table style="width:100%; border-collapse: collapse;">';
+    html += '<tr><th>種別</th><th>名前</th><th>人工</th><th>残業</th></tr>';
+    records.forEach(r => {
+      html += `<tr>
+      <td>${r.type}</td>
+      <td>${r.name}</td>
+      <td>${r.man}</td>
+      <td>${r.overtime}</td>
+    </tr>`;
+    });
+    html += '</table>';
+    container.innerHTML = html;
+
+    editButton.style.display = 'inline-block'; // 編集ボタンを表示
+  }
+
+
+
+  // ------------------------------------------
+  // 画面内の「履歴」欄に、指定条件で過去データを表示
+  // ------------------------------------------
+  function loadPreviousRecords() {
+    const date = document.getElementById('historyDate').value;
+    const companyId = document.getElementById('company').value;
+    const staffId = document.getElementById('staff').value;
+    const siteId = document.getElementById('site').value;
+
+    const container = document.getElementById('historyRecords');
+
+    if (date && companyId && staffId && siteId) {
+      // ✅ 即フィードバック表示（読み込み中）
+      container.innerHTML = '<em style="color: gray;">📂 送信履歴を取得中です...</em>';
+
+      // 非同期呼び出し
+      google.script.run.withSuccessHandler(displayHistory).getPreviousRecords(date, companyId, staffId, siteId);
+    } else {
+      container.innerHTML = '<em style="color: gray;">※送信履歴を表示するには履歴対象日付・元請・担当者・現場をすべて選択してください。</em>';
+    }
+  }
+
+
+  // ------------------------------------------
+  // 履歴モーダル側で過去データを取得して表表示
+  // ------------------------------------------
+  function loadModalHistory() {
+    const date = document.getElementById('modalHistoryDate').value;
+    const companyId = document.getElementById('company').value;
+    const staffId = document.getElementById('staff').value;
+    const siteId = document.getElementById('site').value;
+    const container = document.getElementById('modalHistoryContent');
+
+    if (!date || !companyId || !staffId || !siteId) {
+      container.innerHTML = '<em style="color:red;">すべての項目を選択してください（元請・担当・現場・日付）</em>';
+      return;
+    }
+
+    document.getElementById('loadingOverlay').style.display = 'flex'; // ✅ 表示ON
+    container.innerHTML = ''; // 内容初期化
+
+    google.script.run.withSuccessHandler(records => {
+      document.getElementById('loadingOverlay').style.display = 'none'; // ✅ 表示OFF
+      lastFetchedRecords = records;
+      if (records.length === 0) {
+        container.innerHTML = '<em>履歴が見つかりませんでした。</em>';
+        return;
+      }
+
+      let html = '<table style="width:100%; border-collapse: collapse;">';
+      html += '<tr><th>種別</th><th>名前</th><th>人工</th><th>残業</th></tr>';
+      records.forEach(r => {
+        html += `<tr>
+        <td>${r.type}</td>
+        <td>${r.name}</td>
+        <td>${r.man}</td>
+        <td>${r.overtime}</td>
+      </tr>`;
+      });
+      html += '</table>';
+      html += `<button onclick="showEditFormInModal()">編集する</button>`;
+      container.innerHTML = html;
+    }).getPreviousRecords(date, companyId, staffId, siteId);
+  }
+
+  let lastFetchedRecords = [];
+
+
+
+  /** モーダル内：編集フォームに切り替える（既存＋追加の入力UI） */
+  function showEditFormInModal() {
+    const container = document.getElementById('modalHistoryContent');
+
+    let html = '<h3>編集フォーム</h3>';
+    html += '<table style="width:100%; border-collapse: collapse;">';
+    // html += '<tr><th>種別</th><th>名前</th><th>日勤</th><th>夕勤</th><th>夜勤</th><th>残業</th></tr>';
+    html += '<tr><th>種別</th><th>名前</th><th>人工</th><th>残業</th></tr>';
+    lastFetchedRecords.forEach((r, i) => {
+      html += `<tr>
+      <td>${r.type}</td>
+      <td>${r.name}</td>
+      <td><input type="number" step="0.25" class="work-input" placeholder="人工" value="${r.man}" id="edit-man-${i}" /></td>
+      <td><input type="number" step="0.25" class="work-input" placeholder="残業" value="${r.overtime}" id="edit-overtime-${i}" /></td>
+
+    </tr>`;
+    });
+    html += '</table>';
+    html += `<button onclick="showEditConfirmationModal()">再送信（更新）</button>`;
+    container.innerHTML = html;
+    renderAdditionalInputs(); // ✅ 履歴外の追加候補を表示
+  }
+
+
+  // ------------------------------------------
+  // 編集モーダル下部の「新規追加」用チェックボックス＆入力欄を描画
+  // 既に表に載っている人は候補から除外
+  // ------------------------------------------
+  function renderAdditionalInputs() {
+    const workerContainer = document.getElementById('additionalWorkerInputs');
+    const partnerContainer = document.getElementById('additionalPartnerInputs');
+    workerContainer.innerHTML = '';
+    partnerContainer.innerHTML = '';
+
+    const staffId = document.getElementById('staff').value;
+    if (!staffId) return;
+
+    const registered = new Set(lastFetchedRecords.map(r => `${r.type}:${r.name}`));
+
+    // 🔽 編集テーブルに表示されている作業者／協力会社の名前も除外対象に追加
+    document.querySelectorAll('#edit-table tbody tr').forEach(row => {
+      const type = row.querySelector('td:nth-child(1)').textContent.trim();
+      const name = row.querySelector('td:nth-child(2)').textContent.trim();
+      registered.add(`${type}:${name}`);
+    });
+
+    const createCheckboxBlock = (type, name, container) => {
+      const safeName = sanitize(name);
+      const wrapper = document.createElement('label');
+      wrapper.className = 'checkbox-wrapper';
+
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.className = `additional-${type}`;
+      checkbox.value = name;
+      checkbox.onchange = () => toggleTimeInputs(checkbox, `modal-${type}-${safeName}`);
+
+      const span = document.createElement('span');
+      span.textContent = name;
+
+      wrapper.appendChild(checkbox);
+      wrapper.appendChild(span);
+      container.appendChild(wrapper);
+
+      const inputs = createTimeInputs(`modal-${type}-${safeName}`);
+      container.appendChild(inputs);
+    };
+
+    // ✅ 作業者の見出し
+    // const workerHeader = document.createElement('h4');
+    // workerHeader.textContent = '作業者';
+    // workerContainer.appendChild(workerHeader);
+
+    masterData.worker
+      .filter(w => w.staffIds.includes(staffId))
+      .filter(w => !registered.has(`作業者:${w.name}`)) // ✅ 重複回避
+      .forEach(w => createCheckboxBlock('worker', w.name, workerContainer));
+
+    // ✅ 協力会社の見出し
+    // const partnerHeader = document.createElement('h4');
+    // partnerHeader.textContent = '協力会社';
+    // partnerContainer.appendChild(partnerHeader);
+
+    masterData.partner
+      .filter(p => p.staffIds.includes(staffId))
+      .filter(p => !registered.has(`協力会社:${p.name}`)) // ✅ 重複回避
+      .forEach(p => createCheckboxBlock('partner', p.name, partnerContainer));
+  }
+
+
+  // ------------------------------------------
+  // モーダル内編集フォームの「再送信（更新）」ボタン押下時：
+  // 入力検証→formData組み立て→確認モーダルへ
+  // ------------------------------------------
+  function showEditConfirmationModal() {
+    isEditMode = true;
+    // 既存のエラー表示をすべてクリア
+    document.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
+    document.querySelectorAll('.edit-error-message').forEach(el => el.remove());
+
+    let hasError = false;
+    const editedRecords = []; // 更新後の全データを格納する配列
+
+    // --- 1. 既存レコードのバリデーションとデータ収集 ---
+    lastFetchedRecords.forEach((r, i) => {
+      const manInput = document.getElementById(`edit-man-${i}`);
+      const overtimeInput = document.getElementById(`edit-overtime-${i}`);
+
+      if (!manInput || !overtimeInput) return; // 念のため要素存在チェック
+
+      const man = parseFloat(manInput.value || 0);
+      const overtime = parseFloat(overtimeInput.value || 0);
+      let isRowInvalid = false;
+
+      // 0.25単位チェック
+      [manInput, overtimeInput].forEach(input => {
+        const val = parseFloat(input.value || 0);
+        if (input.value && !isValidQuarterHour(val)) {
+          input.classList.add('input-error');
+          const errMsg = document.createElement('div');
+          errMsg.textContent = '※0.25単位で入力してください。';
+          errMsg.className = 'edit-error-message';
+          errMsg.style.color = 'red';
+          input.parentElement.appendChild(errMsg);
+          hasError = true;
+          isRowInvalid = true;
+        }
+      });
+
+      if (!isRowInvalid) {
+        editedRecords.push({ ...r, man, overtime });
+      }
+    });
+
+    // --- 2. 追加作業者のバリデーションとデータ収集 ---
+    document.querySelectorAll('.additional-worker:checked').forEach(cb => {
+      const name = cb.value;
+      const safeName = sanitize(name);
+      // dataset を使って正しく要素を取得
+      const manInput = document.querySelector(`input[data-name="modal-worker-${safeName}"][data-type="man"]`);
+      const overtimeInput = document.querySelector(`input[data-name="modal-worker-${safeName}"][data-type="overtime"]`);
+
+      if (!manInput || !overtimeInput) return;
+
+      const man = parseFloat(manInput.value || 0);
+      const overtime = parseFloat(overtimeInput.value || 0);
+      let isRowInvalid = false;
+
+      // 合計0チェック
+      if ((man + overtime) <= 0) {
+        [manInput, overtimeInput].forEach(input => input.classList.add('input-error'));
+        const errMsg = document.createElement('div');
+        errMsg.className = 'edit-error-message';
+        errMsg.textContent = '※勤務時間を入力してください。';
+        errMsg.style.color = 'red';
+        // エラーメッセージを適切な場所に追加
+        manInput.closest('.time-inputs').insertAdjacentElement('afterend', errMsg);
+        hasError = true;
+        isRowInvalid = true;
+      }
+
+      // 0.25単位チェック
+      [manInput, overtimeInput].forEach(input => {
+        const val = parseFloat(input.value || 0);
+        if (input.value && !isValidQuarterHour(val)) {
+          input.classList.add('input-error');
+          // 既にエラーメッセージがなければ追加
+          if (!manInput.closest('.checkbox-wrapper').querySelector('.edit-error-message')) {
+            const errMsg = document.createElement('div');
+            errMsg.className = 'edit-error-message';
+            errMsg.textContent = '※0.25単位で入力してください。';
+            errMsg.style.color = 'red';
+            input.closest('.time-inputs').insertAdjacentElement('afterend', errMsg);
+          }
+          hasError = true;
+          isRowInvalid = true;
+        }
+      });
+
+      if (!isRowInvalid) {
+        editedRecords.push({ type: '作業者', name, man, overtime });
+      }
+    });
+
+    // --- 3. 追加協力会社のバリデーションとデータ収集 (作業者とほぼ同じ) ---
+    document.querySelectorAll('.additional-partner:checked').forEach(cb => {
+      const name = cb.value;
+      const safeName = sanitize(name);
+      const manInput = document.querySelector(`input[data-name="modal-partner-${safeName}"][data-type="man"]`);
+      const overtimeInput = document.querySelector(`input[data-name="modal-partner-${safeName}"][data-type="overtime"]`);
+
+      if (!manInput || !overtimeInput) return;
+
+      const man = parseFloat(manInput.value || 0);
+      const overtime = parseFloat(overtimeInput.value || 0);
+      let isRowInvalid = false;
+
+      if ((man + overtime) <= 0) {
+        [manInput, overtimeInput].forEach(input => input.classList.add('input-error'));
+        const errMsg = document.createElement('div');
+        errMsg.className = 'edit-error-message';
+        errMsg.textContent = '※勤務時間を入力してください。';
+        errMsg.style.color = 'red';
+        manInput.closest('.time-inputs').insertAdjacentElement('afterend', errMsg);
+        hasError = true;
+        isRowInvalid = true;
+      }
+
+      [manInput, overtimeInput].forEach(input => {
+        const val = parseFloat(input.value || 0);
+        if (input.value && !isValidQuarterHour(val)) {
+          input.classList.add('input-error');
+          if (!manInput.closest('.checkbox-wrapper').querySelector('.edit-error-message')) {
+            const errMsg = document.createElement('div');
+            errMsg.className = 'edit-error-message';
+            errMsg.textContent = '※0.25単位で入力してください。';
+            errMsg.style.color = 'red';
+            input.closest('.time-inputs').insertAdjacentElement('afterend', errMsg);
+          }
+          hasError = true;
+          isRowInvalid = true;
+        }
+      });
+
+      if (!isRowInvalid) {
+        editedRecords.push({ type: '協力会社', name, man, overtime });
+      }
+    });
+
+    // --- 4. バリデーション結果に応じて処理 ---
+    if (hasError) {
+      // エラーがある場合は、モーダルを開いたまま処理を中断
+      return;
+    }
+
+    // --- 5. エラーがない場合のみ、モーダルを閉じて確認画面へ ---
+    document.getElementById('historyModal').style.display = 'none';
+
+    // 送信用のformDataを構築
+    formData = {
+      date: document.getElementById('modalHistoryDate').value,
+      companyId: document.getElementById('company').value,
+      staffId: document.getElementById('staff').value,
+      site: document.getElementById('site').value,
+      workers: editedRecords.filter(r => r.type === '作業者').map(({ name, man, overtime }) => ({ name, man, overtime })),
+      partners: editedRecords.filter(r => r.type === '協力会社').map(({ name, man, overtime }) => ({ name, man, overtime }))
+    };
+
+    // 確認画面を表示
+    showConfirmation(true);
+  }
+
+
+
+
 </script>
