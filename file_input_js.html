@@ -4,37 +4,48 @@ document.addEventListener('DOMContentLoaded', () => {
   const previewArea = document.getElementById('previewArea');
   const fileCountEl = document.getElementById('fileCount');
 
-  if (!fileInput || !previewArea || !fileCountEl) {
-    console.warn('upload UI elements not found');
-    return;
-  }
+  if (!fileInput || !previewArea || !fileCountEl) return;
 
   fileInput.addEventListener('change', () => {
     const files = Array.from(fileInput.files);
-    if (files.length > 5) alert('写真は最大5枚までです。先頭5枚のみ表示します。');
-    const limited = files.slice(0, 5);
 
+    // 並べ替えを先にやる（名前昇順）
+    const sorted = [...files].sort((a, b) => a.name.localeCompare(b.name));
+
+    // 表示は先頭5枚
+    const limited = sorted.slice(0, 5);
+    if (files.length > 5) {
+      alert('写真は最大5枚までです。先頭5枚のみ表示します。');
+    }
+
+    // 個数表示＆領域初期化
     fileCountEl.textContent = `${limited.length} 枚`;
     previewArea.innerHTML = '';
 
-    // 名前順で並び替え
-    files.sort((a, b) => a.name.localeCompare(b.name));
+    // まずプレースホルダ（カード）を順番に並べてから、画像を読み込んで埋める
+    const imgEls = [];
 
+    limited.forEach((_, idx) => {
+      const card  = document.createElement('div');
+      const img   = document.createElement('img');
+      const badge = document.createElement('div');
 
+      card.className  = 'preview-card';
+      badge.className = 'preview-badge';
+      badge.textContent = `${idx + 1} 枚目`;
+
+      card.append(img, badge);
+      previewArea.appendChild(card);
+      imgEls.push(img);             // 後で src を埋める
+    });
+
+    // 非同期でも順序が崩れないよう、対応する <img> にだけ埋める
     limited.forEach((file, idx) => {
       if (!file.type.startsWith('image/')) return;
       const reader = new FileReader();
       reader.onload = (e) => {
-        const card  = document.createElement('div');
-        const img   = document.createElement('img');
-        const badge = document.createElement('div');
-        card.className = 'preview-card';
-        img.src = e.target.result;
-        img.alt = `アップロード画像 ${idx + 1}枚目`;
-        badge.className = 'preview-badge';
-        badge.textContent = `${idx + 1} 枚目`;
-        card.append(img, badge);
-        previewArea.appendChild(card);
+        imgEls[idx].src = e.target.result;
+        imgEls[idx].alt = `アップロード画像 ${idx + 1}枚目`;
       };
       reader.readAsDataURL(file);
     });
