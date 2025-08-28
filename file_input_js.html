@@ -17,6 +17,10 @@ document.addEventListener('DOMContentLoaded', () => {
     fileCountEl.textContent = `${limited.length} 枚`;
     previewArea.innerHTML = '';
 
+    // 名前順で並び替え
+    files.sort((a, b) => a.name.localeCompare(b.name));
+
+
     limited.forEach((file, idx) => {
       if (!file.type.startsWith('image/')) return;
       const reader = new FileReader();
