@@ -1009,33 +1009,33 @@ TTC担当者：${staff}<br>
   // 初期化：ページ読み込み完了時にマスタ取得＆各イベントを仕込む
   // ※ ここは「ブラウザでのみ」動く領域（window, document を使うため）
   // ------------------------------------------
-  window.onload = function () {
-    google.script.run.withSuccessHandler(data => {
-      masterData = data;
+  // window.onload = function () {
+  //   google.script.run.withSuccessHandler(data => {
+  //     masterData = data;
 
-      // 元請会社のセレクト作成
-      const companySelect = document.getElementById('company');
-      companySelect.innerHTML = '<option value="" disabled selected>選択してください</option>';
-      masterData.company.forEach(c => {
-        const opt = document.createElement('option');
-        opt.value = c.id;
-        opt.textContent = c.name;
-        companySelect.appendChild(opt);
-      });
+  //     // 元請会社のセレクト作成
+  //     const companySelect = document.getElementById('company');
+  //     companySelect.innerHTML = '<option value="" disabled selected>選択してください</option>';
+  //     masterData.company.forEach(c => {
+  //       const opt = document.createElement('option');
+  //       opt.value = c.id;
+  //       opt.textContent = c.name;
+  //       companySelect.appendChild(opt);
+  //     });
 
-      // 担当者・現場名などのイベント登録
-      document.getElementById("company").addEventListener("change", updateStaffOptions);
-      document.getElementById("company").addEventListener("change", updateSiteOptions);
-      document.getElementById("staff").addEventListener("change", updateSiteOptions);
-      document.getElementById("staff").addEventListener("change", updateWorkerAndPartner);
+  //     // 担当者・現場名などのイベント登録
+  //     document.getElementById("company").addEventListener("change", updateStaffOptions);
+  //     document.getElementById("company").addEventListener("change", updateSiteOptions);
+  //     document.getElementById("staff").addEventListener("change", updateSiteOptions);
+  //     document.getElementById("staff").addEventListener("change", updateWorkerAndPartner);
 
-      // ✅ 編集機能など追加イベント
-      const historyDateInput = document.getElementById("historyDate");
-      if (historyDateInput) {
-        historyDateInput.addEventListener("change", loadPreviousRecords);
-      }
-    }).getMasterData();
-  };
+  //     // ✅ 編集機能など追加イベント
+  //     const historyDateInput = document.getElementById("historyDate");
+  //     if (historyDateInput) {
+  //       historyDateInput.addEventListener("change", loadPreviousRecords);
+  //     }
+  //   }).getMasterData();
+  // };
 
 
   // ------------------------------------------

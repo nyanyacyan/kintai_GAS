@@ -1,28 +1,17 @@
 <script>
-(function () {
-  console.log('[init_js] loaded');
-
-  function init() {
-    console.log('[init_js] init start');
-
-    // google.script が無いなら、まだ HTMLService で動いてない or 早期エラー
-    if (typeof google === 'undefined' || !google.script) {
-      console.error('[init_js] google.script が未定義。HTML 内の他のJSエラー or 実行環境を確認');
-      alert('初期化に失敗しました（google.script 未定義）');
-      return;
-    }
-
+  window.onload = function () {
     google.script.run
       .withSuccessHandler(data => {
-        console.log('[OK] getMasterData result =', data);
-        window.masterData = data;   // どこでも参照できるように
+        console.log('[OK] getMasterData result =', data, 'keys:', Object.keys(data || {}));
+        masterData = data;
+
+        // 会社セレクト初期化
         const companySelect = document.getElementById('company');
-        if (!companySelect) {
-          console.error('[init_js] #company が見つかりません。HTML の読み込み順を確認');
-          return;
-        }
         companySelect.innerHTML = '<option value="" disabled selected>選択してください</option>';
-        (data.company || []).forEach(c => {
+
+        // ← ここで本当に配列？ 長さは？ を念のため確認
+        console.log('masterData.company length =', masterData?.company?.length);
+        (masterData.company || []).forEach(c => {
           const opt = document.createElement('option');
           opt.value = c.id;
           opt.textContent = c.name;
@@ -30,21 +19,18 @@
         });
 
         // イベント配線
-        document.getElementById("company")?.addEventListener("change", updateStaffOptions);
-        document.getElementById("company")?.addEventListener("change", updateSiteOptions);
-        document.getElementById("staff")?.addEventListener("change", updateSiteOptions);
-        document.getElementById("staff")?.addEventListener("change", updateWorkerAndPartner);
+        document.getElementById("company").addEventListener("change", updateStaffOptions);
+        document.getElementById("company").addEventListener("change", updateSiteOptions);
+        document.getElementById("staff").addEventListener("change", updateSiteOptions);
+        document.getElementById("staff").addEventListener("change", updateWorkerAndPartner);
+
         const historyDateInput = document.getElementById("historyDate");
         if (historyDateInput) historyDateInput.addEventListener("change", loadPreviousRecords);
       })
       .withFailureHandler(err => {
         console.error('[NG] getMasterData failed:', err);
-        alert('マスター取得に失敗しました: ' + (err && err.message));
+        alert('マスター取得に失敗しました: ' + err?.message);
       })
       .getMasterData();
-  }
-
-  // ← これなら他ファイルで onload を書いても両方実行される
-  window.addEventListener('load', init);
-})();
+  };
 </script>
