@@ -9,14 +9,19 @@
   // 初期化：ページ読み込み完了時にマスタ取得＆各イベントを仕込む
   // ※ ここは「ブラウザでのみ」動く領域（window, document を使うため）
   // ------------------------------------------
-  window.onload = function () {
-    google.script.run.withSuccessHandler(data => {
+window.onload = function () {
+  google.script.run
+    .withSuccessHandler(data => {
+      console.log('[OK] getMasterData result =', data, 'keys:', Object.keys(data || {}));
       masterData = data;
 
       // 会社セレクト初期化
       const companySelect = document.getElementById('company');
       companySelect.innerHTML = '<option value="" disabled selected>選択してください</option>';
-      masterData.company.forEach(c => {
+
+      // ← ここで本当に配列？ 長さは？ を念のため確認
+      console.log('masterData.company length =', masterData?.company?.length);
+      (masterData.company || []).forEach(c => {
         const opt = document.createElement('option');
         opt.value = c.id;
         opt.textContent = c.name;
@@ -31,6 +36,11 @@
 
       const historyDateInput = document.getElementById("historyDate");
       if (historyDateInput) historyDateInput.addEventListener("change", loadPreviousRecords);
-    }).getMasterData();
-  };
+    })
+    .withFailureHandler(err => {
+      console.error('[NG] getMasterData failed:', err);
+      alert('マスター取得に失敗しました: ' + err?.message);
+    })
+    .getMasterData();
+};
 </script>
