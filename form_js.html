@@ -1,0 +1,92 @@
+<script>
+
+  // ------------------------------------------
+  // 過去日入力のON/OFF（トグル）に応じて日付入力欄の表示切替
+  // ------------------------------------------
+  function toggleDateInput(el) {
+    const button = document.getElementById('dateToggleButton');
+    const checked = el.checked;
+    document.getElementById('dateContainer').style.display = checked ? 'block' : 'none';
+    button.classList.toggle('checked', checked);
+  }
+
+  // ------------------------------------------
+  // 画面全体を初期状態に戻す（送信完了後などに使用）
+  // マスターを使って会社セレクトだけは再構築
+  // ------------------------------------------
+  function resetForm() {
+    document.getElementById('company').selectedIndex = 0;
+    document.getElementById('staff').innerHTML = '';
+    document.getElementById('site').innerHTML = '<option value="" disabled selected>選択してください</option>';
+    document.getElementById('worker').innerHTML = '';
+    document.getElementById('partner').innerHTML = '';
+    document.getElementById('customDateToggle').checked = false;
+    document.getElementById('customDate').value = '';
+    toggleDateInput(document.getElementById('customDateToggle'));
+    formData = {};
+    isSubmitted = false;
+    const companySelect = document.getElementById('company');
+    companySelect.innerHTML = '<option value="" disabled selected>選択してください</option>';
+    masterData.company.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = c.name;
+      companySelect.appendChild(opt);
+    });
+    // ✅ 履歴ボタンの再接続（HTML再描画で onclick が消えている場合に備えて）
+    const historyBtn = document.getElementById('showHistoryButton');
+    if (historyBtn) {
+      historyBtn.onclick = () => showHistoryModal();
+    }
+  }
+
+  // ------------------------------------------
+  // 会社選択に応じて担当者セレクトを絞り込み＆現場セレクトも更新
+  // ------------------------------------------
+  function updateStaffOptions() {
+    const staffSelect = document.getElementById('staff');
+    const companyId = document.getElementById('company').value;
+    staffSelect.innerHTML = '<option value="" disabled selected>選択してください</option>';
+
+
+    if (!companyId) return;
+
+
+    masterData.staff
+      .filter(staff => staff.companies.includes(companyId))
+      .forEach(staff => {
+        const opt = document.createElement('option');
+        opt.value = staff.id;
+        opt.textContent = staff.name;
+        staffSelect.appendChild(opt);
+      });
+
+
+    updateSiteOptions(); // スタッフが変わったら現場も再絞り込み
+  }
+
+  // ------------------------------------------
+  // 会社＋担当者の選択に応じて現場セレクトを絞り込み
+  // ------------------------------------------
+  function updateSiteOptions() {
+    const staffId = document.getElementById('staff').value;
+    const companyId = document.getElementById('company').value;
+    const siteSelect = document.getElementById('site');
+    siteSelect.innerHTML = '<option value="" disabled selected>選択してください</option>';
+
+
+    if (!staffId || !companyId) return;
+
+
+    masterData.site
+      .filter(site => site.staffId === staffId && site.companyIds.includes(companyId))
+      .forEach(site => {
+        const opt = document.createElement('option');
+        opt.value = site.id;
+        opt.textContent = site.name;
+        siteSelect.appendChild(opt);
+      });
+  }
+
+
+</script>

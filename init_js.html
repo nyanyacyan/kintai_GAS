@@ -1,0 +1,36 @@
+<script>
+  let masterData = {};
+  let formData = {};
+  let lastFetchedRecords = [];
+  let isEditMode = false;
+  let isSubmitted = false;
+
+  // ------------------------------------------
+  // 初期化：ページ読み込み完了時にマスタ取得＆各イベントを仕込む
+  // ※ ここは「ブラウザでのみ」動く領域（window, document を使うため）
+  // ------------------------------------------
+  window.onload = function () {
+    google.script.run.withSuccessHandler(data => {
+      masterData = data;
+
+      // 会社セレクト初期化
+      const companySelect = document.getElementById('company');
+      companySelect.innerHTML = '<option value="" disabled selected>選択してください</option>';
+      masterData.company.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = c.name;
+        companySelect.appendChild(opt);
+      });
+
+      // イベント配線
+      document.getElementById("company").addEventListener("change", updateStaffOptions);
+      document.getElementById("company").addEventListener("change", updateSiteOptions);
+      document.getElementById("staff").addEventListener("change", updateSiteOptions);
+      document.getElementById("staff").addEventListener("change", updateWorkerAndPartner);
+
+      const historyDateInput = document.getElementById("historyDate");
+      if (historyDateInput) historyDateInput.addEventListener("change", loadPreviousRecords);
+    }).getMasterData();
+  };
+</script>
