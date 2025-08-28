@@ -1,10 +1,12 @@
+// webアプリを実施する際に一番最初に呼ばれる関数
+// htmlをビルドしていく感じ→ form.html を呼び出す
 function doGet(e) {
   const t = HtmlService.createTemplateFromFile('form');
   t.isLocal = false; // 本番なら false, ローカル確認なら true
   return t.evaluate();
 }
 
-// Code.gs
+// cssファイルのhtmlファイルを呼び出し紐づける関数
 function include(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
