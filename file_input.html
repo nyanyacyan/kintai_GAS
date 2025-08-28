@@ -1,40 +1,44 @@
-  <script>
-    const fileInput = document.getElementById('uploadPhotos');
-    const previewArea = document.getElementById('previewArea');
+<script>
+  const fileInput = document.getElementById('uploadPhotos');
+  const previewArea = document.getElementById('previewArea');
+  const fileCountEl = document.getElementById('fileCount');
 
-    fileInput.addEventListener('change', () => {
-      previewArea.innerHTML = ''; // 一度クリア
-      const files = Array.from(fileInput.files).slice(0, 5); // 最大5枚まで
+  fileInput.addEventListener('change', () => {
+    const files = Array.from(fileInput.files);
 
-      if (fileInput.files.length > 5) {
-        alert('写真は最大5枚までアップロードできます。');
-        fileInput.value = ''; // 選択をクリア
-        return;
-      }
+    // バリデーション：最大5枚
+    if (files.length > 5) {
+      alert('写真は最大5枚までアップロードできます。先頭の5枚のみを表示します。');
+    }
+    const limited = files.slice(0, 5);
 
-      // 画像データかどうかを確認
-      for (const file of files) {
-        if (!file.type.startsWith('image/')) {
-          alert('画像ファイルのみアップロードできます。');
-          fileInput.value = ''; // 選択をクリア
-          previewArea.innerHTML = ''; // プレビューもクリア
-          return;
-        }
-      }
+    // 個数表示更新
+    fileCountEl.textContent = `${limited.length} 枚`;
 
-      files.forEach(file => {
-        const reader = new FileReader();
-        reader.onload = e => {
-          const img = document.createElement('img');
-          img.src = e.target.result;
-          img.style.maxWidth = '150px';
-          img.style.maxHeight = '150px';
-          img.style.objectFit = 'cover';
-          img.style.border = '1px solid #ccc';
-          img.style.borderRadius = '6px';
-          previewArea.appendChild(img);
-        };
-        reader.readAsDataURL(file);
-      });
+    // プレビュー初期化
+    previewArea.innerHTML = '';
+
+    // プレビュー生成
+    limited.forEach((file, idx) => {
+      if (!file.type.startsWith('image/')) return; // 画像以外は無視
+
+      const reader = new FileReader();
+      reader.onload = e => {
+        const card = document.createElement('div');
+        const img = document.createElement('img');
+        const badge = document.createElement('div');
+
+        card.className = 'preview-card';
+        img.src = e.target.result;
+        img.alt = `アップロード画像 ${idx + 1}枚目`;
+        badge.className = 'preview-badge';
+        badge.textContent = `${idx + 1} 枚目`;
+
+        card.appendChild(img);
+        card.appendChild(badge);
+        previewArea.appendChild(card);
+      };
+      reader.readAsDataURL(file);
     });
-  </script>
+  });
+</script>
