@@ -1,39 +1,41 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <base target="_top">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP&display=swap" rel="stylesheet">
 
-    <!-- 各ファイル 読み込み -->
+  <!-- 各ファイル 読み込み -->
   <?!= include('style'); ?>
 
   <?!= include('form_js'); ?>
   <?!= include('send_js'); ?>
   <?!= include('history_view_js'); ?>
   <?!= include('check_js'); ?>
-
+  <?!= include('file_input'); ?>
   <!-- 最後に読み込む必要がある→実行してしまうから -->
   <?!= include('init_js'); ?>
 
 
 </head>
+
 <body>
-<div id="dateToggleWrapper">
-  <label class="date-toggle-button" id="dateToggleButton">
-    <input type="checkbox" id="customDateToggle" onchange="toggleDateInput(this)">
-    ※当日より前の出面入力の場合はこちらをタップ
-  </label>
-  <div id="dateContainer">
-    <label for="customDate" class="section-label">出面日付</label>
-    <input type="date" id="customDate">
-    <div id="error-date" class="error-message"></div>
+  <div id="dateToggleWrapper">
+    <label class="date-toggle-button" id="dateToggleButton">
+      <input type="checkbox" id="customDateToggle" onchange="toggleDateInput(this)">
+      ※当日より前の出面入力の場合はこちらをタップ
+    </label>
+    <div id="dateContainer">
+      <label for="customDate" class="section-label">出面日付</label>
+      <input type="date" id="customDate">
+      <div id="error-date" class="error-message"></div>
+    </div>
   </div>
-</div>
 
 
   <div>
-    <label for="company"  class="section-label">元請会社</label>
+    <label for="company" class="section-label">元請会社</label>
     <select id="company">
       <option value="" disabled selected>選択してください</option>
     </select>
@@ -42,7 +44,7 @@
 
 
   <div>
-    <label for="staff"  class="section-label">TTC担当者</label>
+    <label for="staff" class="section-label">TTC担当者</label>
     <select id="staff">
       <option value="" disabled selected>選択してください</option>
     </select>
@@ -51,45 +53,47 @@
 
 
   <div>
-    <label for="site"  class="section-label">現場名</label>
+    <label for="site" class="section-label">現場名</label>
     <select id="site">
       <option value="" disabled selected>選択してください</option>
     </select>
     <div id="error-site" class="error-message"></div>
   </div>
 
-<!-- ✅ モーダル表示トリガー -->
-<div style="margin-top: 2rem;">
-  <label class="date-toggle-button" onclick="openHistoryModal()">
-    ※送信履歴を確認したい場合はこちらをタップ
-  </label>
-</div>
-
-<!-- ✅ 履歴モーダル本体 -->
-<div id="historyModal" style="display: none; position: fixed; z-index: 9999; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center;">
-  <div style="background: white; padding: 2rem; border-radius: 10px; width: 90%; max-width: 800px; max-height: 90vh; overflow-y: auto;">
-    <h3>何日の送信履歴を確認しますか？</h3>
-    <input type="date" id="modalHistoryDate" class="custom-date-input" />
-    <button onclick="loadModalHistory()">送信履歴を取得</button>
-    <div id="modalHistoryContent" style="margin-top: 1rem;"></div>
-    <!-- ✅ 新規追加フォーム（モーダル下部に追加） -->
-    <div class="toggle-header" onclick="toggleSection('toggleAddArea')">＋ 新しい作業者／協力会社を追加</div>
-    <div id="toggleAddArea" class="toggle-section">
-      <div class="toggle-header inner" onclick="toggleSection('workerSection')">▶ 作業者</div>
-      <div id="workerSection" class="toggle-section inner">
-       <div id="additionalWorkerInputs"></div>
-      </div>
-
-      <div class="toggle-header inner" onclick="toggleSection('partnerSection')">▶ 協力会社</div>
-      <div id="partnerSection" class="toggle-section inner">
-        <div id="additionalPartnerInputs"></div>
-      </div>
-    </div>
-    <button onclick="closeHistoryModal()" style="margin-top: 1rem;">閉じる</button>
+  <!-- ✅ モーダル表示トリガー -->
+  <div style="margin-top: 2rem;">
+    <label class="date-toggle-button" onclick="openHistoryModal()">
+      ※送信履歴を確認したい場合はこちらをタップ
+    </label>
   </div>
-</div>
 
-<!--
+  <!-- ✅ 履歴モーダル本体 -->
+  <div id="historyModal"
+    style="display: none; position: fixed; z-index: 9999; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center;">
+    <div
+      style="background: white; padding: 2rem; border-radius: 10px; width: 90%; max-width: 800px; max-height: 90vh; overflow-y: auto;">
+      <h3>何日の送信履歴を確認しますか？</h3>
+      <input type="date" id="modalHistoryDate" class="custom-date-input" />
+      <button onclick="loadModalHistory()">送信履歴を取得</button>
+      <div id="modalHistoryContent" style="margin-top: 1rem;"></div>
+      <!-- ✅ 新規追加フォーム（モーダル下部に追加） -->
+      <div class="toggle-header" onclick="toggleSection('toggleAddArea')">＋ 新しい作業者／協力会社を追加</div>
+      <div id="toggleAddArea" class="toggle-section">
+        <div class="toggle-header inner" onclick="toggleSection('workerSection')">▶ 作業者</div>
+        <div id="workerSection" class="toggle-section inner">
+          <div id="additionalWorkerInputs"></div>
+        </div>
+
+        <div class="toggle-header inner" onclick="toggleSection('partnerSection')">▶ 協力会社</div>
+        <div id="partnerSection" class="toggle-section inner">
+          <div id="additionalPartnerInputs"></div>
+        </div>
+      </div>
+      <button onclick="closeHistoryModal()" style="margin-top: 1rem;">閉じる</button>
+    </div>
+  </div>
+
+  <!--
   <div>
   <label class="section-label">送信履歴</label>
   <div id="historyRecords" style="margin-top: 1rem; border: 1px solid #ccc; padding: 1rem;  border-radius: 6px; background-color: #fff;"></div>
@@ -107,28 +111,36 @@
 -->
 
   <div>
-  <label  class="section-label">作業者</label>
-  <div id="worker" class="checkbox-group"></div>
-  <div id="error-worker" class="error-message"></div>
-</div>
-
-
-<div>
-  <label  class="section-label">協力会社名</label>
-  <div id="partner" class="checkbox-group"></div>
-  <div id="error-partner" class="error-message"></div>
-</div>
-
-  <!-- ファイル選択 -->
-  <div>
-    <label for="uploadPhotos" class="section-label">写真を添付（最大5枚）</label>
-    <input type="file" id="uploadPhotos" multiple accept="image/*">
+    <label class="section-label">作業者</label>
+    <div id="worker" class="checkbox-group"></div>
+    <div id="error-worker" class="error-message"></div>
   </div>
 
-  <!-- プレビューエリア -->
-  <div id="previewArea" style="margin-top:1rem; display:flex; gap:1rem; flex-wrap:wrap;"></div>
 
-  <script>
+  <div>
+    <label class="section-label">協力会社名</label>
+    <div id="partner" class="checkbox-group"></div>
+    <div id="error-partner" class="error-message"></div>
+  </div>
+
+
+
+  <!-- 写真アップロード（最大5枚） -->
+  <div class="upload-section">
+    <label class="section-label">写真を添付（最大5枚）</label>
+
+    <!-- 実ファイル入力は隠して、見た目のボタンを使う -->
+    <input id="uploadPhotos" type="file" accept="image/*" multiple hidden>
+    <label for="uploadPhotos" id="uploadLabel" class="file-button">
+      ファイル選択 <span id="fileCount">0 枚</span>
+    </label>
+
+    <!-- プレビュー -->
+    <div id="previewArea" class="preview-grid" aria-live="polite"></div>
+  </div>
+
+
+  <!-- <script>
     const fileInput = document.getElementById('uploadPhotos');
     const previewArea = document.getElementById('previewArea');
 
@@ -151,7 +163,7 @@
         reader.readAsDataURL(file);
       });
     });
-  </script>
+  </script> -->
 
 
   <div>
@@ -159,23 +171,23 @@
   </div>
 
 
-<!-- 確認モーダル -->
-<div id="confirmationModal" onclick="handleModalClickOutside(event)">
-  <div id="confirmationBox" onclick="event.stopPropagation()">
-    <div id="confirmationText">この内容で送信しますか？</div>
-    <div class="button-row">
-      <button onclick="confirmSend()">✅ 確定して送信</button>
-      <button onclick="closeConfirmation()">戻る</button>
+  <!-- 確認モーダル -->
+  <div id="confirmationModal" onclick="handleModalClickOutside(event)">
+    <div id="confirmationBox" onclick="event.stopPropagation()">
+      <div id="confirmationText">この内容で送信しますか？</div>
+      <div class="button-row">
+        <button onclick="confirmSend()">✅ 確定して送信</button>
+        <button onclick="closeConfirmation()">戻る</button>
+      </div>
     </div>
   </div>
-</div>
 
 
-<!-- ローディングオーバーレイ（統合版） -->
-<div id="loadingOverlay">
-  <div class="loader"></div>
-  <div style="margin-top: 1rem; font-size: 1.2rem; color: #0066cc;">送信中...</div>
-</div>
+  <!-- ローディングオーバーレイ（統合版） -->
+  <div id="loadingOverlay">
+    <div class="loader"></div>
+    <div style="margin-top: 1rem; font-size: 1.2rem; color: #0066cc;">送信中...</div>
+  </div>
 
 
 

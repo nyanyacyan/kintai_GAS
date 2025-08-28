@@ -1,0 +1,40 @@
+  <script>
+    const fileInput = document.getElementById('uploadPhotos');
+    const previewArea = document.getElementById('previewArea');
+
+    fileInput.addEventListener('change', () => {
+      previewArea.innerHTML = ''; // 一度クリア
+      const files = Array.from(fileInput.files).slice(0, 5); // 最大5枚まで
+
+      if (fileInput.files.length > 5) {
+        alert('写真は最大5枚までアップロードできます。');
+        fileInput.value = ''; // 選択をクリア
+        return;
+      }
+
+      // 画像データかどうかを確認
+      for (const file of files) {
+        if (!file.type.startsWith('image/')) {
+          alert('画像ファイルのみアップロードできます。');
+          fileInput.value = ''; // 選択をクリア
+          previewArea.innerHTML = ''; // プレビューもクリア
+          return;
+        }
+      }
+
+      files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = e => {
+          const img = document.createElement('img');
+          img.src = e.target.result;
+          img.style.maxWidth = '150px';
+          img.style.maxHeight = '150px';
+          img.style.objectFit = 'cover';
+          img.style.border = '1px solid #ccc';
+          img.style.borderRadius = '6px';
+          previewArea.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+  </script>

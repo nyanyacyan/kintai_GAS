@@ -1,5 +1,3 @@
-
-
 <style>
   body {
     font-family: 'Noto Sans JP', sans-serif;
@@ -401,5 +399,81 @@
     text-align: center;
     border: 1px solid #ccc;
     border-radius: 0.5rem;
+  }
+
+  /* アップロードUI */
+  .file-button {
+    display: inline-flex;
+    align-items: center;
+    gap: .75rem;
+    padding: .9rem 1.4rem;
+    border: 1px solid #bbb;
+    border-radius: 10px;
+    font-size: 1.6rem;
+    /* 画像のスクショの雰囲気に寄せて少し大きめ */
+    background: #f8f8f8;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .file-button:hover {
+    background: #f1f1f1;
+  }
+
+  .file-button #fileCount {
+    font-size: 1.2rem;
+    color: #666;
+  }
+
+  /* プレビュー：PCは2カラム、最大3行（=6）相当の見た目
+   ※実際は5枚上限なので2列×2～3行になります */
+  .preview-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  /* 1カード */
+  .preview-card {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    /* 比率固定で整える */
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+  }
+
+  .preview-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* 「1枚目、2枚目」バッジ */
+  .preview-badge {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, .55);
+    color: #fff;
+    font-size: .95rem;
+  }
+
+  /* スマホ：1カラムで大きく見せる */
+  @media (max-width: 560px) {
+    .preview-grid {
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .file-button {
+      width: 100%;
+      justify-content: center;
+    }
   }
 </style>
