@@ -1,4 +1,5 @@
 <style>
+  /* ========= ベース ========= */
   body {
     font-family: 'Noto Sans JP', sans-serif;
     background-color: #f9f9f9;
@@ -19,11 +20,10 @@
     font-weight: bold;
     display: block;
     margin-top: 1rem;
-    margin-bottom: 0.25rem;
+    margin-bottom: .25rem;
     font-size: 1rem;
   }
 
-  /* 一括指定の中から checkbox を除外 */
   select,
   input:not([type="checkbox"]),
   button {
@@ -33,16 +33,14 @@
     border-radius: 10px;
     border: 1px solid #ccc;
     box-sizing: border-box;
-    background-color: white;
+    background-color: #fff;
   }
 
-  /* 元請会社・TTC担当者・現場名・作業者・協力会社名のラベル（見出し） */
   .section-label {
     font-size: 2rem;
     font-weight: bold;
   }
 
-  /* チェックボックスは個別に小さく */
   input[type="checkbox"] {
     width: 2rem;
     height: 2rem;
@@ -52,17 +50,17 @@
   .checkbox-group {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: .5rem;
   }
 
   .checkbox-wrapper {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem;
+    gap: .75rem;
+    padding: .75rem;
     border: 1px solid #ccc;
     border-radius: 6px;
-    background-color: #fff;
+    background: #fff;
     cursor: pointer;
     font-size: 3.25rem;
   }
@@ -83,14 +81,14 @@
 
   .time-inputs {
     display: none;
-    margin-top: 0.5rem;
-    gap: 0.5rem;
+    margin-top: .5rem;
+    gap: .5rem;
     flex-wrap: wrap;
   }
 
   .time-inputs input {
     width: 48%;
-    margin-bottom: 0.5rem;
+    margin-bottom: .5rem;
   }
 
   @media (min-width: 600px) {
@@ -100,28 +98,25 @@
   }
 
   button {
-    background-color: #0066cc;
-    color: white;
+    background: #0066cc;
+    color: #fff;
     border: none;
     margin-top: 1.5rem;
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    transition: background-color .3s ease;
   }
 
   button:hover {
-    background-color: #004999;
+    background: #004999;
   }
 
-  /* ========== 確認モーダル ========== */
+  /* ========= 確認モーダル ========= */
   #confirmationModal {
     display: none;
     position: fixed;
     z-index: 999;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
+    inset: 0;
+    background: rgba(0, 0, 0, .5);
     justify-content: center;
     align-items: center;
   }
@@ -139,7 +134,7 @@
     white-space: pre-wrap;
   }
 
-  /* ========== 日付入力 ========== */
+  /* ========= 日付入力 ========= */
   #customDate,
   .custom-date-input {
     font-size: 4rem;
@@ -148,17 +143,17 @@
     border-radius: 10px;
     border: 1px solid #ccc;
     box-sizing: border-box;
-    background-color: white;
+    background: #fff;
   }
 
-  /* ========== 履歴モーダル ========== */
+  /* ========= 履歴モーダル ========= */
   #historyModal {
     position: fixed;
     inset: 0;
     z-index: 9999;
     background: rgba(0, 0, 0, .5);
     display: none;
-    /* JSでflexにする */
+    /* JSでflexに切り替え */
     justify-content: center;
     align-items: center;
     padding: 24px;
@@ -181,7 +176,7 @@
     box-sizing: border-box;
   }
 
-  /* ========== アップロードUI ========== */
+  /* ========= アップロード UI（共通） ========= */
   .file-button {
     display: inline-flex;
     align-items: center;
@@ -204,7 +199,6 @@
     color: #666;
   }
 
-  /* プレビューエリア */
   .preview-grid {
     display: flex;
     flex-wrap: wrap;
@@ -237,7 +231,6 @@
     border-radius: 4px;
   }
 
-  /* スマホ対応 */
   @media (max-width: 560px) {
     .file-button {
       width: 100%;
@@ -250,47 +243,61 @@
     }
   }
 
-  /* ===== 画像プレビュー：カルーセル用 ===== */
-  /* ====== Carousel 全体の幅調整（横スクロール防止） ====== */
+  /* ========= 画像プレビュー：カルーセル ========= */
+  /* ここが “横スライド1枚表示” を保証する中核 */
   .carousel {
     width: 100%;
     max-width: min(92vw, 680px);
-    /* モーダル幅より少し小さく */
-    margin: 0 auto;
+    /* モーダルより少し狭くして横スクロール抑止 */
+    margin: 10px auto 0;
     box-sizing: border-box;
   }
 
-  /* スライド枠：はみ出しを隠す */
   .carousel-viewport {
     position: relative;
     overflow: hidden;
+    /* ★ 枠外は隠す */
+    width: 100%;
+    border: 1px solid #ccc;
     border-radius: 10px;
+    background: #fff;
   }
 
-  /* 画像サイズ：モーダル内に収まるように */
+  .carousel-track {
+    display: flex;
+    flex-wrap: nowrap;
+    /* ★ 折り返し禁止 */
+    will-change: transform;
+    transition: transform .3s ease;
+    /* ★ JSで transform: translateX(...) する前提 */
+  }
+
   .carousel-slide {
+    flex: 0 0 100%;
+    /* ★ 1枚が常に全幅を占有 */
     display: flex;
     align-items: center;
     justify-content: center;
+    user-select: none;
   }
 
   .carousel-slide img {
     display: block;
     max-width: 100%;
     max-height: 60vh;
-    /* 画面高の 60% までに制限 */
+    /* 画面高の6割で収める */
     width: auto;
     height: auto;
     object-fit: contain;
     /* 画像の切れ防止 */
   }
 
-  /* ====== ドット（中央下） ====== */
+  /* ドット */
   .carousel-dots {
     display: flex;
     justify-content: center;
     gap: 6px;
-    margin: 8px 0 12px;
+    margin: 8px 0 10px;
   }
 
   .carousel-dot {
@@ -301,16 +308,15 @@
     opacity: .6;
   }
 
-  .carousel-dot.is-active {
+  .carousel-dot.active {
     background: #666;
     opacity: 1;
   }
 
-  /* ====== 前/次ボタン（中央下に並べる・見やすく） ====== */
+  /* 前/次ボタン：中央下に並べる（表現を変えたい場合は absolute 版に差替え可） */
   .carousel-nav {
     display: flex;
     justify-content: center;
-    /* ★ 中央寄せ */
     gap: 12px;
     margin: 6px 0 0;
   }
@@ -326,9 +332,7 @@
     border-radius: 10px;
     border: none;
     background: #0066cc;
-    /* ★ 青背景でコントラスト強く */
     color: #fff;
-    /* ★ 白文字で視認性UP */
     font-size: 1.2rem;
     cursor: pointer;
     box-shadow: 0 2px 6px rgba(0, 0, 0, .15);
@@ -347,7 +351,6 @@
     box-shadow: none;
   }
 
-  /* モバイルで少し小さめに */
   @media (max-width: 560px) {
 
     .carousel-prev,
@@ -358,7 +361,7 @@
     }
   }
 
-  /* ========== 汎用UI ========== */
+  /* ========= 汎用UI ========= */
   .button-row {
     text-align: right;
   }
@@ -375,17 +378,17 @@
     display: inline-block;
     font-weight: bold;
     font-size: 2.25rem;
-    padding: 0.75rem 1rem;
+    padding: .75rem 1rem;
     border: 2px solid #0066cc;
     color: #0066cc;
     border-radius: 6px;
     cursor: pointer;
-    background-color: #f0f8ff;
+    background: #f0f8ff;
     text-align: center;
   }
 
   .date-toggle-button:hover {
-    background-color: #e0f0ff;
+    background: #e0f0ff;
   }
 
   .date-toggle-button input[type="checkbox"] {
@@ -393,20 +396,17 @@
   }
 
   .date-toggle-button.checked {
-    background-color: #0066cc;
-    color: white;
+    background: #0066cc;
+    color: #fff;
   }
 
-  /* ========== ローディング ========== */
+  /* ========= ローディング ========= */
   #loadingOverlay {
     display: none;
     position: fixed;
     z-index: 10000;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(255, 255, 255, 0.7);
+    inset: 0;
+    background: rgba(255, 255, 255, .7);
     justify-content: center;
     align-items: center;
   }
@@ -422,19 +422,19 @@
 
   @keyframes spin {
     0% {
-      transform: rotate(0deg);
+      transform: rotate(0)
     }
 
     100% {
-      transform: rotate(360deg);
+      transform: rotate(360deg)
     }
   }
 
-  /* ========== エラーメッセージ ========== */
+  /* ========= エラー表示 ========= */
   .error-message {
     color: red;
-    font-size: 0.9rem;
-    margin-top: 0.25rem;
+    font-size: .9rem;
+    margin-top: .25rem;
   }
 
   .input-error {
@@ -442,7 +442,7 @@
     background-color: #fff0f0;
   }
 
-  /* ========== テーブル ========== */
+  /* ========= テーブル ========= */
   #historyModal table {
     width: 100%;
     border-collapse: collapse;
@@ -450,36 +450,36 @@
   }
 
   #historyModal th {
-    background-color: #f0f8ff;
+    background: #f0f8ff;
     font-weight: bold;
     font-size: 1.4rem;
-    padding: 0.75rem;
+    padding: .75rem;
     text-align: center;
     border: 1px solid #ccc;
   }
 
   #historyModal td {
-    padding: 0.6rem;
+    padding: .6rem;
     text-align: center;
     border: 1px solid #ddd;
     font-size: 1.3rem;
   }
 
   #historyModal tr:nth-child(even) {
-    background-color: #f9f9f9;
+    background: #f9f9f9;
   }
 
-  /* ========== 折りたたみセクション ========== */
+  /* ========= 折りたたみ ========= */
   .toggle-header {
     display: inline-block;
     font-weight: bold;
     font-size: 2.25rem;
-    padding: 1rem 1rem;
+    padding: 1rem;
     border: 2px solid #0066cc;
     color: #0066cc;
     border-radius: 10px;
     cursor: pointer;
-    background-color: #f0f8ff;
+    background: #f0f8ff;
     text-align: center;
     width: 100%;
     box-sizing: border-box;
@@ -487,33 +487,33 @@
   }
 
   .toggle-header:hover {
-    background-color: #e0f0ff;
+    background: #e0f0ff;
   }
 
   .toggle-header.inner {
     font-size: 1.4rem;
-    background-color: #e6f2ff;
+    background: #e6f2ff;
     margin-top: 1rem;
   }
 
   .toggle-section {
     display: none;
     padding-left: 1rem;
-    margin-top: 0.5rem;
+    margin-top: .5rem;
   }
 
-  /* 作業者入力UI */
+  /* ========= 作業者入力 ========= */
   .work-input-group {
     display: flex;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
+    gap: .5rem;
+    margin-top: .5rem;
   }
 
   .work-label {
     padding: 1rem 2rem;
-    background-color: #f2f2f2;
+    background: #f2f2f2;
     border: 1px solid #ccc;
-    border-radius: 0.5rem;
+    border-radius: .5rem;
     font-size: 1.5rem;
     text-align: center;
     min-width: 5rem;
@@ -526,6 +526,6 @@
     padding: 1rem;
     text-align: center;
     border: 1px solid #ccc;
-    border-radius: 0.5rem;
+    border-radius: .5rem;
   }
 </style>
