@@ -60,14 +60,14 @@
     <div id="error-site" class="error-message"></div>
   </div>
 
-  <!-- ✅ モーダル表示トリガー -->
+  <!-- ✅ トリガー -->
   <div style="margin-top: 2rem;">
     <label class="date-toggle-button" onclick="openHistoryModal()">
       ※送信履歴を確認したい場合はこちらをタップ
     </label>
   </div>
 
-  <!-- ✅ 履歴モーダル本体 -->
+  <!-- ✅ モーダル本体（inline style は不要。display は CSS で管理） -->
   <div id="historyModal">
     <div class="modal-body">
       <h3>何日の送信履歴を確認しますか？</h3>
@@ -75,15 +75,23 @@
       <button onclick="loadModalHistory()">送信履歴を取得</button>
       <div id="modalHistoryContent" style="margin-top: 1rem;"></div>
 
-      <!-- 追加フォーム -->
+      <!-- ✅ 新規追加フォーム（IDを必ず残す） -->
       <div class="toggle-header" onclick="toggleSection('toggleAddArea')">
         ＋ 新しい作業者／協力会社を追加
       </div>
       <div id="toggleAddArea" class="toggle-section">
-        ...
+        <div class="toggle-header inner" onclick="toggleSection('workerSection')">▶ 作業者</div>
+        <div id="workerSection" class="toggle-section inner">
+          <div id="additionalWorkerInputs"></div>
+        </div>
+
+        <div class="toggle-header inner" onclick="toggleSection('partnerSection')">▶ 協力会社</div>
+        <div id="partnerSection" class="toggle-section inner">
+          <div id="additionalPartnerInputs"></div>
+        </div>
       </div>
 
-      <!-- モーダル内 -->
+      <!-- 画像アップロード（共通化版のままでOK） -->
       <div id="uploaderModal" class="upload-section">
         <input type="file" accept="image/*" multiple hidden>
         <label class="file-button">ファイル選択 <span class="file-count">0 枚</span></label>
