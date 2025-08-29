@@ -1,28 +1,33 @@
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-  const fileInput   = document.getElementById('uploadPhotos');
-  const previewArea = document.getElementById('previewArea');
-  const fileCountEl = document.getElementById('fileCount');
+function setupUploader(rootId, max = 5) {
+  const root    = document.getElementById(rootId);
+  if (!root) return;
 
-  if (!fileInput || !previewArea || !fileCountEl) return;
+  const input   = root.querySelector('input[type="file"]');
+  const button  = root.querySelector('.file-button');
+  const counter = root.querySelector('.file-count');
+  const preview = root.querySelector('.preview-grid');
 
-  fileInput.addEventListener('change', () => {
-    const files = Array.from(fileInput.files);
+  // ラベル押下でファイル選択
+  button.addEventListener('click', () => input.click());
 
-    // 並べ替えを先にやる（名前昇順）
-    const sorted = [...files].sort((a, b) => a.name.localeCompare(b.name));
+  input.addEventListener('change', () => {
+    const files = Array.from(input.files);
 
-    // 表示は先頭5枚
-    const limited = sorted.slice(0, 5);
-    if (files.length > 5) {
-      alert('写真は最大5枚までです。先頭5枚のみ表示します。');
+    // ★ ソート（ファイル名の昇順）
+    const sorted = files.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+
+    // ★ 最大枚数制限
+    const limited = sorted.slice(0, max);
+    if (files.length > max) {
+      alert(`写真は最大${max}枚までです。先頭${max}枚のみ表示します。`);
     }
 
-    // 個数表示＆領域初期化
-    fileCountEl.textContent = `${limited.length} 枚`;
-    previewArea.innerHTML = '';
+    // カウンタ更新＆プレビュー初期化
+    counter.textContent = `${limited.length} 枚`;
+    preview.innerHTML = '';
 
-    // まずプレースホルダ（カード）を順番に並べてから、画像を読み込んで埋める
+    // 非同期読み込みでも順序が崩れないように、先にカードを並べる
     const imgEls = [];
 
     limited.forEach((_, idx) => {
@@ -32,23 +37,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
       card.className  = 'preview-card';
       badge.className = 'preview-badge';
-      badge.textContent = `${idx + 1} 枚目`;
+      badge.textContent = `${idx + 1} 枚目`; // ★ 番号ラベル
 
       card.append(img, badge);
-      previewArea.appendChild(card);
-      imgEls.push(img);             // 後で src を埋める
+      preview.appendChild(card);
+      imgEls.push(img);
     });
 
-    // 非同期でも順序が崩れないよう、対応する <img> にだけ埋める
+    // 対応する <img> にだけ埋める
     limited.forEach((file, idx) => {
       if (!file.type.startsWith('image/')) return;
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = e => {
         imgEls[idx].src = e.target.result;
-        imgEls[idx].alt = `アップロード画像 ${idx + 1}枚目`;
+        imgEls[idx].alt = `${idx + 1}枚目: ${file.name}`;
       };
       reader.readAsDataURL(file);
     });
   });
-});
+}
+
+// 複数箇所で使える
+setupUploader('uploaderModal', 5);
+setupUploader('uploaderMain', 5);
 </script>

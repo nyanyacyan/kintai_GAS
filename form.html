@@ -89,6 +89,18 @@
           <div id="additionalPartnerInputs"></div>
         </div>
       </div>
+<!-- モーダル用 -->
+<div id="uploaderModal" class="upload-section">
+  <label class="section-label">写真を添付（最大5枚）</label>
+  <input type="file" accept="image/*" multiple hidden>
+  <label class="file-button">ファイル選択 <span class="file-count">0 枚</span></label>
+  <div class="preview-grid" aria-live="polite"></div>
+</div>
+
+        <!-- プレビュー -->
+        <div id="previewArea" class="preview-grid" aria-live="polite"></div>
+      </div>
+
       <button onclick="closeHistoryModal()" style="margin-top: 1rem;">閉じる</button>
     </div>
   </div>
@@ -125,19 +137,13 @@
 
 
 
-  <!-- 写真アップロード（最大5枚） -->
-  <div class="upload-section">
-    <label class="section-label">写真を添付（最大5枚）</label>
-
-    <!-- 実ファイル入力は隠して、見た目のボタンを使う -->
-    <input id="uploadPhotos" type="file" accept="image/*" multiple hidden>
-    <label for="uploadPhotos" id="uploadLabel" class="file-button">
-      ファイル選択 <span id="fileCount">0 枚</span>
-    </label>
-
-    <!-- プレビュー -->
-    <div id="previewArea" class="preview-grid" aria-live="polite"></div>
-  </div>
+<!-- 本体用 -->
+<div id="uploaderMain" class="upload-section">
+  <label class="section-label">写真を添付（最大5枚）</label>
+  <input type="file" accept="image/*" multiple hidden>
+  <label class="file-button">ファイル選択 <span class="file-count">0 枚</span></label>
+  <div class="preview-grid" aria-live="polite"></div>
+</div>
 
 
   <!-- <script>
