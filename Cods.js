@@ -151,19 +151,33 @@ function getPreviousRecords(date, companyId, staffId, siteId) {
   const siteName = siteMap[siteId];
   const staffName = staffMap[staffId];
 
-  const filtered = values.filter(row =>
-    Utilities.formatDate(new Date(row[1]), "Asia/Tokyo", "yyyy-MM-dd") === date &&
-    row[2] === companyName &&
-    row[3] === staffName &&
-    row[4] === siteName
-  ).map(row => ({
-    type: row[5],
-    name: row[6],
-    // day: row[7],
-    // evening: row[8],
-    man: row[7],
-    overtime: row[8],
-  }));
+  const filtered = values
+    .filter(row => {
+      // row[1] は「出面日付」列
+      const cell = row[1];
+      let cellDateStr;
+
+      if (cell instanceof Date) {
+        // 日付型ならフォーマット
+        cellDateStr = Utilities.formatDate(cell, "Asia/Tokyo", "yyyy-MM-dd");
+      } else {
+        // 文字列（"yyyy-MM-dd" で入っている想定）
+        cellDateStr = String(cell);
+      }
+
+      return (
+        cellDateStr === date &&
+        row[2] === companyName &&
+        row[3] === staffName  &&
+        row[4] === siteName
+      );
+    })
+    .map(row => ({
+      type: row[5],
+      name: row[6],
+      man: row[7],
+      overtime: row[8],
+    }));
 
   return filtered;
 }
