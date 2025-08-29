@@ -185,6 +185,6 @@ function setupUploader(rootId, opts = {}) {
 // 初期化（モーダルは1枚表示カルーセル、メインはグリッドのまま等好きに）
 document.addEventListener('DOMContentLoaded', () => {
   setupUploader('uploaderModal', { max: 5, mode: 'carousel' });
-  setupUploader('uploaderMain',  { max: 5, mode: 'grid' });
+  setupUploader('uploaderMain',  { max: 5, mode: 'carousel' });
 });
 </script>
