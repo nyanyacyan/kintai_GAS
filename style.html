@@ -251,112 +251,111 @@
   }
 
   /* ===== 画像プレビュー：カルーセル用 ===== */
+  /* ====== Carousel 全体の幅調整（横スクロール防止） ====== */
   .carousel {
     width: 100%;
-    position: relative;
-    margin-top: 10px;
+    max-width: min(92vw, 680px);
+    /* モーダル幅より少し小さく */
+    margin: 0 auto;
+    box-sizing: border-box;
   }
 
+  /* スライド枠：はみ出しを隠す */
   .carousel-viewport {
+    position: relative;
     overflow: hidden;
-    width: 100%;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    background: #fff;
+    border-radius: 10px;
   }
 
-  .carousel-track {
-    display: flex;
-    transition: transform .3s ease;
-    will-change: transform;
-  }
-
+  /* 画像サイズ：モーダル内に収まるように */
   .carousel-slide {
-    min-width: 100%;
-    /* ★ 1枚が常に全幅 */
-    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .carousel-slide img {
-    width: 100%;
-    height: auto;
     display: block;
+    max-width: 100%;
+    max-height: 60vh;
+    /* 画面高の 60% までに制限 */
+    width: auto;
+    height: auto;
     object-fit: contain;
+    /* 画像の切れ防止 */
   }
 
-  .carousel-nav {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 8px;
-    gap: 8px;
-  }
-
-
-  /* カルーセルナビゲーション */
-  .carousel-prev,
-  .carousel-next {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    background: rgba(0, 0, 0, 0.6);
-    /* 背景黒に半透明 */
-    color: #fff;
-    /* 白文字 */
-    font-size: 2rem;
-    padding: 0.5rem 1rem;
-    border: none;
-    border-radius: 50%;
-    cursor: pointer;
-    z-index: 10;
-  }
-
-  /* 左右位置 */
-  .carousel-prev {
-    left: 10px;
-  }
-
-  .carousel-next {
-    right: 10px;
-  }
-
-  /* ホバー時に強調 */
-  .carousel-prev:hover,
-  .carousel-next:hover {
-    background: rgba(0, 0, 0, 0.85);
-  }
-
-  .carousel-nav button {
-    flex: 1;
-    padding: 1rem;
-    font-size: 1.2rem;
-    border: 1px solid #bbb;
-    border-radius: 8px;
-    background: #f8f8f8;
-    cursor: pointer;
-  }
-
-  .carousel-nav button:disabled {
-    opacity: .5;
-    cursor: not-allowed;
-  }
-
-  /* ドット（お好みで） */
+  /* ====== ドット（中央下） ====== */
   .carousel-dots {
     display: flex;
     justify-content: center;
     gap: 6px;
-    margin-top: 6px;
+    margin: 8px 0 12px;
   }
 
   .carousel-dot {
     width: 8px;
     height: 8px;
-    border-radius: 50%;
-    background: #ccc;
+    border-radius: 999px;
+    background: #c4c4c4;
+    opacity: .6;
   }
 
-  .carousel-dot.active {
+  .carousel-dot.is-active {
     background: #666;
+    opacity: 1;
+  }
+
+  /* ====== 前/次ボタン（中央下に並べる・見やすく） ====== */
+  .carousel-nav {
+    display: flex;
+    justify-content: center;
+    /* ★ 中央寄せ */
+    gap: 12px;
+    margin: 6px 0 0;
+  }
+
+  .carousel-prev,
+  .carousel-next {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    border: none;
+    background: #0066cc;
+    /* ★ 青背景でコントラスト強く */
+    color: #fff;
+    /* ★ 白文字で視認性UP */
+    font-size: 1.2rem;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, .15);
+  }
+
+  .carousel-prev:hover,
+  .carousel-next:hover {
+    background: #0055aa;
+  }
+
+  .carousel-prev[disabled],
+  .carousel-next[disabled] {
+    background: #d8d8d8;
+    color: #777;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  /* モバイルで少し小さめに */
+  @media (max-width: 560px) {
+
+    .carousel-prev,
+    .carousel-next {
+      width: 40px;
+      height: 40px;
+      font-size: 1rem;
+    }
   }
 
   /* ========== 汎用UI ========== */
