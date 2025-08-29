@@ -1,65 +1,190 @@
 <script>
-function setupUploader(rootId, max = 5) {
+function setupUploader(rootId, opts = {}) {
+  const { max = 5, mode = 'grid' } = opts;
   const root    = document.getElementById(rootId);
   if (!root) return;
 
   const input   = root.querySelector('input[type="file"]');
   const button  = root.querySelector('.file-button');
   const counter = root.querySelector('.file-count');
-  const preview = root.querySelector('.preview-grid');
+  const preview = root.querySelector('.preview-grid'); // 既存の容器を使う
 
-  // ラベル押下でファイル選択
+  if (!input || !button || !counter || !preview) return;
+
+  // クリックでファイル選択
   button.addEventListener('click', () => input.click());
 
   input.addEventListener('change', () => {
     const files = Array.from(input.files);
-
-    // ★ ソート（ファイル名の昇順）
     const sorted = files.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
-
-    // ★ 最大枚数制限
     const limited = sorted.slice(0, max);
+
     if (files.length > max) {
       alert(`写真は最大${max}枚までです。先頭${max}枚のみ表示します。`);
     }
-
-    // カウンタ更新＆プレビュー初期化
     counter.textContent = `${limited.length} 枚`;
+
+    // 表示の初期化
     preview.innerHTML = '';
 
-    // 非同期読み込みでも順序が崩れないように、先にカードを並べる
-    const imgEls = [];
+    if (mode === 'grid') {
+      // ===== グリッド表示（複数枚を並べる） =====
+      preview.style.display = 'flex';
+      preview.style.flexWrap = 'wrap';
+      preview.style.gap = '8px';
 
-    limited.forEach((_, idx) => {
-      const card  = document.createElement('div');
-      const img   = document.createElement('img');
-      const badge = document.createElement('div');
+      const imgEls = [];
+      limited.forEach((_, idx) => {
+        const card  = document.createElement('div');
+        const img   = document.createElement('img');
+        const badge = document.createElement('div');
 
-      card.className  = 'preview-card';
-      badge.className = 'preview-badge';
-      badge.textContent = `${idx + 1} 枚目`; // ★ 番号ラベル
+        card.className = 'preview-card';
+        img.alt = `${idx + 1}枚目`;
+        badge.className = 'preview-badge';
+        badge.textContent = `${idx + 1} 枚目`;
 
-      card.append(img, badge);
-      preview.appendChild(card);
-      imgEls.push(img);
-    });
+        card.append(img, badge);
+        preview.appendChild(card);
+        imgEls.push(img);
+      });
 
-    // 対応する <img> にだけ埋める
-    limited.forEach((file, idx) => {
-      if (!file.type.startsWith('image/')) return;
-      const reader = new FileReader();
-      reader.onload = e => {
-        imgEls[idx].src = e.target.result;
-        imgEls[idx].alt = `${idx + 1}枚目: ${file.name}`;
-      };
-      reader.readAsDataURL(file);
-    });
+      limited.forEach((file, idx) => {
+        if (!file.type.startsWith('image/')) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+          imgEls[idx].src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+
+    } else {
+      // ===== カルーセル表示（1枚ずつ全幅） =====
+      // preivew をカルーセルに差し替える
+      const carousel = document.createElement('div');
+      carousel.className = 'carousel';
+
+      const viewport = document.createElement('div');
+      viewport.className = 'carousel-viewport';
+
+      const track = document.createElement('div');
+      track.className = 'carousel-track';
+
+      viewport.appendChild(track);
+      carousel.appendChild(viewport);
+
+      // ナビ
+      const nav = document.createElement('div');
+      nav.className = 'carousel-nav';
+      const prevBtn = document.createElement('button');
+      const nextBtn = document.createElement('button');
+      prevBtn.textContent = '◀ 前へ';
+      nextBtn.textContent = '次へ ▶';
+      nav.append(prevBtn, nextBtn);
+
+      // ドット
+      const dots = document.createElement('div');
+      dots.className = 'carousel-dots';
+
+      preview.appendChild(carousel);
+      preview.appendChild(nav);
+      preview.appendChild(dots);
+
+      // スライド生成
+      const slideEls = [];
+      const dotEls = [];
+
+      limited.forEach((_, idx) => {
+        const slide = document.createElement('div');
+        slide.className = 'carousel-slide';
+
+        const img = document.createElement('img');
+        img.alt = `${idx + 1}枚目`;
+
+        slide.appendChild(img);
+        track.appendChild(slide);
+        slideEls.push(img);
+
+        const dot = document.createElement('div');
+        dot.className = 'carousel-dot';
+        dots.appendChild(dot);
+        dotEls.push(dot);
+      });
+
+      // 画像ロード
+      limited.forEach((file, idx) => {
+        if (!file.type.startsWith('image/')) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+          slideEls[idx].src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+
+      // ステート
+      let index = 0;
+      const total = limited.length;
+      const width = () => viewport.clientWidth;
+
+      function render() {
+        track.style.transform = `translateX(${-index * width()}px)`;
+        prevBtn.disabled = (index === 0);
+        nextBtn.disabled = (index === total - 1);
+        dotEls.forEach((d, i) => d.classList.toggle('active', i === index));
+      }
+
+      function goTo(n) {
+        index = Math.max(0, Math.min(total - 1, n));
+        render();
+      }
+
+      prevBtn.addEventListener('click', () => goTo(index - 1));
+      nextBtn.addEventListener('click', () => goTo(index + 1));
+
+      // リサイズで幅計算を更新
+      window.addEventListener('resize', render);
+
+      // スワイプ対応
+      let startX = 0, currentX = 0, dragging = false;
+
+      viewport.addEventListener('touchstart', (e) => {
+        if (!total) return;
+        dragging = true;
+        startX = e.touches[0].clientX;
+        currentX = startX;
+      }, { passive: true });
+
+      viewport.addEventListener('touchmove', (e) => {
+        if (!dragging) return;
+        currentX = e.touches[0].clientX;
+        const dx = currentX - startX;
+        const base = -index * width();
+        track.style.transform = `translateX(${base + dx}px)`;
+      }, { passive: true });
+
+      viewport.addEventListener('touchend', () => {
+        if (!dragging) return;
+        dragging = false;
+        const dx = currentX - startX;
+        const threshold = width() * 0.25; // 25% スワイプでページ送り
+        if (dx > threshold) {
+          goTo(index - 1);
+        } else if (dx < -threshold) {
+          goTo(index + 1);
+        } else {
+          render();
+        }
+      });
+
+      // 初期描画
+      render();
+    }
   });
 }
 
+// 初期化（モーダルは1枚表示カルーセル、メインはグリッドのまま等好きに）
 document.addEventListener('DOMContentLoaded', () => {
-  setupUploader('uploaderModal', 5);
-  setupUploader('uploaderMain', 5);
+  setupUploader('uploaderModal', { max: 5, mode: 'carousel' });
+  setupUploader('uploaderMain',  { max: 5, mode: 'grid' });
 });
-
 </script>

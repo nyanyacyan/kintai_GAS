@@ -250,6 +250,81 @@
     }
   }
 
+  /* ===== 画像プレビュー：カルーセル用 ===== */
+  .carousel {
+    width: 100%;
+    position: relative;
+    margin-top: 10px;
+  }
+
+  .carousel-viewport {
+    overflow: hidden;
+    width: 100%;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background: #fff;
+  }
+
+  .carousel-track {
+    display: flex;
+    transition: transform .3s ease;
+    will-change: transform;
+  }
+
+  .carousel-slide {
+    min-width: 100%;
+    /* ★ 1枚が常に全幅 */
+    user-select: none;
+  }
+
+  .carousel-slide img {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: contain;
+  }
+
+  .carousel-nav {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    gap: 8px;
+  }
+
+  .carousel-nav button {
+    flex: 1;
+    padding: 1rem;
+    font-size: 1.2rem;
+    border: 1px solid #bbb;
+    border-radius: 8px;
+    background: #f8f8f8;
+    cursor: pointer;
+  }
+
+  .carousel-nav button:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+  }
+
+  /* ドット（お好みで） */
+  .carousel-dots {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 6px;
+  }
+
+  .carousel-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ccc;
+  }
+
+  .carousel-dot.active {
+    background: #666;
+  }
+
   /* ========== 汎用UI ========== */
   .button-row {
     text-align: right;
