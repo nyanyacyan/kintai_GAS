@@ -23,7 +23,6 @@
     font-size: 1rem;
   }
 
-
   /* 一括指定の中から checkbox を除外 */
   select,
   input:not([type="checkbox"]),
@@ -37,32 +36,17 @@
     background-color: white;
   }
 
-
-  /* 元請会社・TTC担当者・現場名・作業者・協力会社名のラベル（見出し）サイズ調整 */
+  /* 元請会社・TTC担当者・現場名・作業者・協力会社名のラベル（見出し） */
   .section-label {
     font-size: 2rem;
-    /* ← お好みで大きさ調整 */
     font-weight: bold;
   }
 
-
-  /* チェックボックスは個別に小さく指定 */
+  /* チェックボックスは個別に小さく */
   input[type="checkbox"] {
     width: 2rem;
     height: 2rem;
     margin: 0;
-  }
-
-
-  /* チェックボックスの作業者名の文字サイズだけを調整 */
-  .checkbox-wrapper span {
-    font-size: 3.25rem;
-    /* ← ここをお好みのサイズに調整 */
-  }
-
-
-  select:invalid {
-    color: #aaa;
   }
 
   .checkbox-group {
@@ -70,7 +54,6 @@
     flex-direction: column;
     gap: 0.5rem;
   }
-
 
   .checkbox-wrapper {
     display: flex;
@@ -82,29 +65,21 @@
     background-color: #fff;
     cursor: pointer;
     font-size: 3.25rem;
-    /* ✅ 親の大きさ */
   }
-
 
   .checkbox-wrapper span {
     font-size: 3.25rem;
-    /* ✅ 修正: remrem → rem */
     font-weight: normal;
-    /* ✅ 明示的に太字を解除 */
     white-space: nowrap;
   }
-
 
   .checkbox-wrapper input[type="checkbox"]:checked+span {
     color: #0066cc;
     font-size: 3.25rem;
-    /* ✅ サイズを揃える */
     font-weight: normal;
-    /* ✅ 太字にしない */
     font-family: 'Noto Sans JP', sans-serif;
     white-space: nowrap;
   }
-
 
   .time-inputs {
     display: none;
@@ -137,6 +112,7 @@
     background-color: #004999;
   }
 
+  /* ========== 確認モーダル ========== */
   #confirmationModal {
     display: none;
     position: fixed;
@@ -163,17 +139,8 @@
     white-space: pre-wrap;
   }
 
-
-  #customDate {
-    font-size: 4rem;
-    padding: 2rem;
-    width: 100%;
-    border-radius: 10px;
-    border: 1px solid #ccc;
-    box-sizing: border-box;
-    background-color: white;
-  }
-
+  /* ========== 日付入力 ========== */
+  #customDate,
   .custom-date-input {
     font-size: 4rem;
     padding: 2rem;
@@ -184,8 +151,106 @@
     background-color: white;
   }
 
+  /* ========== 履歴モーダル ========== */
+  #historyModal {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(0, 0, 0, .5);
+    display: none;
+    /* JSでflexにする */
+    justify-content: center;
+    align-items: center;
+    padding: 24px;
+    box-sizing: border-box;
+  }
 
+  #historyModal .modal-body {
+    width: min(92vw, 720px);
+    max-height: 90vh;
+    overflow: auto;
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    box-sizing: border-box;
+  }
 
+  #historyModal .modal-body button {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* ========== アップロードUI ========== */
+  .file-button {
+    display: inline-flex;
+    align-items: center;
+    gap: .75rem;
+    padding: .9rem 1.4rem;
+    border: 1px solid #bbb;
+    border-radius: 10px;
+    font-size: 1.6rem;
+    background: #f8f8f8;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .file-button:hover {
+    background: #f1f1f1;
+  }
+
+  .file-button .file-count {
+    font-size: 1.2rem;
+    color: #666;
+  }
+
+  /* プレビューエリア */
+  .preview-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .preview-card {
+    position: relative;
+    width: 150px;
+    height: 150px;
+  }
+
+  .preview-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+  }
+
+  .preview-badge {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    background: rgba(0, 0, 0, .7);
+    color: #fff;
+    font-size: .8rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  /* スマホ対応 */
+  @media (max-width: 560px) {
+    .file-button {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .preview-card {
+      width: 100px;
+      height: 100px;
+    }
+  }
+
+  /* ========== 汎用UI ========== */
   .button-row {
     text-align: right;
   }
@@ -224,14 +289,7 @@
     color: white;
   }
 
-  #dateContainer {
-    display: none;
-    margin-top: 0.5rem;
-  }
-
-
-
-
+  /* ========== ローディング ========== */
   #loadingOverlay {
     display: none;
     position: fixed;
@@ -245,7 +303,6 @@
     align-items: center;
   }
 
-
   .loader {
     border: 6px solid #f3f3f3;
     border-top: 6px solid #0066cc;
@@ -254,7 +311,6 @@
     height: 48px;
     animation: spin 1s linear infinite;
   }
-
 
   @keyframes spin {
     0% {
@@ -266,30 +322,19 @@
     }
   }
 
+  /* ========== エラーメッセージ ========== */
   .error-message {
     color: red;
     font-size: 0.9rem;
     margin-top: 0.25rem;
   }
 
-
   .input-error {
     border: 2px solid red !important;
     background-color: #fff0f0;
   }
 
-  /* テーブル内の文字（ヘッダー）サイズも微調整する場合 */
-  #historyModal table th {
-    font-size: 1.4rem;
-    padding: 0.4rem;
-  }
-
-  #historyModal table td {
-    padding: 0.4rem;
-    text-align: center;
-  }
-
-  /* 編集フォームのテーブルスタイル */
+  /* ========== テーブル ========== */
   #historyModal table {
     width: 100%;
     border-collapse: collapse;
@@ -298,7 +343,6 @@
 
   #historyModal th {
     background-color: #f0f8ff;
-    /* タイトル背景色 */
     font-weight: bold;
     font-size: 1.4rem;
     padding: 0.75rem;
@@ -313,11 +357,11 @@
     font-size: 1.3rem;
   }
 
-  /* 偶数行だけ背景色つける（視認性UP） */
   #historyModal tr:nth-child(even) {
     background-color: #f9f9f9;
   }
 
+  /* ========== 折りたたみセクション ========== */
   .toggle-header {
     display: inline-block;
     font-weight: bold;
@@ -338,7 +382,6 @@
     background-color: #e0f0ff;
   }
 
-
   .toggle-header.inner {
     font-size: 1.4rem;
     background-color: #e6f2ff;
@@ -351,6 +394,7 @@
     margin-top: 0.5rem;
   }
 
+  /* 作業者入力UI */
   .work-input-group {
     display: flex;
     gap: 0.5rem;
@@ -368,30 +412,6 @@
     user-select: none;
   }
 
-  /* 写真アップロード欄のスタイル */
-  #photos {
-    font-size: 1.5rem;
-    margin-top: 0.5rem;
-  }
-
-  #photos:invalid {
-    border: 2px solid red;
-  }
-
-  .preview-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
-  }
-
-  .preview-container img {
-    width: 100px;
-    height: auto;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-  }
-
   .work-input {
     width: 6rem;
     font-size: 2rem;
@@ -399,89 +419,5 @@
     text-align: center;
     border: 1px solid #ccc;
     border-radius: 0.5rem;
-  }
-
-  /* アップロードUI */
-  .file-button {
-    display: inline-flex;
-    align-items: center;
-    gap: .75rem;
-    padding: .9rem 1.4rem;
-    border: 1px solid #bbb;
-    border-radius: 10px;
-    font-size: 1.6rem;
-    /* 画像のスクショの雰囲気に寄せて少し大きめ */
-    background: #f8f8f8;
-    cursor: pointer;
-    user-select: none;
-  }
-
-  .file-button:hover {
-    background: #f1f1f1;
-  }
-
-  .file-button #fileCount {
-    font-size: 1.2rem;
-    color: #666;
-  }
-
-  /* プレビュー：PCは2カラム、最大3行（=6）相当の見た目
-   ※実際は5枚上限なので2列×2～3行になります */
-  .preview-grid {
-    display: flex;
-    flex-direction: column;
-    /* ← 縦並びにする */
-    gap: 10px;
-  }
-
-  .preview-card {
-    position: relative;
-    max-width: 90%;
-    /* スマホ幅に合わせる */
-    margin: 0 auto;
-    /* 中央寄せ */
-  }
-
-  .preview-card img {
-    width: 100%;
-    height: auto;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-  }
-
-  /* 「1枚目、2枚目」バッジ */
-  .preview-badge {
-    position: absolute;
-    top: 6px;
-    left: 6px;
-    padding: 4px 8px;
-    border-radius: 999px;
-    background: rgba(0, 0, 0, .55);
-    color: #fff;
-    font-size: .95rem;
-  }
-
-  /* スマホ：1カラムで大きく見せる */
-  @media (max-width: 560px) {
-    .preview-grid {
-      grid-template-columns: 1fr;
-      gap: 10px;
-    }
-
-    .file-button {
-      width: 100%;
-      justify-content: center;
-    }
-.preview-grid { display: flex; flex-wrap: wrap; gap: 8px; }
-.preview-card { position: relative; width: 150px; height: 150px; }
-.preview-card img {
-  width: 100%; height: 100%; object-fit: cover;
-  border: 1px solid #ccc; border-radius: 6px;
-}
-.preview-badge {
-  position: absolute; top: 4px; left: 4px;
-  background: rgba(0,0,0,.7); color: #fff; font-size: .8rem;
-  padding: 2px 6px; border-radius: 4px;
-}
   }
 </style>

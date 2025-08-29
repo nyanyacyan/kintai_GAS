@@ -57,7 +57,9 @@ function setupUploader(rootId, max = 5) {
   });
 }
 
-// 複数箇所で使える
-setupUploader('uploaderModal', 5);
-setupUploader('uploaderMain', 5);
+document.addEventListener('DOMContentLoaded', () => {
+  setupUploader('uploaderModal', 5);
+  setupUploader('uploaderMain', 5);
+});
+
 </script>
