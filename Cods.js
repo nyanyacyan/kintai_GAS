@@ -139,9 +139,13 @@ function getMapFromSheet(sheet) {
 
 // 過去の回答を取得する関数
 function getPreviousRecords(date, companyId, staffId, siteId) {
+  Logger.log('--- getPreviousRecords 開始 ---');
+  Logger.log('指定日付: %s, 元請ID: %s, 担当ID: %s, 現場ID: %s', date, companyId, staffId, siteId);
+
   const ss = SpreadsheetApp.openById('1mXMe5UFKDVPpB4VSens3s_NBYMrfA-e6zbaN3gSBuZA');
   const sheet = ss.getSheetByName('回答');
   const values = sheet.getDataRange().getValues();
+  Logger.log('全行数=%s 行', values.length);
 
   const companyMap = getMapFromSheet(ss.getSheetByName('元請会社マスタ'));
   const siteMap = getMapFromSheet(ss.getSheetByName('現場名マスタ'));
@@ -150,6 +154,8 @@ function getPreviousRecords(date, companyId, staffId, siteId) {
   const companyName = companyMap[companyId];
   const siteName = siteMap[siteId];
   const staffName = staffMap[staffId];
+
+  Logger.log('会社名: %s, 現場名: %s, 担当者名: %s', companyName, siteName, staffName);
 
   const filtered = values
     .filter(row => {
@@ -165,6 +171,12 @@ function getPreviousRecords(date, companyId, staffId, siteId) {
         cellDateStr = String(cell);
       }
 
+      // 🔽 ここで1行ごとにログ出力
+      Logger.log(
+        '[行の内容] 入力日付=%s, 出面日付=%s | 業種=%s vs %s | 担当者=%s vs %s | 現場名=%s vs %s',
+        cellDateStr, date, row[2], companyName, row[3], staffName, row[4], siteName
+      );
+
       return (
         cellDateStr === date &&
         row[2] === companyName &&
@@ -179,6 +191,7 @@ function getPreviousRecords(date, companyId, staffId, siteId) {
       overtime: row[8],
     }));
 
+  Logger.log('[getPreviousRecords] 該当行数=%s 件', filtered.length);
   return filtered;
 }
 
