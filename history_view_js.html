@@ -18,7 +18,8 @@
    * ------------------------------------------*/
 
   // ------------------------------------------
-  // 履歴モーダルを開く（デフォルト日付を今日に、内容は空に）
+  // 送信履歴のモーダルを開く（初回モーダル表示時）
+  // 日付＋送信履歴を取得
   // ------------------------------------------
   function openHistoryModal() {
     document.getElementById('modalHistoryDate').value = new Date().toISOString().split("T")[0];
@@ -91,7 +92,8 @@
 
 
   // ------------------------------------------
-  // 履歴モーダル側で過去データを取得して表表示
+  // 過去の履歴を検索した結果を表示
+  // ここで編集ボタンが出現→編集ボタンを押すことで編集モーダルへ移行
   // ------------------------------------------
   function loadModalHistory() {
     const date = document.getElementById('modalHistoryDate').value;
@@ -136,8 +138,14 @@
   let lastFetchedRecords = [];
 
 
-
+  // ------------------------------------------
+  // 編集モーダルの移行先のモーダル
+  // ここで工数の変更を修正できる
+  // ここに画像を添付できるフォームを追加
   /** モーダル内：編集フォームに切り替える（既存＋追加の入力UI） */
+  // ここで編集ボタンが出現→編集ボタンを押すことで編集モーダルへ移行
+  // ------------------------------------------
+
   function showEditFormInModal() {
     const container = document.getElementById('modalHistoryContent');
 
@@ -155,9 +163,33 @@
     </tr>`;
     });
     html += '</table>';
-    html += `<button onclick="showEditConfirmationModal()">再送信（更新）</button>`;
+    html += `
+      <div id="editUploader" class="upload-section" style="margin:12px 0;"></div>
+      <button onclick="showEditConfirmationModal()">再送信（更新）</button>
+    `;
     container.innerHTML = html;
     renderAdditionalInputs(); // ✅ 履歴外の追加候補を表示
+  }
+
+
+  // ------------------------------------------
+  // 編集ボタンが押されたあとに、画像アップロードUIを描画
+  // ------------------------------------------
+  function renderEditUploader() {
+    const container = document.getElementById('editUploader');
+    if (!container) return;
+
+    container.innerHTML = `
+      <label style="display:block;margin:8px 0;">📎 添付ファイル</label>
+      <div id="uploaderEdit" class="uploader">
+        <input type="file" accept="image/*" multiple hidden>
+        <label class="file-button">ファイル選択 <span class="file-count">0 枚</span></label>
+        <div class="preview-grid"></div>
+      </div>
+    `;
+
+    // 既存のアップローダー初期化を使う
+    setupUploader('uploaderEdit', { max: 5, mode: 'grid' });
   }
 
 

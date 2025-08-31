@@ -1,6 +1,5 @@
 <script>
 
-
   // ------------------------------------------
   // 送信ボタンクリック時：入力値の検証と formData の組み立て、確認モーダル表示
   // ------------------------------------------
@@ -285,5 +284,60 @@ TTC担当者：${staff}<br>
   }
 
 
+  // ------------------------------------------
+  // ファイルをDriveへアップロードする
+  // ------------------------------------------
+
+  // 固定の親フォルダID
+  const DRIVE_PARENT_ID = '1Wagx5e-sJJwz3YjUHIzs5SkV-UqEQDyi';
+
+  // 送信確定フロー
+  async function submitWithPhotosThenSave(formData) {
+    const files = [...(uploadQueue.modal||[]), ...(uploadQueue.main||[])];
+
+    const subPath = [
+      formData.date || new Date().toISOString().slice(0,10),
+      formData.companyName || '',
+      formData.siteName || ''
+    ].filter(Boolean).join('/');
+
+    if (files.length > 0) {
+      document.getElementById('loadingOverlay')?.style?.setProperty('display','flex');
+
+      await new Promise((resolve, reject) => {
+        google.script.run
+          .withSuccessHandler(result => {
+            formData.photos = result;   // [{id,url,name}]
+            resolve();
+          })
+          .withFailureHandler(err => {
+            console.error(err);
+            alert('画像アップロードに失敗しました。');
+            reject(err);
+          })
+          .uploadImagesToDrive({ parentFolderId: DRIVE_PARENT_ID, subPath }, files);
+      });
+    }
+
+    return new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler(res => resolve(res))
+        .withFailureHandler(err => { console.error(err); alert('送信に失敗しました。'); reject(err); })
+        .saveFormResponse(formData);
+    });
+  }
+
+
+  function confirmSend() {
+    const formData = buildFormDataSomehow(); // ←既存ロジックでOK
+    submitWithPhotosThenSave(formData)
+      .then(() => {
+        document.getElementById('loadingOverlay')?.style?.setProperty('display','none');
+        // 完了UIなど
+      })
+      .catch(() => {
+        document.getElementById('loadingOverlay')?.style?.setProperty('display','none');
+      });
+  }
 
 </script>

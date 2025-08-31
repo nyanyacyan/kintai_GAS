@@ -91,33 +91,17 @@
         </div>
       </div>
 
-      <!-- 画像アップロード（共通化版のままでOK） -->
+      <!-- modal 画像アップロード
       <div id="uploaderModal" class="upload-section">
         <input type="file" accept="image/*" multiple hidden>
         <label class="file-button">ファイル選択 <span class="file-count">0 枚</span></label>
         <div class="preview-grid"></div>
-      </div>
+      </div> -->
 
       <button onclick="closeHistoryModal()" style="margin-top: 1rem;">閉じる</button>
     </div>
   </div>
 
-  <!--
-  <div>
-  <label class="section-label">送信履歴</label>
-  <div id="historyRecords" style="margin-top: 1rem; border: 1px solid #ccc; padding: 1rem;  border-radius: 6px; background-color: #fff;"></div>
-  </div>
-
-<div style="margin-bottom: 1rem;">
-  <label for="historyDate">履歴対象日付</label>
-  <input type="date" id="historyDate" style="font-size: 2rem; padding: 0.5rem; width: 100%;">
-</div>
-
-<div id="editSection" style="margin-top: 2rem;">
-  <button id="editButton" onclick="showEditForm()" style="display: none;">編集する</button>
-  <div id="editFormContainer"></div>
-</div>
--->
 
   <div>
     <label class="section-label">作業者</label>
@@ -134,40 +118,14 @@
 
 
 
-  <!-- 本体用 -->
+  <!-- main 画像アップロード -->
   <div id="uploaderMain" class="upload-section">
     <input type="file" accept="image/*" multiple hidden>
     <label class="file-button">ファイル選択 <span class="file-count">0 枚</span></label>
     <div class="preview-grid"></div>
   </div>
 
-
-  <!-- <script>
-    const fileInput = document.getElementById('uploadPhotos');
-    const previewArea = document.getElementById('previewArea');
-
-    fileInput.addEventListener('change', () => {
-      previewArea.innerHTML = ''; // 一度クリア
-      const files = Array.from(fileInput.files).slice(0, 5); // 最大5枚まで
-
-      files.forEach(file => {
-        const reader = new FileReader();
-        reader.onload = e => {
-          const img = document.createElement('img');
-          img.src = e.target.result;
-          img.style.maxWidth = '150px';
-          img.style.maxHeight = '150px';
-          img.style.objectFit = 'cover';
-          img.style.border = '1px solid #ccc';
-          img.style.borderRadius = '6px';
-          previewArea.appendChild(img);
-        };
-        reader.readAsDataURL(file);
-      });
-    });
-  </script> -->
-
-
+  <!-- mainでの送信ボタン -->
   <div>
     <button onclick="submitForm()">送信</button>
   </div>

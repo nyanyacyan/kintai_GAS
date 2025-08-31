@@ -286,6 +286,8 @@ function updateEditedRecords(meta, records) {
   return 'ok';
 }
 
+// --------------------------------------------------------------------------
+
 
 function toNumber(val) {
   if (val === null || val === undefined || val === '') return 0;
@@ -293,3 +295,48 @@ function toNumber(val) {
   return Number.isFinite(n) ? n : 0;
 }
 
+// --------------------------------------------------------------------------
+// 保存先をフォルダパスで指定できるようにする
+
+function getOrCreateFolderByPath_(parentId, path) {
+  Logger.log('--- getOrCreateFolderByPath_ 開始 ---');
+  let folder = DriveApp.getFolderById(parentId);
+  if (!path) return folder;
+  const parts = String(path).split('/').map(s => s.trim()).filter(Boolean);
+  Logger.log('フォルダパス: %s, 分割数=%s', path, parts.length);
+  parts.forEach(name => {
+    const it = folder.getFoldersByName(name);
+    Logger.log('  フォルダ "%s" の存在確認', name);
+
+    // 存在すればそれを取得、なければ新規作成
+    folder = it.hasNext() ? it.next() : folder.createFolder(name);
+  });
+  Logger.log('作成先フォルダ: %s', folder.getId());
+  Logger.log('--- getOrCreateFolderByPath_ 終了 ---');
+  return folder;
+}
+
+// --------------------------------------------------------------------------
+// Driveへ画像をアップロードする関数
+
+function uploadImagesToDrive(meta, files) {
+  Logger.log('--- uploadImagesToDrive 開始 ---');
+  const parentId = meta && meta.parentFolderId;
+  if (!parentId) throw new Error('parentFolderId が指定されていません。');
+
+  const targetFolder = getOrCreateFolderByPath_(parentId, meta.subPath || '');
+  const results = [];
+
+  files.forEach(f => {
+    const base64 = String(f.dataUrl).split(',')[1] || '';
+    const bytes  = Utilities.base64Decode(base64);
+    const blob   = Utilities.newBlob(bytes, f.type || MimeType.JPEG, f.name || 'image');
+    const file   = targetFolder.createFile(blob);
+
+    Logger.log('アップロード完了: %s (ID=%s)', 'https://drive.google.com/uc?id=' + file.getId(), file.getId());
+    results.push({ id: file.getId(), url: 'https://drive.google.com/uc?id=' + file.getId(), name: file.getName() });
+  });
+
+  Logger.log('--- uploadImagesToDrive 終了 ---');
+  return results;
+}
