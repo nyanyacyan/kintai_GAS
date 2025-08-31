@@ -198,7 +198,7 @@ function getPreviousRecords(date, companyId, staffId, siteId) {
 
 // 以下の関数は、Google Sheetsを使用してデータを取得、保存、および更新するためのものです。
 function updateEditedRecords(meta, records) {
-  const ss = SpreadsheetApp.openById('1mXMe5UFKDVPpB4VSens3s_NBYMrfA-e6zbaN3gSBuZA');
+  const ss = SpreadsheetApp.openById('1pmSMczZPZm2eLjbSD8Bkza0x6TYVCNoxq6DXrxXiplg');
   const sheet = ss.getSheetByName('回答');
   const logSheet = ss.getSheetByName('編集ログ') || ss.insertSheet('編集ログ');
 
