@@ -142,8 +142,10 @@ function getPreviousRecords(date, companyId, staffId, siteId) {
   Logger.log('--- getPreviousRecords 開始 ---');
   Logger.log('指定日付: %s, 元請ID: %s, 担当ID: %s, 現場ID: %s', date, companyId, staffId, siteId);
 
-  const ss = SpreadsheetApp.openById('1mXMe5UFKDVPpB4VSens3s_NBYMrfA-e6zbaN3gSBuZA');
+  const ss = SpreadsheetApp.openById('1pmSMczZPZm2eLjbSD8Bkza0x6TYVCNoxq6DXrxXiplg');
   const sheet = ss.getSheetByName('回答');
+  Logger.log('読み取り中スプシURL: %s', ss.getUrl());
+
   const values = sheet.getDataRange().getValues();
   Logger.log('全行数=%s 行', values.length);
 
