@@ -6,6 +6,23 @@ function doGet(e) {
   return t.evaluate();
 }
 
+/** =========================
+ * 集中管理：スプレッドシート
+ * ========================= */
+const SHEET_ID = '1pmSMczZPZm2eLjbSD8Bkza0x6TYVCNoxq6DXrxXiplg'; //
+const SHEETS = {
+  RESPONSES: '回答',
+  COMPANY: '元請会社マスタ',
+  STAFF: 'TTC担当者名マスタ',
+  SITE: '現場名マスタ',
+  WORKER: '作業者名マスタ',
+  PARTNER: '協力会社名マスタ',
+};
+
+function getSS() {
+  return SpreadsheetApp.openById(SHEET_ID);
+}
+
 // cssファイルのhtmlファイルを呼び出し紐づける関数
 function include(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
@@ -13,14 +30,13 @@ function include(filename) {
 
 // マスターデータを取得する関数
 function getMasterData() {
-  const ss = SpreadsheetApp.openById('1mXMe5UFKDVPpB4VSens3s_NBYMrfA-e6zbaN3gSBuZA');
+  const ss = getSS();
 
-
-  const companySheet = ss.getSheetByName('元請会社マスタ');
-  const staffSheet = ss.getSheetByName('TTC担当者名マスタ');
-  const siteSheet = ss.getSheetByName('現場名マスタ');
-  const workerSheet = ss.getSheetByName('作業者名マスタ');
-  const partnerSheet = ss.getSheetByName('協力会社名マスタ');
+  const companySheet = ss.getSheetByName(SHEETS.COMPANY);
+  const staffSheet = ss.getSheetByName(SHEETS.STAFF);
+  const siteSheet = ss.getSheetByName(SHEETS.SITE);
+  const workerSheet = ss.getSheetByName(SHEETS.WORKER);
+  const partnerSheet = ss.getSheetByName(SHEETS.PARTNER);
 
 
   const company = companySheet.getRange(2, 1, companySheet.getLastRow() - 1, 2).getValues()
@@ -70,8 +86,8 @@ function isValidQuarterHour(value) {
 
 // 回答を保存する関数
 function saveFormResponse(data) {
-  const ss = SpreadsheetApp.openById('1mXMe5UFKDVPpB4VSens3s_NBYMrfA-e6zbaN3gSBuZA');
-  const sheet = ss.getSheetByName('回答');
+  const ss = getSS();
+  const sheet = ss.getSheetByName(SHEETS.RESPONSES);
   const timestamp = new Date();
   const reportDate = data.date || Utilities.formatDate(new Date(), "Asia/Tokyo", "yyyy-MM-dd");
 
@@ -142,8 +158,8 @@ function getPreviousRecords(date, companyId, staffId, siteId) {
   Logger.log('--- getPreviousRecords 開始 ---');
   Logger.log('指定日付: %s, 元請ID: %s, 担当ID: %s, 現場ID: %s', date, companyId, staffId, siteId);
 
-  const ss = SpreadsheetApp.openById('1pmSMczZPZm2eLjbSD8Bkza0x6TYVCNoxq6DXrxXiplg');
-  const sheet = ss.getSheetByName('回答');
+  const ss = getSS();
+  const sheet = ss.getSheetByName(SHEETS.RESPONSES);
   Logger.log('読み取り中スプシURL: %s', ss.getUrl());
 
   const values = sheet.getDataRange().getValues();
@@ -200,13 +216,13 @@ function getPreviousRecords(date, companyId, staffId, siteId) {
 
 // 以下の関数は、Google Sheetsを使用してデータを取得、保存、および更新するためのものです。
 function updateEditedRecords(meta, records) {
-  const ss = SpreadsheetApp.openById('1pmSMczZPZm2eLjbSD8Bkza0x6TYVCNoxq6DXrxXiplg');
-  const sheet = ss.getSheetByName('回答');
+  const ss = getSS();
+  const sheet = ss.getSheetByName(SHEETS.RESPONSES);
   const logSheet = ss.getSheetByName('編集ログ') || ss.insertSheet('編集ログ');
 
-  const companyMap = getMapFromSheet(ss.getSheetByName('元請会社マスタ'));
-  const siteMap = getMapFromSheet(ss.getSheetByName('現場名マスタ'));
-  const staffMap = getMapFromSheet(ss.getSheetByName('TTC担当者名マスタ'));
+  const companyMap = getMapFromSheet(ss.getSheetByName(SHEETS.COMPANY));
+  const siteMap = getMapFromSheet(ss.getSheetByName(SHEETS.SITE));
+  const staffMap = getMapFromSheet(ss.getSheetByName(SHEETS.STAFF));
 
   const date = meta.date;
   const companyName = companyMap[meta.companyId];
