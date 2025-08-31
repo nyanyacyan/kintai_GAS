@@ -109,6 +109,7 @@
     container.innerHTML = ''; // 内容初期化
 
     google.script.run.withSuccessHandler(records => {
+      console.log("📥 サーバーから返ってきた値:", records);
       document.getElementById('loadingOverlay').style.display = 'none'; // ✅ 表示OFF
       lastFetchedRecords = records;
       if (records.length === 0) {
