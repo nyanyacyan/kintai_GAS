@@ -10,42 +10,47 @@
     const date    = fd.date || new Date().toLocaleDateString('ja-JP');
 
     let html = `
-      <h3 style="margin-top:0;">✅ 送信が完了しました！</h3>
-      <div style="line-height:1.7">
-        出面日付：${date}<br>
-        元請会社：${company}<br>
-        TTC担当者：${staff}<br>
-        現場名：${site}
-      </div>`;
+      <div class="sent-summary">
+        <h3 class="sent-title">✅ 送信が完了しました！</h3>
+        <dl class="sent-meta">
+          <div><dt>出面日付</dt><dd>${date}</dd></div>
+          <div><dt>元請会社</dt><dd>${company}</dd></div>
+          <div><dt>TTC担当者</dt><dd>${staff}</dd></div>
+          <div><dt>現場名</dt><dd>${site}</dd></div>
+        </dl>
+    `;
 
     if (fd.workers?.length) {
-      html += `<div style="margin-top:10px;"><strong>作業者：</strong>`;
-      fd.workers.forEach(w=>{
-        html += `<br>　${w.name}（人工：<span style="color:#d00;font-weight:bold;">${w.man||0}</span> 残業：<span style="color:#d00;font-weight:bold;">${w.overtime||0}h</span>）`;
-      });
-      html += `</div>`;
-    }
-    if (fd.partners?.length) {
-      html += `<div style="margin-top:10px;"><strong>協力会社：</strong>`;
-      fd.partners.forEach(p=>{
-        html += `<br>　${p.name}（人工：<span style="color:#d00;font-weight:bold;">${p.man||0}</span> 残業：<span style="color:#d00;font-weight:bold;">${p.overtime||0}h</span>）`;
-      });
-      html += `</div>`;
+      const rows = fd.workers.map(w =>
+        `<li>${w.name}（人工：<b class="sent-num">${w.man||0}</b> / 残業：<b class="sent-num">${w.overtime||0}</b>h）</li>`
+      ).join('');
+      html += `<div class="sent-block"><div class="sent-block-title">作業者</div><ul class="sent-list">${rows}</ul></div>`;
     }
 
-    // 写真（Drive サムネ）  ※公開設定やリンクポリシーに依存
+    if (fd.partners?.length) {
+      const rows = fd.partners.map(p =>
+        `<li>${p.name}（人工：<b class="sent-num">${p.man||0}</b> / 残業：<b class="sent-num">${p.overtime||0}</b>h）</li>`
+      ).join('');
+      html += `<div class="sent-block"><div class="sent-block-title">協力会社</div><ul class="sent-list">${rows}</ul></div>`;
+    }
+
+    // ✅ Driveのサムネイルを使って軽量表示（クリックで原寸URLへ）
     if (fd.photos?.length) {
-      html += `<div style="margin-top:12px;">
-        <strong>添付写真：</strong>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;">
-          ${fd.photos.map(ph => `
-            <a href="${ph.url}" target="_blank" rel="noopener" title="${ph.name}">
-              <img src="${ph.url}" style="width:96px;height:96px;object-fit:cover;border:1px solid #ddd;border-radius:6px;">
-            </a>
-          `).join('')}
-        </div>
+      const imgs = fd.photos.map(ph => {
+        const thumb = `https://drive.google.com/thumbnail?id=${ph.id}&sz=w200`; // w200程度
+        const href  = ph.url || `https://drive.google.com/uc?id=${ph.id}`;
+        return `
+          <a class="sent-thumb" href="${href}" target="_blank" rel="noopener" title="${ph.name || ''}">
+            <img src="${thumb}" alt="${ph.name || ''}">
+          </a>`;
+      }).join('');
+      html += `<div class="sent-block">
+        <div class="sent-block-title">添付写真</div>
+        <div class="sent-thumbs">${imgs}</div>
       </div>`;
     }
+
+    html += `</div>`;
     console.log('[renderSentSummaryHTML] end');
     return html;
   }
