@@ -181,19 +181,6 @@
     }
   }
 
-  // --- form_js の最後に追加 ---
-  console.log('[form_js] exporting handlers to window');
-  window.submitForm       = submitForm;
-  window.showConfirmation = showConfirmation;
-  // 編集系・閉じる系もここで公開しておくと安心
-  window.confirmSend              = typeof confirmSend === 'function' ? confirmSend : undefined;
-  window.submitEditFromModal      = typeof submitEditFromModal === 'function' ? submitEditFromModal : undefined;
-  window.closeConfirmation        = typeof closeConfirmation === 'function' ? closeConfirmation : undefined;
-  window.handleModalClickOutside  = typeof handleModalClickOutside === 'function' ? handleModalClickOutside : undefined;
-  console.log('[form_js] exports:', {
-    submitForm: typeof window.submitForm,
-    showConfirmation: typeof window.showConfirmation
-  });
 console.log('[form_js] exporting handlers to window');
 window.toggleDateInput       = toggleDateInput;
 window.updateStaffOptions    = updateStaffOptions;
