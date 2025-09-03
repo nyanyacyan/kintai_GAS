@@ -33,4 +33,16 @@
       })
       .getMasterData();
   };
+
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log('[init_js] bind handlers');
+    const btn = document.getElementById('sendBtn');
+    if (btn && typeof window.submitForm === 'function') {
+      btn.addEventListener('click', window.submitForm);
+      console.log('[init_js] submitForm bound');
+    } else {
+      console.warn('[init_js] submitForm not ready:', typeof window.submitForm);
+    }
+  });
+
 </script>
