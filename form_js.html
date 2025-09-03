@@ -194,5 +194,11 @@
     submitForm: typeof window.submitForm,
     showConfirmation: typeof window.showConfirmation
   });
-
+console.log('[form_js] exporting handlers to window');
+window.toggleDateInput       = toggleDateInput;
+window.updateStaffOptions    = updateStaffOptions;
+window.updateSiteOptions     = updateSiteOptions;
+window.updateWorkerAndPartner= updateWorkerAndPartner;
+window.resetForm             = resetForm;
+console.log('[form_js] exports done');
 </script>
