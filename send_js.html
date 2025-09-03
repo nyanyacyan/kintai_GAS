@@ -253,30 +253,76 @@ TTC担当者：${staff}<br>
   // ローディングの表示/非表示、完了メッセージの描き換えなど
   // ------------------------------------------
   // === 確定して送信（確認モーダルのボタンから呼ばれる） ===
+
+  // TODO: 可能だったら1枚目を送信中などの文言をオーバーレイにいれる
   function confirmSend() {
     console.log('[DEBUG] confirmSend start');
-    // ここで既に submitForm() で組み立て済みの formData を使う
-    if (typeof formData !== 'object' || !formData) {
-      console.error('[DEBUG] formData is not ready:', formData);
-      alert('フォームデータが組み立てられていません。');
-      return;
-    }
-    console.log('[DEBUG] formData to send:', JSON.stringify(formData));
 
-    submitWithPhotosThenSave(formData)
-      .then(() => {
-        document.getElementById('loadingOverlay')?.style?.setProperty('display','none');
-        // 成功UI
-        document.getElementById('confirmationText').textContent =
-          '✅ 送信が完了しました！\n別の場所をタップしてフォームに戻ってください。';
-        const buttonRow = document.querySelector('#confirmationBox .button-row');
-        if (buttonRow) buttonRow.innerHTML = '<button onclick="closeConfirmation()">閉じる</button>';
-        console.log('[DEBUG] confirmSend done');
-      })
-      .catch(() => {
-        document.getElementById('loadingOverlay')?.style?.setProperty('display','none');
-        console.log('[DEBUG] confirmSend failed');
-      });
+    // 送信用の formData は既に作ってある想定（submitForm() で）
+    // 会社名・現場名など「名前」が欲しいので masterData から逆引き
+    const companyName = masterData.company.find(c => c.id === formData.companyId)?.name || '';
+    const siteObj     = masterData.site.find(s => s.id === formData.site) || {};
+    const siteName    = siteObj.name || '';
+    // workType はどこで選んでいるかにより取得方法が違う
+    // 例: ラジオやセレクトから拾う、または siteObj に持たせる、など
+    const workType    = formData.workType || siteObj.workType || '美装'; // 無ければ仮で"美装"
+
+    const reportDate  = formData.date || new Date().toISOString().slice(0, 10);
+
+    // ★ アップロード用 meta を作る（GAS 側は BASE_DIR_ID を使う設計なら parentFolderId は不要）
+    const meta = {
+      workType,            // 例: "美装" or "揚重"
+      reportDate,          // "2025-09-03"
+      siteName,            // "東京第1現場"
+      companyName          // 必要なら（サブパスやログ用）
+    };
+
+    console.log('[DEBUG] upload meta =', meta);
+
+    // ★ 画像のキューを集める（どこに積んでいるかはあなたの実装に合わせて）
+    const files = [
+      ...(window.uploadQueue?.modal || []),
+      ...(window.uploadQueue?.main  || [])
+    ];
+
+    console.log('[DEBUG] files count =', files.length);
+
+    // 画像があれば先にアップロード → 成功後にフォームを保存、の順
+    const runSave = () => {
+      google.script.run
+        .withSuccessHandler(res => {
+          console.log('[DEBUG] saveFormResponse success', res);
+          alert('送信成功！');
+          // 完了UIやモーダル閉じなど
+        })
+        .withFailureHandler(err => {
+          console.error('[DEBUG] saveFormResponse failed', err);
+          alert('送信失敗: ' + (err?.message || err));
+        })
+        .saveFormResponse(formData);
+    };
+
+    if (files.length > 0) {
+      document.getElementById('loadingOverlay')?.style?.setProperty('display', 'flex');
+
+      google.script.run
+        .withSuccessHandler(result => {
+          console.log('[DEBUG] uploadImagesToDrive success', result);
+          // 返ってきた Drive 情報を formData に格納してから保存
+          formData.photos = result; // [{id,url,name}, ...]
+          document.getElementById('loadingOverlay')?.style?.setProperty('display', 'none');
+          runSave();
+        })
+        .withFailureHandler(err => {
+          console.error('[DEBUG] uploadImagesToDrive failed', err);
+          alert('画像アップロードに失敗しました: ' + (err?.message || err));
+          document.getElementById('loadingOverlay')?.style?.setProperty('display', 'none');
+        })
+        .uploadImagesToDrive(meta, files); // ← ★ meta を正しく渡す！
+    } else {
+      // 画像が無ければそのまま保存
+      runSave();
+    }
   }
 
 
