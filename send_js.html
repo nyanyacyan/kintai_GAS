@@ -253,13 +253,22 @@ TTC担当者：${staff}<br>
   // ローディングの表示/非表示、完了メッセージの描き換えなど
   // ------------------------------------------
   function confirmSend() {
-    document.getElementById('loadingOverlay').style.display = 'flex';
-    google.script.run.withSuccessHandler(() => {
-      isSubmitted = true;
-      document.getElementById('loadingOverlay').style.display = 'none';
-      document.getElementById('confirmationText').textContent = '✅ 送信が完了しました！\n別の場所をタップしてフォームに戻ってください。';
-      document.querySelector('#confirmationBox .button-row button:nth-child(1)').style.display = 'none';
-    }).saveFormResponse(formData);
+    console.log('[DEBUG] confirmSend start');
+    alert('confirmSend が呼ばれました');
+
+    // ここでは buildFormDataSomehow() の代わりに既存の formData を使う
+    const payload = formData;
+
+    google.script.run
+      .withSuccessHandler(res => {
+        console.log('[DEBUG] 送信成功:', res);
+        alert('送信成功！');
+      })
+      .withFailureHandler(err => {
+        console.error('[DEBUG] 送信失敗:', err);
+        alert('送信失敗: ' + err.message);
+      })
+      .sendFormData(payload); // ← GAS 側の sendFormData 関数に渡す
   }
 
 
