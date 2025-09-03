@@ -391,9 +391,12 @@ TTC担当者：${staff}<br>
     }
     console.log('[closeConfirmation] end, isSent=', isSent, 'isEditMode=', isEditMode);
   }
-// window.confirmSend             = confirmSend;
-// window.submitEditFromModal     = submitEditFromModal;
-// window.closeConfirmation       = closeConfirmation;
-// window.handleModalClickOutside = handleModalClickOutside;
+  window.submitForm              = submitForm;
+  window.showConfirmation        = showConfirmation;
+  window.confirmSend             = confirmSend;
+  window.submitEditFromModal     = submitEditFromModal;
+  window.closeConfirmation       = closeConfirmation;
+  window.handleModalClickOutside = handleModalClickOutside;
+  console.log('[send_js] functions exposed to window');
   /***** ========== ここまで ========== *****/
 </script>
