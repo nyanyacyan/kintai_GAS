@@ -1,186 +1,403 @@
+<!-- heic2any（HEIC/HEIF → JPEG 変換用） -->
+<script src="https://unpkg.com/heic2any/dist/heic2any.min.js"></script>
+
 <script>
-// 1回だけ初期化
+/* =========================================================================
+ *  Uploader（フロント）— 画像選択→変換→プレビュー→キュー格納
+ *  - 使い方：DOMContentLoaded後に initUploaders() を呼ぶ
+ *  - プレビューはデフォルトでカルーセル
+ * ======================================================================= */
+
+/** グローバルのアップロードキュー（送信用） */
 window.uploadQueue = window.uploadQueue || { modal: [], main: [], edit: [] };
 
-function setupUploader(rootId, opts = {}) {
-  const { max = 5, mode = 'grid' } = opts;
-  const root = document.getElementById(rootId);
-  if (!root) return;
+/* =========================
+ * ユーティリティ群
+ * =======================*/
 
-  const input   = root.querySelector('input[type="file"]');
-  const button  = root.querySelector('.file-button');
-  const counter = root.querySelector('.file-count');
-  const preview = root.querySelector('.preview-grid');
-  if (!input || !button || !counter || !preview) return;
+/** 動画判定 */
+function isVideo(file) {
+  console.log('[isVideo] start:', { name: file?.name, type: file?.type });
+  const result = !!file && file.type?.startsWith('video/');
+  console.log('[isVideo] end ->', result);
+  return result;
+}
 
-  // ★ rootId から queueKey を決定
-  const queueKey = (rootId === 'uploaderModal') ? 'modal'
-                  : (rootId === 'uploaderMain')  ? 'main'
-                  : 'edit';
+/** 画像判定 */
+function isImage(file) {
+  console.log('[isImage] start:', { name: file?.name, type: file?.type });
+  const result = !!file && file.type?.startsWith('image/');
+  console.log('[isImage] end ->', result);
+  return result;
+}
 
-  // クリックでファイル選択
-  button.addEventListener('click', () => input.click());
+/** 禁則文字を置換して安全なファイル名ベースへ */
+function sanitizeBaseName(base) {
+  console.log('[sanitizeBaseName] start:', base);
+  const result = String(base || '画像').replace(/[\\/:*?"<>|]/g, '_').trim() || '画像';
+  console.log('[sanitizeBaseName] end ->', result);
+  return result;
+}
 
-  input.addEventListener('change', () => {
-    const files   = Array.from(input.files);
-    const sorted  = files.sort((a,b) => a.name.localeCompare(b.name, 'ja'));
-    const limited = sorted.slice(0, max);
+/** 連番付きファイル名（例：出面日付_現場名_01.jpeg） */
+function buildNumberedFileName(base, index1based) {
+  console.log('[buildNumberedFileName] start:', { base, index1based });
+  const result = `${sanitizeBaseName(base)}_${String(index1based).padStart(2, '0')}.jpeg`;
+  console.log('[buildNumberedFileName] end ->', result);
+  return result;
+}
 
-    if (files.length > max) {
-      alert(`写真は最大${max}枚までです。先頭${max}枚のみ表示します。`);
-    }
-    counter.textContent = `${limited.length} 枚`;
-
-    // プレビュー初期化 & ★キューを今回選択分でリセット
-    preview.innerHTML = '';
-    window.uploadQueue[queueKey] = [];
-
-    if (mode === 'grid') {
-      // ===== グリッド（複数並べ）=====
-      preview.style.display = 'flex';
-      preview.style.flexWrap = 'wrap';
-      preview.style.gap = '8px';
-
-      const imgEls = [];
-      limited.forEach((_, idx) => {
-        const card  = document.createElement('div');
-        const img   = document.createElement('img');
-        const badge = document.createElement('div');
-        card.className = 'preview-card';
-        img.alt = `${idx + 1}枚目`;
-        badge.className = 'preview-badge';
-        badge.textContent = `${idx + 1} 枚目`;
-        card.append(img, badge);
-        preview.appendChild(card);
-        imgEls.push(img);
-      });
-
-      // ★ グリッドでも DataURL を uploadQueue に積む
-      limited.forEach((file, idx) => {
-        if (!file.type.startsWith('image/')) return;
-        const reader = new FileReader();
-        reader.onload = e => {
-          imgEls[idx].src = e.target.result;
-          window.uploadQueue[queueKey].push({  // ここでキューに積む
-            name: file.name,
-            type: file.type,
-            dataUrl: e.target.result
-          });
-        };
-        reader.readAsDataURL(file);
-      });
-
-    } else {
-      // ===== カルーセル（1枚全幅）=====
-      const carousel = document.createElement('div');
-      carousel.className = 'carousel';
-      const viewport = document.createElement('div');
-      viewport.className = 'carousel-viewport';
-      const track = document.createElement('div');
-      track.className = 'carousel-track';
-      viewport.appendChild(track);
-      carousel.appendChild(viewport);
-
-      const nav = document.createElement('div');
-      nav.className = 'carousel-nav';
-      const prevBtn = document.createElement('button');
-      const nextBtn = document.createElement('button');
-      prevBtn.textContent = '◀';
-      nextBtn.textContent = '▶';
-      nav.append(prevBtn, nextBtn);
-
-      const dots = document.createElement('div');
-      dots.className = 'carousel-dots';
-
-      preview.appendChild(carousel);
-      preview.appendChild(nav);
-      preview.appendChild(dots);
-
-      const slideEls = [];
-      const dotEls = [];
-
-      limited.forEach((_, idx) => {
-        const slide = document.createElement('div');
-        slide.className = 'carousel-slide';
-        const img = document.createElement('img');
-        img.alt = `${idx + 1}枚目`;
-        slide.appendChild(img);
-        track.appendChild(slide);
-        slideEls.push(img);
-
-        const dot = document.createElement('div');
-        dot.className = 'carousel-dot';
-        dots.appendChild(dot);
-        dotEls.push(dot);
-      });
-
-      // ★ カルーセルでも DataURL を uploadQueue に積む
-      limited.forEach((file, idx) => {
-        if (!file.type.startsWith('image/')) return;
-        const reader = new FileReader();
-        reader.onload = e => {
-          slideEls[idx].src = e.target.result;
-          window.uploadQueue[queueKey].push({
-            name: file.name,
-            type: file.type,
-            dataUrl: e.target.result
-          });
-        };
-        reader.readAsDataURL(file);
-      });
-
-      // ステート & 動き
-      let index = 0;
-      const total = limited.length;
-      const width = () => viewport.clientWidth;
-      function render() {
-        track.style.transform = `translateX(${-index * width()}px)`;
-        prevBtn.disabled = (index === 0);
-        nextBtn.disabled = (index === total - 1);
-        dotEls.forEach((d, i) => d.classList.toggle('active', i === index));
-      }
-      function goTo(n) {
-        index = Math.max(0, Math.min(total - 1, n));
-        render();
-      }
-      prevBtn.addEventListener('click', () => goTo(index - 1));
-      nextBtn.addEventListener('click', () => goTo(index + 1));
-      window.addEventListener('resize', render);
-
-      // スワイプ
-      let startX = 0, currentX = 0, dragging = false;
-      viewport.addEventListener('touchstart', e => {
-        if (!total) return;
-        dragging = true;
-        startX = e.touches[0].clientX;
-        currentX = startX;
-      }, { passive: true });
-      viewport.addEventListener('touchmove', e => {
-        if (!dragging) return;
-        currentX = e.touches[0].clientX;
-        const dx = currentX - startX;
-        const base = -index * width();
-        track.style.transform = `translateX(${base + dx}px)`;
-      }, { passive: true });
-      viewport.addEventListener('touchend', () => {
-        if (!dragging) return;
-        dragging = false;
-        const dx = currentX - startX;
-        const threshold = width() * 0.25;
-        if (dx > threshold) goTo(index - 1);
-        else if (dx < -threshold) goTo(index + 1);
-        else render();
-      });
-      render();
-    }
+/** File → DataURL */
+function fileToDataURL(file) {
+  console.log('[fileToDataURL] start:', { name: file?.name, type: file?.type });
+  return new Promise((resolve) => {
+    const fr = new FileReader();
+    fr.onload = () => {
+      console.log('[fileToDataURL] end -> (dataUrl length):', String(fr.result).length);
+      resolve(fr.result);
+    };
+    fr.readAsDataURL(file);
   });
 }
 
-// 初期化
+/** Blob → DataURL */
+function blobToDataURL(blob) {
+  console.log('[blobToDataURL] start:', { size: blob?.size, type: blob?.type });
+  return new Promise((resolve) => {
+    const fr = new FileReader();
+    fr.onload = () => {
+      console.log('[blobToDataURL] end -> (dataUrl length):', String(fr.result).length);
+      resolve(fr.result);
+    };
+    fr.readAsDataURL(blob);
+  });
+}
+
+/** File → HTMLImageElement */
+async function fileToImage(file) {
+  console.log('[fileToImage] start:', { name: file?.name, type: file?.type });
+  const url = await fileToDataURL(file);
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      console.log('[fileToImage] end ->', { width: img.naturalWidth, height: img.naturalHeight });
+      resolve(img);
+    };
+    img.onerror = (e) => {
+      console.error('[fileToImage] error:', e);
+      reject(e);
+    };
+    img.src = url;
+  });
+}
+
+/** Image → JPEG Blob（Canvas） */
+function imageToJpegBlob(img, quality = 0.9) {
+  console.log('[imageToJpegBlob] start:', { w: img?.naturalWidth, h: img?.naturalHeight, quality });
+  return new Promise((resolve) => {
+    const c = document.createElement('canvas');
+    c.width = img.naturalWidth;
+    c.height = img.naturalHeight;
+    const g = c.getContext('2d');
+    g.drawImage(img, 0, 0);
+    c.toBlob((b) => {
+      console.log('[imageToJpegBlob] end ->', { size: b?.size, type: b?.type });
+      resolve(b);
+    }, 'image/jpeg', quality);
+  });
+}
+
+/** あらゆる画像ファイルを JPEG DataURL へ */
+async function toJpegDataURLSmart(file) {
+  console.log('[toJpegDataURLSmart] start:', { name: file?.name, type: file?.type });
+  const type = (file?.type || '').toLowerCase();
+
+  try {
+    if (type.includes('heic') || type.includes('heif')) {
+      console.log('[toJpegDataURLSmart] HEIC/HEIF → heic2any 変換');
+      const blob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 });
+      const dataUrl = await blobToDataURL(blob);
+      console.log('[toJpegDataURLSmart] end(heic) -> (dataUrl length):', dataUrl.length);
+      return dataUrl;
+    }
+
+    if (type === 'image/jpeg' || type === 'image/jpg') {
+      console.log('[toJpegDataURLSmart] 既にJPEG → そのまま');
+      const dataUrl = await fileToDataURL(file);
+      console.log('[toJpegDataURLSmart] end(jpeg) -> (dataUrl length):', dataUrl.length);
+      return dataUrl;
+    }
+
+    console.log('[toJpegDataURLSmart] その他（PNG/WEBP…）→ CanvasでJPEG化');
+    const img = await fileToImage(file);
+    const jpegBlob = await imageToJpegBlob(img, 0.9);
+    const dataUrl = await blobToDataURL(jpegBlob);
+    console.log('[toJpegDataURLSmart] end(canvas) -> (dataUrl length):', dataUrl.length);
+    return dataUrl;
+  } catch (e) {
+    console.error('[toJpegDataURLSmart] error:', e);
+    throw e;
+  }
+}
+
+/* =========================
+ * DOM 取得/初期化系
+ * =======================*/
+
+/** ルートから必要要素を取ってくる */
+function getDomRefs(rootId) {
+  console.log('[getDomRefs] start:', rootId);
+  const root    = document.getElementById(rootId);
+  const input   = root?.querySelector('input[type="file"]');
+  const button  = root?.querySelector('.file-button');
+  const counter = root?.querySelector('.file-count');
+  const preview = root?.querySelector('.preview-grid');
+  const result  = { root, input, button, counter, preview };
+  console.log('[getDomRefs] end ->', result);
+  return result;
+}
+
+/** プレビュー領域をクリア */
+function clearPreview(previewEl) {
+  console.log('[clearPreview] start');
+  if (previewEl) previewEl.innerHTML = '';
+  console.log('[clearPreview] end');
+}
+
+/* =========================
+ * カルーセル作成・制御
+ * =======================*/
+
+/** カルーセル DOM を作成して各参照と制御関数を返す */
+function createCarousel(previewEl, slideCount) {
+  console.log('[createCarousel] start:', { slideCount });
+
+  // ラッパー
+  const carousel = document.createElement('div');
+  carousel.className = 'carousel';
+
+  // ビューポート & トラック
+  const viewport = document.createElement('div');
+  viewport.className = 'carousel-viewport';
+
+  const track = document.createElement('div');
+  track.className = 'carousel-track';
+
+  viewport.appendChild(track);
+  carousel.appendChild(viewport);
+  previewEl.appendChild(carousel);
+
+  // ナビ
+  const nav = document.createElement('div');
+  nav.className = 'carousel-nav';
+  const prevBtn = document.createElement('button'); prevBtn.textContent = '◀';
+  const nextBtn = document.createElement('button'); nextBtn.textContent = '▶';
+  nav.append(prevBtn, nextBtn);
+  previewEl.appendChild(nav);
+
+  // ドット
+  const dots = document.createElement('div');
+  dots.className = 'carousel-dots';
+  previewEl.appendChild(dots);
+
+  // スライド枠を先に作る
+  const slideImgs = [];
+  const dotEls = [];
+  for (let i = 0; i < slideCount; i++) {
+    const slide = document.createElement('div');
+    slide.className = 'carousel-slide';
+    const img = document.createElement('img');
+    img.alt = `${i + 1}枚目`;
+    slide.appendChild(img);
+    track.appendChild(slide);
+    slideImgs.push(img);
+
+    const dot = document.createElement('div');
+    dot.className = 'carousel-dot';
+    dots.appendChild(dot);
+    dotEls.push(dot);
+  }
+
+  // ステート/描画
+  let index = 0;
+  const total = slideCount;
+  const width = () => viewport.clientWidth;
+
+  function render() {
+    track.style.transform = `translateX(${-index * width()}px)`;
+    prevBtn.disabled = (index === 0);
+    nextBtn.disabled = (index === total - 1);
+    dotEls.forEach((d, i) => d.classList.toggle('active', i === index));
+  }
+  function goTo(n) {
+    index = Math.max(0, Math.min(total - 1, n));
+    render();
+  }
+
+  // 操作イベント
+  prevBtn.addEventListener('click', () => goTo(index - 1));
+  nextBtn.addEventListener('click', () => goTo(index + 1));
+  window.addEventListener('resize', render);
+
+  // スワイプ
+  let startX = 0, currentX = 0, dragging = false;
+  viewport.addEventListener('touchstart', (e) => {
+    if (!total) return;
+    dragging = true;
+    startX = e.touches[0].clientX;
+    currentX = startX;
+  }, { passive: true });
+
+  viewport.addEventListener('touchmove', (e) => {
+    if (!dragging) return;
+    currentX = e.touches[0].clientX;
+    const dx = currentX - startX;
+    const base = -index * width();
+    track.style.transform = `translateX(${base + dx}px)`;
+  }, { passive: true });
+
+  viewport.addEventListener('touchend', () => {
+    if (!dragging) return;
+    dragging = false;
+    const dx = currentX - startX;
+    const threshold = width() * 0.25;
+    if (dx > threshold) goTo(index - 1);
+    else if (dx < -threshold) goTo(index + 1);
+    else render();
+  });
+
+  render();
+
+  const result = { slideImgs, render, goTo };
+  console.log('[createCarousel] end ->', result);
+  return result;
+}
+
+/* =========================
+ * ベース名（出面日付_現場名）取得
+ * =======================*/
+function buildUploadBaseName() {
+  console.log('[buildUploadBaseName] start');
+  const d = document.getElementById('customDate')?.value || new Date().toISOString().slice(0, 10);
+  const site = document.getElementById('site')?.selectedOptions?.[0]?.textContent || '現場';
+  const base = `${d}_${site}`;
+  console.log('[buildUploadBaseName] end ->', base);
+  return base;
+}
+
+/* =========================
+ * ファイル選択→検証→変換→プレビュー→キュー
+ * =======================*/
+async function handleFilesChange(inputEl, counterEl, previewEl, queueKey, max = 5) {
+  console.log('[handleFilesChange] start', { queueKey, max });
+
+  const picked = Array.from(inputEl.files || []);
+  console.log('[handleFilesChange] picked:', picked.map(f => ({ name: f.name, type: f.type, size: f.size })));
+
+  // 動画が混ざっていたらNG
+  if (picked.some(isVideo)) {
+    alert('動画はアップロードできません。画像のみ選択してください。');
+    inputEl.value = '';
+    console.log('[handleFilesChange] end (video detected)');
+    return;
+  }
+
+  // 名前順に並べて最大 max
+  const sorted = picked.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+  const limited = sorted.slice(0, max);
+  if (picked.length > max) {
+    alert(`写真は最大${max}枚です。先頭${max}枚のみ表示します。`);
+  }
+  if (counterEl) counterEl.textContent = `${limited.length} 枚`;
+
+  // プレビュー初期化／キュー初期化
+  clearPreview(previewEl);
+  window.uploadQueue[queueKey] = [];
+  console.log('[handleFilesChange] queue cleared:', queueKey);
+
+  // カルーセル生成
+  const { slideImgs } = createCarousel(previewEl, limited.length);
+
+  // ベース名
+  const rawBase = buildUploadBaseName();
+  const baseName = sanitizeBaseName(rawBase);
+
+  // 1枚ずつ変換→キューへ→プレビュー反映
+  for (let i = 0; i < limited.length; i++) {
+    const file = limited[i];
+    if (!isImage(file)) continue;
+
+    try {
+      const dataUrl = await toJpegDataURLSmart(file);
+      const name = buildNumberedFileName(baseName, i + 1);
+      window.uploadQueue[queueKey].push({ name, type: 'image/jpeg', dataUrl });
+      slideImgs[i].src = dataUrl;
+      console.log('[handleFilesChange] queued:', { idx: i, name, type: 'image/jpeg', length: dataUrl.length });
+    } catch (e) {
+      console.error('[handleFilesChange] convert error:', { idx: i, name: file.name, type: file.type, error: e });
+    }
+  }
+
+  console.log('[handleFilesChange] end; queue size:', window.uploadQueue[queueKey].length);
+}
+
+/* =========================
+ * 初期化（1アップローダー分）
+ * =======================*/
+function setupUploader(rootId, { max = 5, queueKey } = {}) {
+  console.log('[setupUploader] start:', { rootId, max, queueKey });
+
+  // queueKey 自動推定（明示がなければ rootId から決める）
+  if (!queueKey) {
+    queueKey = (rootId === 'uploaderModal') ? 'modal'
+            : (rootId === 'uploaderMain')  ? 'main'
+            : 'edit';
+  }
+
+  const { root, input, button, counter, preview } = getDomRefs(rootId);
+  if (!root || !input || !button || !counter || !preview) {
+    console.warn('[setupUploader] missing elements:', { root: !!root, input: !!input, button: !!button, counter: !!counter, preview: !!preview });
+    console.log('[setupUploader] end (missing elements)');
+    return;
+  }
+
+  // ボタンクリックで input を開く
+  button.addEventListener('click', () => {
+    console.log('[setupUploader] button clicked -> open file dialog');
+    input.click();
+  });
+
+  // ファイル選択時の処理
+  input.addEventListener('change', async () => {
+    console.log('[setupUploader] input.change fired');
+    await handleFilesChange(input, counter, preview, queueKey, max);
+  });
+
+  console.log('[setupUploader] end');
+}
+
+/* =========================
+ * 複数アップローダーの一括初期化
+ * =======================*/
+function initUploaders() {
+  console.log('[initUploaders] start');
+  setupUploader('uploaderModal', { max: 5, queueKey: 'modal' });
+  setupUploader('uploaderMain',  { max: 5, queueKey: 'main'  });
+  // 必要なら編集用も：
+  // setupUploader('uploaderEdit', { max: 5, queueKey: 'edit' });
+  console.log('[initUploaders] end');
+}
+
+/* =========================
+ * DOM 準備後に初期化を実行
+ * =======================*/
 document.addEventListener('DOMContentLoaded', () => {
-  setupUploader('uploaderModal', { max: 5, mode: 'carousel' });
-  setupUploader('uploaderMain',  { max: 5, mode: 'carousel' });
-  // 編集用アップローダを使うなら必要に応じて：
-  // setupUploader('uploaderEdit',  { max: 5, mode: 'grid' });
+  console.log('[DOMContentLoaded] start');
+
+  // 必要なら外部からベース名ロジックを差し替えたい場合、
+  // buildUploadBaseName() を上書きしてもOK（今はこのまま使えます）
+  initUploaders();
+
+  console.log('[DOMContentLoaded] end');
 });
 </script>

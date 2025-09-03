@@ -321,20 +321,43 @@ function getOrCreateFolderByPath_(parentId, path) {
 
 function uploadImagesToDrive(meta, files) {
   Logger.log('--- uploadImagesToDrive 開始 ---');
+  Logger.log('アップロードファイル数=%s 件', files.length);
+  Logger.log('メタ情報: %s', JSON.stringify(meta));
+
   const parentId = meta && meta.parentFolderId;
   if (!parentId) throw new Error('parentFolderId が指定されていません。');
+  Logger.log('親フォルダID: %s', parentId);
 
-  const targetFolder = getOrCreateFolderByPath_(parentId, meta.subPath || '');
+  // === 階層を組み立てる ===
+  // 例: 「美装/添付画像」 または 「揚重/添付画像」
+  // meta.workType に "美装" or "揚重" が入っている想定
+  const subPath = `${meta.workType}/添付画像`;
+
+  const targetFolder = getOrCreateFolderByPath_(parentId, subPath);
   const results = [];
 
-  files.forEach(f => {
+  files.forEach((f, i) => {
     const base64 = String(f.dataUrl).split(',')[1] || '';
     const bytes  = Utilities.base64Decode(base64);
-    const blob   = Utilities.newBlob(bytes, f.type || MimeType.JPEG, f.name || 'image');
-    const file   = targetFolder.createFile(blob);
+    const mime   = f.type || MimeType.JPEG;
 
-    Logger.log('アップロード完了: %s (ID=%s)', 'https://drive.google.com/uc?id=' + file.getId(), file.getId());
-    results.push({ id: file.getId(), url: 'https://drive.google.com/uc?id=' + file.getId(), name: file.getName() });
+    // ファイル名: 出面日付_現場名_01.jpeg
+    const baseName = `${meta.reportDate}_${meta.siteName}`;
+    const fileName = `${baseName}_${String(i + 1).padStart(2, '0')}.jpeg`;
+
+    // Blob 作成
+    const blob = Utilities.newBlob(bytes, mime, fileName);
+    const file = targetFolder.createFile(blob);
+
+    Logger.log('アップロード完了: %s (ID=%s)',
+      'https://drive.google.com/uc?id=' + file.getId(),
+      file.getId()
+    );
+    results.push({
+      id: file.getId(),
+      url: 'https://drive.google.com/uc?id=' + file.getId(),
+      name: file.getName()
+    });
   });
 
   Logger.log('--- uploadImagesToDrive 終了 ---');
