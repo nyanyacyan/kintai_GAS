@@ -218,6 +218,40 @@ TTC担当者：${staff}<br>
   // 送信確定処理：Apps Script サーバー関数 saveFormResponse(formData) を呼ぶ
   // ローディングの表示/非表示、完了メッセージの描き換えなど
   // ------------------------------------------
+
+  function submitEditFromModal() {
+    console.log('[DEBUG] submitEditFromModal start');
+    alert('編集送信ボタンが押されました');
+    // ここも同じく GAS 呼び出し処理を書く
+  }
+
+  // ------------------------------------------
+  // 送信確定処理：Apps Script サーバー関数 saveFormResponse(formData) を呼ぶ
+  // ローディングの表示/非表示、完了メッセージの描き換えなど
+  // ------------------------------------------
+
+  // ✅ グローバルに定義
+  function confirmSend() {
+    console.log('[DEBUG] confirmSend start');
+    alert('confirmSend が呼ばれました');
+
+    // ここで送信処理（例: GAS呼び出し）
+    google.script.run
+      .withSuccessHandler(res => {
+        console.log('[DEBUG] 送信成功:', res);
+        alert('送信成功！');
+      })
+      .withFailureHandler(err => {
+        console.error('[DEBUG] 送信失敗:', err);
+        alert('送信失敗: ' + err.message);
+      })
+      .sendFormData(formData); // ← GAS 側関数名に合わせる
+  }
+
+  // ------------------------------------------
+  // 送信確定処理：Apps Script サーバー関数 saveFormResponse(formData) を呼ぶ
+  // ローディングの表示/非表示、完了メッセージの描き換えなど
+  // ------------------------------------------
   function confirmSend() {
     document.getElementById('loadingOverlay').style.display = 'flex';
     google.script.run.withSuccessHandler(() => {
