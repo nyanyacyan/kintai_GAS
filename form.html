@@ -10,12 +10,12 @@
 
   <!-- 各ファイル 読み込み -->
   <?!= include('style'); ?>
-  <!-- <?!= include('send_js'); ?> -->
-  <?!= include('file_input_js'); ?>
-  <?!= include('form_js'); ?>
+  <?!= include('check_js'); ?>       <!-- sanitize / isValidQuarterHour など -->
+  <?!= include('file_input_js'); ?>  <!-- アップローダ -->
+  <?!= include('form_js'); ?>        <!-- 画面組立て / submitForm 定義 -->
+  <?!= include('send_js'); ?>        <!-- 送信・モーダル表示など -->
   <?!= include('history_view_js'); ?>
-  <?!= include('check_js'); ?>
-  <?!= include('init_js'); ?>
+  <?!= include('init_js'); ?>        <!-- 最後：イベント配線など -->
 
 </head>
 
