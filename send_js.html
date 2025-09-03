@@ -59,11 +59,16 @@
   function showSendSuccessScreen(fd) {
     console.log('[showSendSuccessScreen] start');
     const modal = document.getElementById('confirmationModal');
+    const box   = document.getElementById('confirmationBox');
     const text  = document.getElementById('confirmationText');
     const row   = document.querySelector('#confirmationBox .button-row');
     text.innerHTML = renderSentSummaryHTML(fd);
     row.innerHTML  = `<button onclick="closeConfirmation()">閉じる</button>`;
     modal.style.display = 'flex';
+
+    // コンパクト表示をON
+    box.classList.add('compact');
+
     console.log('[showSendSuccessScreen] end');
   }
 
@@ -233,6 +238,8 @@
   // 確認モーダルの表示＆内容組み立て（編集時はボタンを切替）
   function showConfirmation(isEdit = false) {
     console.log('[showConfirmation] start isEdit=', isEdit);
+    const box = document.getElementById('confirmationBox');
+    box.classList.remove('compact');
     isEditMode = isEdit;
     const company = masterData.company.find(c => c.id === formData.companyId)?.name || '（未選択）';
     const staff   = masterData.staff.find(s => s.id === formData.staffId)?.name || '（未選択）';
