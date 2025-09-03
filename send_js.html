@@ -252,23 +252,31 @@ TTC担当者：${staff}<br>
   // 送信確定処理：Apps Script サーバー関数 saveFormResponse(formData) を呼ぶ
   // ローディングの表示/非表示、完了メッセージの描き換えなど
   // ------------------------------------------
+  // === 確定して送信（確認モーダルのボタンから呼ばれる） ===
   function confirmSend() {
     console.log('[DEBUG] confirmSend start');
-    alert('confirmSend が呼ばれました');
+    // ここで既に submitForm() で組み立て済みの formData を使う
+    if (typeof formData !== 'object' || !formData) {
+      console.error('[DEBUG] formData is not ready:', formData);
+      alert('フォームデータが組み立てられていません。');
+      return;
+    }
+    console.log('[DEBUG] formData to send:', JSON.stringify(formData));
 
-    // ここでは buildFormDataSomehow() の代わりに既存の formData を使う
-    const payload = formData;
-
-    google.script.run
-      .withSuccessHandler(res => {
-        console.log('[DEBUG] 送信成功:', res);
-        alert('送信成功！');
+    submitWithPhotosThenSave(formData)
+      .then(() => {
+        document.getElementById('loadingOverlay')?.style?.setProperty('display','none');
+        // 成功UI
+        document.getElementById('confirmationText').textContent =
+          '✅ 送信が完了しました！\n別の場所をタップしてフォームに戻ってください。';
+        const buttonRow = document.querySelector('#confirmationBox .button-row');
+        if (buttonRow) buttonRow.innerHTML = '<button onclick="closeConfirmation()">閉じる</button>';
+        console.log('[DEBUG] confirmSend done');
       })
-      .withFailureHandler(err => {
-        console.error('[DEBUG] 送信失敗:', err);
-        alert('送信失敗: ' + err.message);
-      })
-      .sendFormData(payload); // ← GAS 側の sendFormData 関数に渡す
+      .catch(() => {
+        document.getElementById('loadingOverlay')?.style?.setProperty('display','none');
+        console.log('[DEBUG] confirmSend failed');
+      });
   }
 
 
@@ -370,16 +378,16 @@ TTC担当者：${staff}<br>
   }
 
 
-  function confirmSend() {
-    const formData = buildFormDataSomehow(); // ←既存ロジックでOK
-    submitWithPhotosThenSave(formData)
-      .then(() => {
-        document.getElementById('loadingOverlay')?.style?.setProperty('display','none');
-        // 完了UIなど
-      })
-      .catch(() => {
-        document.getElementById('loadingOverlay')?.style?.setProperty('display','none');
-      });
-  }
+  // function confirmSend() {
+  //   const formData = buildFormDataSomehow(); // ←既存ロジックでOK
+  //   submitWithPhotosThenSave(formData)
+  //     .then(() => {
+  //       document.getElementById('loadingOverlay')?.style?.setProperty('display','none');
+  //       // 完了UIなど
+  //     })
+  //     .catch(() => {
+  //       document.getElementById('loadingOverlay')?.style?.setProperty('display','none');
+  //     });
+  // }
 
 </script>
