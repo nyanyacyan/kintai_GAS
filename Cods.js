@@ -321,10 +321,13 @@ function getOrCreateFolderByPath_(parentId, path) {
 
 function uploadImagesToDrive(meta, files) {
   Logger.log('--- uploadImagesToDrive 開始 ---');
+  const SCRIPT_PROPS = PropertiesService.getScriptProperties();
+  const BASE_DIR_ID  = SCRIPT_PROPS.getProperty('BASE_DIR_ID');
+
   Logger.log('アップロードファイル数=%s 件', files.length);
   Logger.log('メタ情報: %s', JSON.stringify(meta));
 
-  const parentId = meta && meta.parentFolderId;
+  const parentId = BASE_DIR_ID;
   if (!parentId) throw new Error('parentFolderId が指定されていません。');
   Logger.log('親フォルダID: %s', parentId);
 
