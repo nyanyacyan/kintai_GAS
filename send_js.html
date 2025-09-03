@@ -37,8 +37,8 @@
     // ✅ Driveのサムネイルを使って軽量表示（クリックで原寸URLへ）
     if (fd.photos?.length) {
       const imgs = fd.photos.map(ph => {
-        // const thumb = `https://drive.google.com/thumbnail?id=${ph.id}&sz=w200`; // w200程度
-        // const href  = ph.url || `https://drive.google.com/uc?id=${ph.id}`;
+        const thumb = "https://drive.google.com/thumbnail?id=" + ph.id + "&sz=w200";
+        const href  = ph.url || ("https://drive.google.com/uc?id=" + ph.id);
         return `
           <a class="sent-thumb" href="${href}" target="_blank" rel="noopener" title="${ph.name || ''}">
             <img src="${thumb}" alt="${ph.name || ''}">
