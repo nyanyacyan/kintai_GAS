@@ -531,7 +531,7 @@
 /* 全体の文字サイズと行間を控えめに */
 .sent-summary{
   width: 100%;
-  font-size: 28px !important;
+  font-size: 28px;
   line-height: 1.4;
 }
 
@@ -649,6 +649,17 @@
   background: #ccc;
   border-radius: 4px;
 }
+
+/* 成功モード用 */
+#confirmationModal.modal--success .sent-summary {
+  font-size: 28px;
+  line-height: 1.4;
+}
+#confirmationModal.modal--success .sent-title {
+  font-size: 42px;
+}
+
+
 
 
 </style>
