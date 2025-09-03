@@ -512,11 +512,12 @@
     border-radius: .5rem;
   }
 
+/* ===== 送信完了モーダルの文字調整 ===== */
 /* ===== 送信完了モーダル（見やすい大きめ文字＆詰め気味レイアウト） ===== */
 
-/* 背景＆中央寄せ */
+/* モーダルの外側はそのまま（中央寄せ＆背景半透明） */
 #confirmationModal{
-  display:none;                 /* JSで flex に切り替わる */
+  display:none;            /* JSでflexに */
   position:fixed; inset:0;
   z-index:9999;
   background:rgba(0,0,0,.5);
@@ -524,17 +525,17 @@
   justify-content:center;
 }
 
-/* 本体：サイズ自動調整＋内容が多い時は中だけスクロール */
+/* 本体のサイズ：スマホは広め、内容が多い時は縦スクロール */
 #confirmationBox{
-  width:clamp(320px, 92vw, 720px);
-  max-height:85vh;
+  width:clamp(320px, 92vw, 720px); /* 画面に合わせて自動調整 */
+  max-height:85vh;                 /* はみ出す時は中身だけスクロール */
   overflow-y:auto;
-  padding:18px 20px;
+  padding:18px 20px;               /* 適度な余白 */
   border-radius:14px;
   background:#fff;
   box-shadow:0 6px 22px rgba(0,0,0,.2);
 
-  /* 文字は見やすく、でも詰める */
+  /* 文字は大きめだけど詰める */
   font-size:16px;
   line-height:1.35;
 }
@@ -542,61 +543,130 @@
 /* タイトル */
 .sent-title{
   margin:0 0 10px;
-  font-size:17px;
+  font-size:36px;
   font-weight:700;
   text-align:center;
   color:#333;
 }
 
-/* メタ情報（出面日付/元請/担当/現場）…タイトな2カラム */
-.sent-meta{ margin:0 0 8px; }
+/* メタ情報（出面日付/元請/担当/現場）をタイトな2カラム */
+.sent-meta{
+  margin:0 0 8px;
+}
 .sent-meta > div{
   display:grid;
-  grid-template-columns: 90px 1fr;   /* 左ラベルの幅 */
+  grid-template-columns: 90px 1fr;  /* 左ラベルの幅 */
   column-gap:8px;
   row-gap:4px;
   margin:2px 0;
 }
-.sent-meta dt{ margin:0; color:#666; font-weight:600; }
-.sent-meta dd{ margin:0; }
+.sent-meta dt{
+  margin:0;
+  color:#666;
+  font-weight:600;
+}
+.sent-meta dd{
+  margin:0;
+}
 
-/* ブロックと見出し */
-.sent-block{ margin:10px 0 8px; }
-.sent-block-title{ margin:0 0 6px; font-weight:700; color:#333; }
+/* ブロックの見出しと本文の間隔を詰める */
+.sent-block{
+  margin:10px 0 8px;
+}
+.sent-block-title{
+  margin:0 0 6px;
+  font-weight:700;
+  color:#333;
+}
 
 /* リスト（作業者/協力会社） */
-.sent-list{ margin:0; padding-left:1.1em; }
-.sent-list li{ margin:2px 0; }
+.sent-list{
+  margin:0;
+  padding-left:1.1em;
+}
+.sent-list li{
+  margin:2px 0;
+}
 
-/* 強調数値 */
+/* 強調数値（人工/残業） */
 .sent-num{ color:#d33; }
 
-/* 添付写真：見やすいサムネ */
+/* 添付写真：見やすいサムネ＋詰めた間隔。行が増えたら #confirmationBox の中でスクロール */
 .sent-thumbs{
-  display:flex; flex-wrap:wrap; gap:8px; margin-top:4px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:4px;
 }
 .sent-thumb{
-  display:block; width:120px; height:90px;
-  border:1px solid #e7e7e7; border-radius:8px;
-  background:#fafafa; overflow:hidden;
+  display:block;
+  width:120px;   /* スマホで見やすいサイズ */
+  height:90px;
+  border:1px solid #e7e7e7;
+  border-radius:8px;
+  background:#fafafa;
+  overflow:hidden;
 }
-.sent-thumb img{ width:100%; height:100%; object-fit:cover; }
+.sent-thumb img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
 
 /* ボタンは中央寄せ＆大きめ */
-#confirmationBox .button-row{ margin-top:14px; text-align:center; }
+#confirmationBox .button-row{
+  margin-top:14px;
+  text-align:center;
+}
 #confirmationBox .button-row button{
-  padding:12px 28px; font-size:16px; border-radius:8px; margin:0 6px;
+  padding:12px 28px;
+  font-size:16px;
+  border-radius:8px;
+  margin:0 6px;
 }
 
-/* スクロールバー少し細く（WebKit系） */
-#confirmationBox::-webkit-scrollbar{ width:8px; }
-#confirmationBox::-webkit-scrollbar-thumb{ background:#ccc; border-radius:4px; }
-
-/* 画面が狭い時は少しだけ縮小 */
+/* 画面が狭い時は少しだけ縮める */
 @media (max-width: 420px){
   #confirmationBox{ font-size:15px; }
   .sent-thumb{ width:104px; height:78px; }
-  .sent-meta > div{ grid-template-columns:84px 1fr; }
+  .sent-meta > div{ grid-template-columns: 84px 1fr; }
 }
+
+
+/* ===== モーダル内をスクロール可能に ===== */
+#confirmationModal{
+  display:none;            /* JSでflexに */
+  position:fixed; inset:0;
+  z-index:9999;
+  background:rgba(0,0,0,.5);
+  align-items:center;
+  justify-content:center;
+}
+
+
+/* ボックス本体 */
+#confirmationBox{
+  width:clamp(320px, 92vw, 720px); /* 画面に合わせて自動調整 */
+  max-height:85vh;                 /* はみ出す時は中身だけスクロール */
+  overflow-y:auto;
+  padding:18px 20px;               /* 適度な余白 */
+  border-radius:14px;
+  background:#fff;
+  box-shadow:0 6px 22px rgba(0,0,0,.2);
+
+  /* 文字は大きめだけど詰める */
+  font-size:16px;
+  line-height:1.35;
+}
+
+/* スクロールバーを少し細く */
+#confirmationBox::-webkit-scrollbar {
+  width: 8px;
+}
+#confirmationBox::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 4px;
+}
+
 
 </style>
