@@ -35,13 +35,19 @@
   };
 
   document.addEventListener('DOMContentLoaded', () => {
-    console.log('[init_js] bind handlers');
+    console.log('[init_js] DOM ready');
+    console.log('[init_js] typeof heic2any =', typeof window.heic2any);
+    console.log('[init_js] typeof submitForm =', typeof window.submitForm);
+
     const btn = document.getElementById('sendBtn');
-    if (btn && typeof window.submitForm === 'function') {
-      btn.addEventListener('click', window.submitForm);
-      console.log('[init_js] submitForm bound');
-    } else {
-      console.warn('[init_js] submitForm not ready:', typeof window.submitForm);
+    console.log('[init_js] found #sendBtn:', !!btn);
+
+    if (btn) {
+      btn.addEventListener('click', () => {
+        console.log('[init_js] sendBtn clicked');
+        if (typeof window.submitForm === 'function') window.submitForm();
+        else console.warn('submitForm not found at click time');
+      });
     }
   });
 
