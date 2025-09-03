@@ -8,11 +8,7 @@
 
   <!-- 各ファイル 読み込み -->
   <?!= include('style'); ?>
-  <?!= include('file_input_js'); ?>
-  <?!= include('form_js'); ?>
-  <?!= include('send_js'); ?>
-  <?!= include('history_view_js'); ?>
-  <?!= include('check_js'); ?>
+
 
   <!-- 最後に読み込む必要がある→実行してしまうから -->
   <?!= include('init_js'); ?>
@@ -21,6 +17,13 @@
 </head>
 
 <body>
+  <!-- JS は最後にまとめて -->
+  <?!= include('file_input_js'); ?>
+  <?!= include('form_js'); ?>
+  <?!= include('send_js'); ?>
+  <?!= include('history_view_js'); ?>
+  <?!= include('check_js'); ?>
+
   <div id="dateToggleWrapper">
     <label class="date-toggle-button" id="dateToggleButton">
       <input type="checkbox" id="customDateToggle" onchange="toggleDateInput(this)">
