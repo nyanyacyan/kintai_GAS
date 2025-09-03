@@ -512,6 +512,7 @@
     border-radius: .5rem;
   }
 
+
 /* ===== 送信完了モーダルの文字調整 ===== */
 #confirmationBox {
   max-width: 560px;
@@ -525,35 +526,33 @@
   line-height: 1.4;         /* 行間を少し詰める */
 }
 
-/* タイトル */
-.sent-title{
-  margin:0 0 10px;
-  font-size:17px;
-  font-weight:700;
-  text-align:center;
-  color:#333;
+/* 見出し（送信完了タイトル） */
+.sent-title {
+  margin: 0 0 8px;
+  font-size: 15px;          /* 他と揃える */
+  font-weight: 600;
+  text-align: center;       /* 中央寄せ */
+  color: #333;
 }
 
 /* メタ情報（出面日付/会社/担当/現場）を2カラムで */
-.sent-meta{
-  margin:0 0 8px;
+.sent-meta {
+  margin: 0 0 6px;
 }
-.sent-meta > div{
-  display:grid;
-  grid-template-columns: 90px 1fr;  /* 左ラベルの幅 */
-  column-gap:8px;
-  row-gap:4px;
-  margin:2px 0;
+.sent-meta > div {
+  display: grid;
+  grid-template-columns: 80px 1fr; /* 左ラベル幅 */
+  column-gap: 6px;
+  margin: 2px 0;
 }
-
-.sent-meta dt{
-  margin:0;
-  color:#666;
-  font-weight:600;
+.sent-meta dt {
+  color: #666;
+  font-weight: 600;
+  font-size: 14px;
 }
-
-.sent-meta dd{
-  margin:0;
+.sent-meta dd {
+  margin: 0;
+  font-size: 14px;
 }
 
 /* ブロック見出し */
@@ -609,29 +608,25 @@
 
 
 /* ===== モーダル内をスクロール可能に ===== */
-#confirmationModal{
-  display:none;            /* JSでflexに */
-  position:fixed; inset:0;
-  z-index:9999;
-  background:rgba(0,0,0,.5);
-  align-items:center;
-  justify-content:center;
+#confirmationModal {
+  display: none;                /* JSでflexになる */
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 9999;
 }
 
-
 /* ボックス本体 */
-#confirmationBox{
-  width:clamp(320px, 92vw, 720px); /* 画面に合わせて自動調整 */
-  max-height:85vh;                 /* はみ出す時は中身だけスクロール */
-  overflow-y:auto;
-  padding:18px 20px;               /* 適度な余白 */
-  border-radius:14px;
-  background:#fff;
-  box-shadow:0 6px 22px rgba(0,0,0,.2);
-
-  /* 文字は大きめだけど詰める */
-  font-size:16px;
-  line-height:1.35;
+#confirmationBox {
+  max-width: 560px;
+  max-height: 80vh;             /* 画面の80%でカット */
+  overflow-y: auto;             /* 縦スクロール */
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
 }
 
 /* スクロールバーを少し細く */
