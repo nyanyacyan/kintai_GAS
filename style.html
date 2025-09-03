@@ -647,14 +647,124 @@
 }
 
 /* 成功モード用 */
-#confirmationModal.modal--success .sent-summary {
-  font-size: 28px;
-  line-height: 1.4;
-}
-#confirmationModal.modal--success .sent-title {
-  font-size: 42px;
+/* ===== 送信成功モードの見た目をまとめて制御 ===== */
+#confirmationModal.modal--success #confirmationBox{
+  /* 横幅をモーダルと同じ“固定”に（必要なら数値を調整） */
+  width: 680px;
+  max-width: 680px;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 18px 20px;
+  font-size: 16px;       /* ベース（下の個別指定が優先） */
+  line-height: 1.35;
 }
 
+/* 成功表示の本文ブロック */
+#confirmationModal.modal--success .sent-summary{
+  font-size: 20px;       /* ← 全体の文字サイズ */
+  line-height: 1.35;
+  letter-spacing: 0.02em;
+}
+
+/* 見出し */
+#confirmationModal.modal--success .sent-title{
+  font-size: 24px;
+  margin: 0 0 10px;
+  text-align: center;
+}
+
+/* 余白が広がる原因対策：dl/dt/dd のデフォルト余白をリセット */
+#confirmationModal.modal--success .sent-summary dl,
+#confirmationModal.modal--success .sent-summary dt,
+#confirmationModal.modal--success .sent-summary dd{
+  margin: 0;
+  padding: 0;
+}
+
+/* 2カラム（ラベル/値）の幅を統一して折り返しを抑制 */
+#confirmationModal.modal--success .sent-meta{
+  margin: 0 0 8px;
+}
+#confirmationModal.modal--success .sent-meta > div{
+  display: grid;
+  /* 左ラベルを“固定幅”で統一（px / em / ch どれでもOK） */
+  grid-template-columns: 120px 1fr;
+  column-gap: 10px;
+  row-gap: 6px;
+  margin: 0;             /* ← 行ごとの余白を詰める */
+  align-items: baseline;
+}
+#confirmationModal.modal--success .sent-meta dt{
+  white-space: nowrap;   /* ラベルを折り返さない */
+  font-weight: 700;
+  color: #444;
+  font-size: 20px;
+}
+#confirmationModal.modal--success .sent-meta dd{
+  font-size: 20px;
+  overflow-wrap: anywhere;   /* 値は必要なら折り返し可 */
+}
+
+/* セクション間隔を詰める */
+#confirmationModal.modal--success .sent-block{
+  margin: 10px 0 8px;
+}
+#confirmationModal.modal--success .sent-block-title{
+  margin: 0 0 6px;
+  font-weight: 700;
+  color: #333;
+}
+
+/* リスト（作業者/協力会社）も詰める */
+#confirmationModal.modal--success .sent-list{
+  margin: 0;
+  padding-left: 1.1em;
+}
+#confirmationModal.modal--success .sent-list li{
+  margin: 2px 0;
+  line-height: 1.35;
+}
+
+/* 強調数値 */
+#confirmationModal.modal--success .sent-num{ color:#d33; }
+
+/* 添付サムネ：全体が見えるように（トリミングせず表示） */
+#confirmationModal.modal--success .sent-thumbs{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+/* 画像は“contain”で全体表示。サイズはお好みで。 */
+#confirmationModal.modal--success .sent-thumb{
+  width: 140px;   /* ← 横幅を統一 */
+  /* 高さはアスペクト比基準で自動にしたいなら aspect-ratio を使う */
+  aspect-ratio: 4 / 3;
+  border: 1px solid #e7e7e7;
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+  display: block;
+}
+#confirmationModal.modal--success .sent-thumb img{
+  width: 100%;
+  height: 100%;
+  object-fit: contain;   /* ← 画像全体が入る */
+  background: #fff;      /* 余白が白に見えるよう */
+}
+
+/* ボタンは中央寄せ＆やや大きめに */
+#confirmationModal.modal--success #confirmationBox .button-row{
+  text-align: center;
+  margin-top: 14px;
+}
+#confirmationModal.modal--success #confirmationBox .button-row button{
+  padding: 12px 28px;
+  font-size: 18px;
+  border-radius: 8px;
+  margin: 0 6px;
+}
 
 
 
