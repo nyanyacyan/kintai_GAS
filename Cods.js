@@ -318,9 +318,9 @@ function updateEditedRecords(meta, records) {
 
     // --- append new rows (compose name with role for 協力会社) ---
     const roleLabelMap = {
-      only:  '協力会社のみ',
-      leader:'協力会社＋職長',
-      other: '協力会社＋その他資格'
+      only:  '',
+      leader:'＋職長',
+      other: '＋その他資格'
     };
 
     (records || []).forEach(r => {
