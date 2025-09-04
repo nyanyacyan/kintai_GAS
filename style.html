@@ -755,4 +755,39 @@
   font-size: 18px;           /* 20でもOK */
   border-radius: 10px;
 }
+
+/* 役割ブロック */
+.partner-role-wrap{ margin:10px 0 6px; }
+.partner-role-title{ font-weight:700; margin:0 0 6px; }
+
+/* ← 左:テキスト / 右:ラジオ丸 を縦に並べる */
+.partner-role-grid{
+  display:grid;
+  grid-template-columns: 1fr 28px;   /* 右列は丸の幅 */
+  row-gap:10px;
+  column-gap:12px;
+  align-items:center;
+}
+.partner-role-grid .txt{ line-height:1.3; }
+.partner-role-grid input[type="radio"]{
+  justify-self:center;
+  width:20px; height:20px;
+}
+
+/* 人工/残業を横並び */
+.time-inputs{
+  display:none;            /* チェック時に表示 */
+  margin-top:10px;
+  gap:10px;
+  display:grid;            /* 表示時は grid に切替になる想定 */
+  grid-template-columns: 1fr 1fr;
+}
+.time-inputs input{
+  padding:12px 14px;
+  font-size:1.1rem;
+  text-align:center;
+}
+
+
+
 </style>
