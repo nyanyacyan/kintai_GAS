@@ -187,10 +187,10 @@
 
 
   // 役割を「会社名＋役割」に整形
-  function partnerDisplayName(baseName, roleVal) {
-    if (roleVal === 'leader') return `${baseName}＋職長`;
-    if (roleVal === 'other') return `${baseName}＋その他資格`;
-    return baseName; // only or 未選択
+  function partnerDisplayName(name, role){
+    const roleLabelMap = { only:'', leader:'＋職長', other:'＋その他資格' };
+    const suffix = roleLabelMap[role] ?? '';
+    return suffix ? `${name}${suffix}` : name;
   }
 
 

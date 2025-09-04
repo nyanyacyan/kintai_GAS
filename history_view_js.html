@@ -251,8 +251,11 @@
       registered.add(`${type}:${name}`);
     });
 
+    // 追加UI：協力会社のときだけ役割ラジオも入れる
     const createCheckboxBlock = (type, name, container) => {
       const safeName = sanitize(name);
+      const key = `modal-${type}-${safeName}`;
+
       const wrapper = document.createElement('label');
       wrapper.className = 'checkbox-wrapper';
 
@@ -260,7 +263,7 @@
       checkbox.type = 'checkbox';
       checkbox.className = `additional-${type}`;
       checkbox.value = name;
-      checkbox.onchange = () => toggleTimeInputs(checkbox, `modal-${type}-${safeName}`);
+      checkbox.onchange = () => toggleTimeInputs(checkbox, key);
 
       const span = document.createElement('span');
       span.textContent = name;
@@ -270,11 +273,13 @@
       container.appendChild(wrapper);
 
       if (type === 'partner') {
-        // ★役割（最初は非表示、チェックONで出る）
-        partnerContainer.appendChild(createEditPartnerRoleBlock(`modal-partner-${safeName}`));
+        // ★ 役割ラジオ（最初は非表示、チェックONで表示）
+        const roleBlock = createPartnerRoleBlock(key);     // name="${key}-role" を作る実装にしておく
+        roleBlock.style.display = 'none';
+        container.appendChild(roleBlock);
       }
 
-      const inputs = createTimeInputs(`modal-${type}-${safeName}`);
+      const inputs = createTimeInputs(key);                // name="${key}-man" / "${key}-overtime"
       container.appendChild(inputs);
     };
 
@@ -306,16 +311,12 @@
   // ------------------------------------------
   function showEditConfirmationModal() {
     isEditMode = true;
-    // 既存のバリデーション処理はそのまま…
 
-    const roleLabelMap = {
-      only: '協力会社のみ',
-      leader: '協力会社＋職長',
-      other: '協力会社＋その他資格'
-    };
+    // 既存のバリデーション・エラークリア処理はこの前にある前提
 
-    const editedRecords = [];
+    const editedRecords = []; // ← 保存用（name=会社名そのまま、roleは別フィールド）
 
+    // --- 1) 既存レコード（テーブル行）の収集 ---
     lastFetchedRecords.forEach((r, i) => {
       const manInput = document.getElementById(`edit-man-${i}`);
       const overtimeInput = document.getElementById(`edit-overtime-${i}`);
@@ -324,63 +325,99 @@
       const man = parseFloat(manInput.value || 0);
       const overtime = parseFloat(overtimeInput.value || 0);
 
-      // ★ 役割の取得（協力会社のみ）
+      // 役割（協力会社のみ）
       let role = r.role || 'only';
       if (r.type === '協力会社') {
         const safe = sanitize(r.name);
         const sel = document.querySelector(`input[name="edit-partner-${safe}-role"]:checked`);
-        role = sel ? sel.value : role; // only | leader | other
+        if (sel) role = sel.value; // only | leader | other
       }
 
-      // ★ 表示名（UIで見せたい用）
-      const displayName = (r.type === '協力会社')
-        ? partnerDisplayName(r.name, role)  // ← 会社名＋役割
-        : r.name;
-
       editedRecords.push({
-        ...r,
-        name: r.name,       // ← 保存用は純粋な会社名
-        role,               // ← 保存用に役割を保持
-        displayName,        // ← UIや確認画面用
+        ...r,                   // type / name（=会社名）など元の値
+        role,                   // 役割は別フィールド
         man,
         overtime
       });
     });
 
-    // 追加の協力会社（モーダル下部の新規追加）にも役割がある場合は同様に拾う
-    document.querySelectorAll('.additional-partner:checked').forEach(cb => {
+    // --- 2) 追加作業者（チェックされたもの） ---
+    document.querySelectorAll('.additional-worker:checked').forEach(cb => {
       const name = cb.value;
       const safe = sanitize(name);
-      const manInput = document.querySelector(`input[data-name="modal-partner-${safe}"][data-type="man"]`);
-      const overtimeInput = document.querySelector(`input[data-name="modal-partner-${safe}"][data-type="overtime"]`);
-      const role = roleEl ? roleEl.value : 'only';
+      const key = `modal-worker-${safe}`;
 
-      const man = parseFloat(manInput?.value || 0);
-      const overtime = parseFloat(overtimeInput?.value || 0);
-      const displayName = roleLabelMap[role];
+      const manInput = document.querySelector(`input[data-name="${key}"][data-type="man"]`);
+      const overtimeInput = document.querySelector(`input[data-name="${key}"][data-type="overtime"]`);
+      if (!manInput || !overtimeInput) return;
 
-      // 役割ラジオの取得（追加用）
-      const roleEl = document.querySelector(`input[name="modal-partner-${safeName}-role"]:checked`);
-      const roleVal = roleEl?.value || '';
-
-      if (!isRowInvalid) {
-
-        const displayName = partnerDisplayName(name, roleVal);
-        editedRecords.push({ type: '協力会社', name: displayName, rawName: name, role: roleVal, man, overtime });
-        }
+      editedRecords.push({
+        type: '作業者',
+        name,                      // そのまま
+        man: parseFloat(manInput.value || 0),
+        overtime: parseFloat(overtimeInput.value || 0)
       });
+    });
 
-    // workers も従来通り push 済みなら OK。最後に formData を作成
+    // --- 3) 追加協力会社（チェックされたもの＋役割） ---
+    document.querySelectorAll('.additional-partner:checked').forEach(cb => {
+      const name = cb.value;                 // 会社名
+      const safe = sanitize(name);
+      const key = `modal-partner-${safe}`;
+
+      const manInput = document.querySelector(`input[data-name="${key}"][data-type="man"]`);
+      const overtimeInput = document.querySelector(`input[data-name="${key}"][data-type="overtime"]`);
+      if (!manInput || !overtimeInput) return;
+
+      let role = 'only';
+      const sel = document.querySelector(`input[name="${key}-role"]:checked`);
+      if (sel) role = sel.value;
+
+      editedRecords.push({
+        type: '協力会社',
+        name,                                       // ← 保存は会社名のまま
+        role,
+        man: parseFloat(manInput.value || 0),
+        overtime: parseFloat(overtimeInput.value || 0)
+      });
+    });
+
+    // ---- 4) デバッグ出力（送信用の“素データ”を確認）----
+    console.log('[showEditConfirmationModal] editedRecords (SAVE) =',
+      JSON.parse(JSON.stringify(editedRecords)));
+
+    // ---- 5) 表示用データを作る（会社名＋役割に整形）----
+    const viewWorkers = editedRecords
+      .filter(x => x.type === '作業者')
+      .map(({ name, man, overtime }) => ({ name, man, overtime }));
+
+    const viewPartners = editedRecords
+      .filter(x => x.type === '協力会社')
+      .map(({ name, role, man, overtime }) => ({
+        name: partnerDisplayName(name, role),   // ★ ここだけ“表示用”
+        man, overtime
+      }));
+
+    // ---- 6) 確認モーダルに渡すオブジェクト（表示用）----
     formData = {
       date: document.getElementById('modalHistoryDate').value,
       companyId: document.getElementById('company').value,
       staffId: document.getElementById('staff').value,
       site: document.getElementById('site').value,
-      workers: editedRecords.filter(r => r.type === '作業者').map(({ name, man, overtime }) => ({ name, man, overtime })),
-      partners: editedRecords.filter(r => r.type === '協力会社').map(({ name, man, overtime }) => ({ name, man, overtime }))
+      workers: viewWorkers,
+      partners: viewPartners
     };
 
+    // 表示用も確認
+    console.log('[showEditConfirmationModal] formData (VIEW) =',
+      JSON.parse(JSON.stringify(formData)));
+
+    // ---- 7) 確認モーダル表示 ----
     showConfirmation(true);
+
+    // ★ この後、実際にシートへ送るときは submitEditFromModal() 側で
+    //    lastFetchedRecords＋追加分から作った “保存用配列 edited” を
+    //    google.script.run.updateEditedRecords(meta, edited) に渡す
   }
 
 
