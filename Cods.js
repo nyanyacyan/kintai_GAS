@@ -317,29 +317,27 @@ function updateEditedRecords(meta, records) {
     SpreadsheetApp.flush();
 
     // --- append new rows (compose name with role for 協力会社) ---
-    const roleLabelMap = {
-      only:  '',
-      leader:'＋職長',
-      other: '＋その他資格'
-    };
+const roleSuffixMap = {
+  only:  '',
+  leader:'＋職長',
+  other: '＋その他資格'
+};
 
-    (records || []).forEach(r => {
-      // ★保存用の name をここで確定（協力会社 かつ role が only 以外なら合成）
-      const nameForSave = (r.type === '協力会社' && r.role && r.role !== 'only')
-        ? `${r.name}${roleLabelMap[r.role] || r.role}`
-        : r.name;
+(records || []).forEach(r => {
+  const nameForSave =
+    (r.type === '協力会社' && r.role && r.role !== 'only')
+      ? `${r.name}${roleSuffixMap[r.role] || ''}`  // ← PR-G＋職長 の形式
+      : r.name;
 
-      const row = [
-        newTimestamp, dateStr,
-        companyName, staffName, siteName,
-        r.type,
-        nameForSave,                                // ← ここに合成後の名前
-        toNumber(r.man), toNumber(r.overtime)
-      ];
-
-      Logger.log('%s append row=%s', FN, JSON.stringify(row));
-      doWithRetry(() => sheet.appendRow(row), { retries: 1, waitMs: 500 });
-    });
+  const row = [
+    newTimestamp, dateStr,
+    companyName, staffName, siteName,
+    r.type,
+    nameForSave,
+    toNumber(r.man), toNumber(r.overtime)
+  ];
+  doWithRetry(() => sheet.appendRow(row), { retries: 1, waitMs: 500 });
+});
 
     SpreadsheetApp.flush();
     const ms = new Date() - start;

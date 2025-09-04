@@ -187,11 +187,10 @@
 
 
   // 役割を「会社名＋役割」に整形
-  function partnerDisplayName(name, role){
-    const roleLabelMap = { only:'', leader:'＋職長', other:'＋その他資格' };
-    const suffix = roleLabelMap[role] ?? '';
-    return suffix ? `${name}${suffix}` : name;
-  }
+const roleSuffixMap = { only:'', leader:'＋職長', other:'＋その他資格' };
+function partnerDisplayName(name, role) {
+  return `${name}${roleSuffixMap[role] || ''}`;
+}
 
 
   // ------------------------------------------
