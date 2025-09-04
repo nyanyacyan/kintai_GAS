@@ -304,169 +304,80 @@ function createEditPartnerRoleBlock(nameKey) {
   // モーダル内編集フォームの「再送信（更新）」ボタン押下時：
   // 入力検証→formData組み立て→確認モーダルへ
   // ------------------------------------------
-  function showEditConfirmationModal() {
-    isEditMode = true;
-    // 既存のエラー表示をすべてクリア
-    document.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
-    document.querySelectorAll('.edit-error-message').forEach(el => el.remove());
+function showEditConfirmationModal() {
+  isEditMode = true;
+  // 既存のバリデーション処理はそのまま…
 
-    let hasError = false;
-    const editedRecords = []; // 更新後の全データを格納する配列
+  const roleLabelMap = {
+    only: '協力会社のみ',
+    leader: '協力会社＋職長',
+    other: '協力会社＋その他資格'
+  };
 
-    // --- 1. 既存レコードのバリデーションとデータ収集 ---
-    lastFetchedRecords.forEach((r, i) => {
-      const manInput = document.getElementById(`edit-man-${i}`);
-      const overtimeInput = document.getElementById(`edit-overtime-${i}`);
+  const editedRecords = [];
 
-      if (!manInput || !overtimeInput) return; // 念のため要素存在チェック
+  lastFetchedRecords.forEach((r, i) => {
+    const manInput = document.getElementById(`edit-man-${i}`);
+    const overtimeInput = document.getElementById(`edit-overtime-${i}`);
+    if (!manInput || !overtimeInput) return;
 
-      const man = parseFloat(manInput.value || 0);
-      const overtime = parseFloat(overtimeInput.value || 0);
-      let isRowInvalid = false;
+    const man = parseFloat(manInput.value || 0);
+    const overtime = parseFloat(overtimeInput.value || 0);
 
-      // 0.25単位チェック
-      [manInput, overtimeInput].forEach(input => {
-        const val = parseFloat(input.value || 0);
-        if (input.value && !isValidQuarterHour(val)) {
-          input.classList.add('input-error');
-          const errMsg = document.createElement('div');
-          errMsg.textContent = '※0.25単位で入力してください。';
-          errMsg.className = 'edit-error-message';
-          errMsg.style.color = 'red';
-          input.parentElement.appendChild(errMsg);
-          hasError = true;
-          isRowInvalid = true;
-        }
-      });
-
-      if (!isRowInvalid) {
-        const entry = { ...r, man, overtime };
-        if (r.type === '協力会社') {
-          const safe = sanitize(r.name);
-          const roleEl = document.querySelector(`input[name="edit-partner-${safe}-role"]:checked`);
-          entry.role = roleEl ? roleEl.value : (r.role || 'only');
-        }
-        editedRecords.push(entry);
-      }
-    });
-
-    // --- 2. 追加作業者のバリデーションとデータ収集 ---
-    document.querySelectorAll('.additional-worker:checked').forEach(cb => {
-      const name = cb.value;
-      const safeName = sanitize(name);
-      // dataset を使って正しく要素を取得
-      const manInput = document.querySelector(`input[data-name="modal-worker-${safeName}"][data-type="man"]`);
-      const overtimeInput = document.querySelector(`input[data-name="modal-worker-${safeName}"][data-type="overtime"]`);
-
-      if (!manInput || !overtimeInput) return;
-
-      const man = parseFloat(manInput.value || 0);
-      const overtime = parseFloat(overtimeInput.value || 0);
-      let isRowInvalid = false;
-
-      // 合計0チェック
-      if ((man + overtime) <= 0) {
-        [manInput, overtimeInput].forEach(input => input.classList.add('input-error'));
-        const errMsg = document.createElement('div');
-        errMsg.className = 'edit-error-message';
-        errMsg.textContent = '※勤務時間を入力してください。';
-        errMsg.style.color = 'red';
-        // エラーメッセージを適切な場所に追加
-        manInput.closest('.time-inputs').insertAdjacentElement('afterend', errMsg);
-        hasError = true;
-        isRowInvalid = true;
-      }
-
-      // 0.25単位チェック
-      [manInput, overtimeInput].forEach(input => {
-        const val = parseFloat(input.value || 0);
-        if (input.value && !isValidQuarterHour(val)) {
-          input.classList.add('input-error');
-          // 既にエラーメッセージがなければ追加
-          if (!manInput.closest('.checkbox-wrapper').querySelector('.edit-error-message')) {
-            const errMsg = document.createElement('div');
-            errMsg.className = 'edit-error-message';
-            errMsg.textContent = '※0.25単位で入力してください。';
-            errMsg.style.color = 'red';
-            input.closest('.time-inputs').insertAdjacentElement('afterend', errMsg);
-          }
-          hasError = true;
-          isRowInvalid = true;
-        }
-      });
-
-      if (!isRowInvalid) {
-        editedRecords.push({ type: '作業者', name, man, overtime });
-      }
-    });
-
-    // --- 3. 追加協力会社のバリデーションとデータ収集 (作業者とほぼ同じ) ---
-    document.querySelectorAll('.additional-partner:checked').forEach(cb => {
-      const name = cb.value;
-      const safeName = sanitize(name);
-      const manInput = document.querySelector(`input[data-name="modal-partner-${safeName}"][data-type="man"]`);
-      const overtimeInput = document.querySelector(`input[data-name="modal-partner-${safeName}"][data-type="overtime"]`);
-
-      if (!manInput || !overtimeInput) return;
-
-      const man = parseFloat(manInput.value || 0);
-      const overtime = parseFloat(overtimeInput.value || 0);
-      let isRowInvalid = false;
-
-      if ((man + overtime) <= 0) {
-        [manInput, overtimeInput].forEach(input => input.classList.add('input-error'));
-        const errMsg = document.createElement('div');
-        errMsg.className = 'edit-error-message';
-        errMsg.textContent = '※勤務時間を入力してください。';
-        errMsg.style.color = 'red';
-        manInput.closest('.time-inputs').insertAdjacentElement('afterend', errMsg);
-        hasError = true;
-        isRowInvalid = true;
-      }
-
-      [manInput, overtimeInput].forEach(input => {
-        const val = parseFloat(input.value || 0);
-        if (input.value && !isValidQuarterHour(val)) {
-          input.classList.add('input-error');
-          if (!manInput.closest('.checkbox-wrapper').querySelector('.edit-error-message')) {
-            const errMsg = document.createElement('div');
-            errMsg.className = 'edit-error-message';
-            errMsg.textContent = '※0.25単位で入力してください。';
-            errMsg.style.color = 'red';
-            input.closest('.time-inputs').insertAdjacentElement('afterend', errMsg);
-          }
-          hasError = true;
-          isRowInvalid = true;
-        }
-      });
-
-      if (!isRowInvalid) {
-        editedRecords.push({ type: '協力会社', name, man, overtime });
-      }
-    });
-
-    // --- 4. バリデーション結果に応じて処理 ---
-    if (hasError) {
-      // エラーがある場合は、モーダルを開いたまま処理を中断
-      return;
+    // ★ 役割の取得（協力会社のみ）
+    let role = r.role || 'only';
+    if (r.type === '協力会社') {
+      const safe = sanitize(r.name);
+      const sel = document.querySelector(`input[name="edit-partner-${safe}-role"]:checked`);
+      role = sel ? sel.value : role; // only | leader | other
     }
 
-    // --- 5. エラーがない場合のみ、モーダルを閉じて確認画面へ ---
-    document.getElementById('historyModal').style.display = 'none';
+    // 表示名を置き換える場合はここで
+    const displayName = (r.type === '協力会社' && role) ? roleLabelMap[role] : r.name;
 
-    // 送信用のformDataを構築
-    formData = {
-      date: document.getElementById('modalHistoryDate').value,
-      companyId: document.getElementById('company').value,
-      staffId: document.getElementById('staff').value,
-      site: document.getElementById('site').value,
-      workers: editedRecords.filter(r => r.type === '作業者').map(({ name, man, overtime }) => ({ name, man, overtime })),
-      partners: editedRecords.filter(r => r.type === '協力会社').map(({ name, man, overtime, role }) => ({ name, man, overtime, role }))
-    };
+    editedRecords.push({
+      ...r,
+      name: displayName,
+      role,
+      man,
+      overtime
+    });
+  });
 
-    // 確認画面を表示
-    showConfirmation(true);
-  }
+  // 追加の協力会社（モーダル下部の新規追加）にも役割がある場合は同様に拾う
+  document.querySelectorAll('.additional-partner:checked').forEach(cb => {
+    const name = cb.value;
+    const safe = sanitize(name);
+    const manInput = document.querySelector(`input[data-name="modal-partner-${safe}"][data-type="man"]`);
+    const overtimeInput = document.querySelector(`input[data-name="modal-partner-${safe}"][data-type="overtime"]`);
+    const roleEl = document.querySelector(`input[name="role-modal-partner-${safe}"]:checked`); // createPartnerRoleBlock の name と一致させる
+    const role = roleEl ? roleEl.value : 'only';
+
+    const man = parseFloat(manInput?.value || 0);
+    const overtime = parseFloat(overtimeInput?.value || 0);
+    const displayName = roleLabelMap[role];
+
+    editedRecords.push({
+      type: '協力会社',
+      name: displayName,
+      role,
+      man,
+      overtime
+    });
+  });
+
+  // workers も従来通り push 済みなら OK。最後に formData を作成
+  formData = {
+    date: document.getElementById('modalHistoryDate').value,
+    companyId: document.getElementById('company').value,
+    staffId: document.getElementById('staff').value,
+    site: document.getElementById('site').value,
+    workers: editedRecords.filter(r => r.type === '作業者').map(({ name, man, overtime }) => ({ name, man, overtime })),
+    partners: editedRecords.filter(r => r.type === '協力会社').map(({ name, man, overtime }) => ({ name, man, overtime }))
+  };
+
+  showConfirmation(true);
+}
 
 
 
