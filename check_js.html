@@ -4,84 +4,97 @@
   // 編集モーダル→確認モーダル→送信の最終段階
   // 実際に updateEditedRecords(meta, edited) を呼び出す
   // ------------------------------------------
-  function submitEditFromModal() {
-    const showLoading = () => document.getElementById('loadingOverlay').style.display = 'flex';
-    const hideLoading = () => document.getElementById('loadingOverlay').style.display = 'none';
-    showLoading();
+function submitEditFromModal() {
+  console.log('[submitEditFromModal] start');
 
-    const edited = [];
-    lastFetchedRecords.forEach((r, i) => {
-      const manInput = document.getElementById(`edit-man-${i}`);
-      const overtimeInput = document.getElementById(`edit-overtime-${i}`);
-      if (manInput && overtimeInput) {
-        edited.push({
-          ...r,
-          man: parseFloat(manInput.value || 0),
-          overtime: parseFloat(overtimeInput.value || 0),
-        });
-      }
-    });
+  // ローディングON
+  document.getElementById('loadingOverlay').style.display = 'flex';
 
-    document.querySelectorAll('.additional-worker:checked').forEach(cb => {
-      const name = cb.value;
-      const safeName = sanitize(name);
-      const inputs = document.querySelectorAll(`.worker-input[data-name="modal-worker-${safeName}"]`);
-      const entry = { type: '作業者', name, man: 0, overtime: 0 };
-      inputs.forEach(input => {
-        const raw = input.value;
-        entry[input.dataset.type] = raw === '' ? 0 : parseFloat(raw);
+  // 送信データ作成（省略部分は今のままでOK）
+  const edited = [];
+  lastFetchedRecords.forEach((r, i) => {
+    const manInput = document.getElementById(`edit-man-${i}`);
+    const overtimeInput = document.getElementById(`edit-overtime-${i}`);
+    if (manInput && overtimeInput) {
+      edited.push({
+        ...r,
+        man: parseFloat(manInput.value || 0),
+        overtime: parseFloat(overtimeInput.value || 0),
       });
-      edited.push(entry);
+    }
+  });
+
+  document.querySelectorAll('.additional-worker:checked').forEach(cb => {
+    const name = cb.value;
+    const safeName = sanitize(name);
+    const inputs = document.querySelectorAll(
+      `.worker-input[data-name="modal-worker-${safeName}"]`
+    );
+    const entry = { type: '作業者', name };
+    inputs.forEach(input => {
+      const raw = input.value;
+      entry[input.dataset.type] = raw === '' ? 0 : parseFloat(raw);
     });
+    edited.push(entry);
+  });
 
-    document.querySelectorAll('.additional-partner:checked').forEach(cb => {
-      const name = cb.value;
-      const safeName = sanitize(name);
-      const inputs = document.querySelectorAll(`.partner-input[data-name="modal-partner-${safeName}"]`);
-      const entry = { type: '協力会社', name, man: 0, overtime: 0 };
-      inputs.forEach(input => {
-        const raw = input.value;
-        entry[input.dataset.type] = raw === '' ? 0 : parseFloat(raw);
-      });
-      edited.push(entry);
+  document.querySelectorAll('.additional-partner:checked').forEach(cb => {
+    const name = cb.value;
+    const safeName = sanitize(name);
+    const inputs = document.querySelectorAll(
+      `.partner-input[data-name="modal-partner-${safeName}"]`
+    );
+    const entry = { type: '協力会社', name };
+    inputs.forEach(input => {
+      const raw = input.value;
+      entry[input.dataset.type] = raw === '' ? 0 : parseFloat(raw);
     });
+    edited.push(entry);
+  });
 
-    const meta = {
-      date: document.getElementById('modalHistoryDate').value,
-      companyId: document.getElementById('company').value,
-      staffId: document.getElementById('staff').value,
-      siteId: document.getElementById('site').value,
-    };
+  const meta = {
+    date: document.getElementById('modalHistoryDate').value,
+    companyId: document.getElementById('company').value,
+    staffId: document.getElementById('staff').value,
+    siteId: document.getElementById('site').value,
+  };
 
-    // ★ 送信前ログ（確認用）
-    console.log('[submitEditFromModal] meta =', meta);
-    console.log('[submitEditFromModal] edited.length =', edited.length);
-    console.log('[submitEditFromModal] edited sample =', edited.slice(0, 3));
-
-    google.script.run
-      .withSuccessHandler(res => {
-        hideLoading();
-        console.log('[updateEditedRecords] success:', res);
-        document.getElementById('confirmationText').textContent =
-          '✅ 送信が完了しました！\n別の場所をタップしてフォームに戻ってください。';
-        document.querySelector('#confirmationBox .button-row').innerHTML =
-          '<button onclick="closeConfirmation()">閉じる</button>';
-        setTimeout(() => {
-          if (isEditMode) document.getElementById('historyModal').style.display = 'none';
-        }, 300);
-      })
-      .withFailureHandler(err => {
-        hideLoading();
-        console.error('[updateEditedRecords] failed:', err);
-        // いつものエラーモーダルがあるなら：
-        if (typeof showSendErrorScreen === 'function') {
-          showSendErrorScreen(err);
-        } else {
-          alert('更新に失敗しました：' + (err && (err.message || err)));
-        }
-      })
-      .updateEditedRecords(meta, edited);
+  // 送信前にシリアライズ可能か確認（循環参照などで落ちると呼び出しまで行きません）
+  try {
+    console.log('[submitEditFromModal] meta=', meta);
+    console.log('[submitEditFromModal] edited sample=', edited.slice(0, 3));
+    JSON.stringify({ meta, edited }); // ここで例外が出たら構造が変
+  } catch (e) {
+    console.error('送信データのJSON化に失敗:', e);
+    alert('送信データの作成に失敗しました。画面を再読み込みしてください。');
+    document.getElementById('loadingOverlay').style.display = 'none';
+    return;
   }
+
+  // 成功/失敗ハンドラを必ず付ける
+  google.script.run
+    .withSuccessHandler((res) => {
+      console.log('[submitEditFromModal] server ok:', res);
+      document.getElementById('loadingOverlay').style.display = 'none';
+      // 完了モーダル表示（今の処理のままでOK）
+      document.getElementById('confirmationText').textContent =
+        '✅ 送信が完了しました！\n別の場所をタップしてフォームに戻ってください。';
+      const buttonRow = document.querySelector('#confirmationBox .button-row');
+      buttonRow.innerHTML = '<button onclick="closeConfirmation()">閉じる</button>';
+      setTimeout(() => {
+        if (isEditMode) document.getElementById('historyModal').style.display = 'none';
+      }, 300);
+    })
+    .withFailureHandler((err) => {
+      console.error('[submitEditFromModal] server error:', err);
+      document.getElementById('loadingOverlay').style.display = 'none';
+      const msg = (err && (err.message || err.toString())) || 'Unknown error';
+      alert('更新に失敗しました：\n' + msg);
+    })
+    .updateEditedRecords(meta, edited);
+
+  console.log('[submitEditFromModal] end (request sent)');
+}
 
 
   // ------------------------------------------
