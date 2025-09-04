@@ -309,116 +309,64 @@
   // モーダル内編集フォームの「再送信（更新）」ボタン押下時：
   // 入力検証→formData組み立て→確認モーダルへ
   // ------------------------------------------
+  let pendingEditPayload = null;
+
   function showEditConfirmationModal() {
     isEditMode = true;
 
     // 既存のバリデーション・エラークリア処理はこの前にある前提
 
-    const editedRecords = []; // ← 保存用（name=会社名そのまま、roleは別フィールド）
 
     // --- 1) 既存レコード（テーブル行）の収集 ---
-    lastFetchedRecords.forEach((r, i) => {
-      const manInput = document.getElementById(`edit-man-${i}`);
-      const overtimeInput = document.getElementById(`edit-overtime-${i}`);
-      if (!manInput || !overtimeInput) return;
+  const records = [];
 
-      const man = parseFloat(manInput.value || 0);
-      const overtime = parseFloat(overtimeInput.value || 0);
+  // 既存行
+  lastFetchedRecords.forEach((r, i) => {
+    const man = parseFloat(document.getElementById(`edit-man-${i}`)?.value || 0);
+    const ot  = parseFloat(document.getElementById(`edit-overtime-${i}`)?.value || 0);
 
-      // 役割（協力会社のみ）
-      let role = r.role || 'only';
-      if (r.type === '協力会社') {
-        const safe = sanitize(r.name);
-        const sel = document.querySelector(`input[name="edit-partner-${safe}-role"]:checked`);
-        if (sel) role = sel.value; // only | leader | other
-      }
+    let role = undefined; // 作業者は role 不要
+    if (r.type === '協力会社') {
+      const safe = sanitize(r.name);
+      const sel  = document.querySelector(`input[name="edit-partner-${safe}-role"]:checked`);
+      role = sel ? sel.value : 'only'; // only | leader | other
+    }
 
-      editedRecords.push({
-        ...r,                   // type / name（=会社名）など元の値
-        role,                   // 役割は別フィールド
-        man,
-        overtime
-      });
-    });
+    records.push({ type: r.type, name: r.name, role, man, overtime: ot });
+  });
 
-    // --- 2) 追加作業者（チェックされたもの） ---
-    document.querySelectorAll('.additional-worker:checked').forEach(cb => {
-      const name = cb.value;
-      const safe = sanitize(name);
-      const key = `modal-worker-${safe}`;
+  // 追加の協力会社
+  document.querySelectorAll('.additional-partner:checked').forEach(cb => {
+    const name = cb.value, safe = sanitize(name);
+    const key  = `modal-partner-${safe}`;
+    const man  = parseFloat(document.querySelector(`input[data-name="${key}"][data-type="man"]`)?.value || 0);
+    const ot   = parseFloat(document.querySelector(`input[data-name="${key}"][data-type="overtime"]`)?.value || 0);
+    const sel  = document.querySelector(`input[name="${key}-role"]:checked`);
+    const role = sel ? sel.value : 'only';
+    records.push({ type: '協力会社', name, role, man, overtime: ot });
+  });
 
-      const manInput = document.querySelector(`input[data-name="${key}"][data-type="man"]`);
-      const overtimeInput = document.querySelector(`input[data-name="${key}"][data-type="overtime"]`);
-      if (!manInput || !overtimeInput) return;
+  // 追加の作業者（role は不要）
+  document.querySelectorAll('.additional-worker:checked').forEach(cb => {
+    const name = cb.value, safe = sanitize(name);
+    const man  = parseFloat(document.querySelector(`input[data-name="modal-worker-${safe}"][data-type="man"]`)?.value || 0);
+    const ot   = parseFloat(document.querySelector(`input[data-name="modal-worker-${safe}"][data-type="overtime"]`)?.value || 0);
+    records.push({ type: '作業者', name, man, overtime: ot });
+  });
 
-      editedRecords.push({
-        type: '作業者',
-        name,                      // そのまま
-        man: parseFloat(manInput.value || 0),
-        overtime: parseFloat(overtimeInput.value || 0)
-      });
-    });
+  const meta = {
+    date: document.getElementById('modalHistoryDate').value,
+    companyId: document.getElementById('company').value,
+    staffId: document.getElementById('staff').value,
+    siteId: document.getElementById('site').value,
+  };
 
-    // --- 3) 追加協力会社（チェックされたもの＋役割） ---
-    document.querySelectorAll('.additional-partner:checked').forEach(cb => {
-      const name = cb.value;                 // 会社名
-      const safe = sanitize(name);
-      const key = `modal-partner-${safe}`;
+  // ★ここで退避（submitEditFromModal はこれをそのまま送る）
+  pendingEditPayload = { meta, records };
 
-      const manInput = document.querySelector(`input[data-name="${key}"][data-type="man"]`);
-      const overtimeInput = document.querySelector(`input[data-name="${key}"][data-type="overtime"]`);
-      if (!manInput || !overtimeInput) return;
-
-      let role = 'only';
-      const sel = document.querySelector(`input[name="${key}-role"]:checked`);
-      if (sel) role = sel.value;
-
-      editedRecords.push({
-        type: '協力会社',
-        name,                                       // ← 保存は会社名のまま
-        role,
-        man: parseFloat(manInput.value || 0),
-        overtime: parseFloat(overtimeInput.value || 0)
-      });
-    });
-
-    // ---- 4) デバッグ出力（送信用の“素データ”を確認）----
-    console.log('[showEditConfirmationModal] editedRecords (SAVE) =',
-      JSON.parse(JSON.stringify(editedRecords)));
-
-    // ---- 5) 表示用データを作る（会社名＋役割に整形）----
-    const viewWorkers = editedRecords
-      .filter(x => x.type === '作業者')
-      .map(({ name, man, overtime }) => ({ name, man, overtime }));
-
-    const viewPartners = editedRecords
-      .filter(x => x.type === '協力会社')
-      .map(({ name, role, man, overtime }) => ({
-        name: partnerDisplayName(name, role),   // ★ ここだけ“表示用”
-        man, overtime
-      }));
-
-    // ---- 6) 確認モーダルに渡すオブジェクト（表示用）----
-    formData = {
-      date: document.getElementById('modalHistoryDate').value,
-      companyId: document.getElementById('company').value,
-      staffId: document.getElementById('staff').value,
-      site: document.getElementById('site').value,
-      workers: viewWorkers,
-      partners: viewPartners
-    };
-
-    // 表示用も確認
-    console.log('[showEditConfirmationModal] formData (VIEW) =',
-      JSON.parse(JSON.stringify(formData)));
-
-    // ---- 7) 確認モーダル表示 ----
-    showConfirmation(true);
-
-    // ★ この後、実際にシートへ送るときは submitEditFromModal() 側で
-    //    lastFetchedRecords＋追加分から作った “保存用配列 edited” を
-    //    google.script.run.updateEditedRecords(meta, edited) に渡す
-  }
+  // 以降は表示用モーダル生成（表示名は会社名＋役割にしてOK。送信値は pendingEditPayload に確定済み）
+  showConfirmation(true);
+}
 
 
 
