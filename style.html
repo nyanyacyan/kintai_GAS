@@ -774,18 +774,68 @@
   width:20px; height:20px;
 }
 
-/* 人工/残業を横並び */
+/* ====== 人工/残業の表示制御 ====== */
+/* デフォルトは非表示 */
 .time-inputs{
-  display:none;            /* チェック時に表示 */
-  margin-top:10px;
-  gap:10px;
-  display:grid;            /* 表示時は grid に切替になる想定 */
-  grid-template-columns: 1fr 1fr;
+  display:none;
+  margin-top: 10px;
+}
+/* JSで .show を付けた時だけ2分割で表示 */
+.time-inputs.show{
+  display:grid;
+  grid-template-columns: 1fr 1fr; /* 半々 */
+  gap: 12px;                      /* 欄と欄の間隔 */
 }
 .time-inputs input{
-  padding:12px 14px;
-  font-size:1.1rem;
-  text-align:center;
+  padding: 14px 16px;
+  font-size: 1.2rem;
+  text-align: center;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ====== 協力会社 役割3択（大きい枠・ラジオ左） ====== */
+.partner-role-wrap{ margin: 12px 0 6px; }
+.partner-role-title{
+  font-weight: 700;
+  margin: 0 0 8px;
+  font-size: 1.05rem;
+}
+
+.role-set{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.role-option{
+  display: flex;
+  align-items: center;
+  gap: 14px;                 /* ラジオと文字の間 */
+  padding: 16px;             /* 行の高さはここで揃う */
+  border: 1px solid #cfcfcf;
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+  user-select: none;
+}
+.role-option input[type="radio"]{
+  margin: 0;
+  width: 20px; height: 20px;
+}
+.role-option .text{
+  font-size: 1.2rem;         /* 大きめ文字 */
+  white-space: nowrap;
+}
+/* 選択中の行をハイライト（対応ブラウザ向け） */
+.role-option:has(input[type="radio"]:checked){
+  border-color: #1976d2;
+  box-shadow: 0 0 0 2px rgba(25,118,210,.12) inset;
+}
+.role-option input[type="radio"]:checked + .text{
+  color: #1976d2;
+  font-weight: 700;
 }
 
 
