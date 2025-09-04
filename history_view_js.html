@@ -199,6 +199,35 @@
     setupUploader('uploaderEdit', { max: 5, mode: 'carousel', queueKey: 'edit' });
   }
 
+// 編集モーダル用：協力会社の「役割」を縦並びラジオで作る
+function createEditPartnerRoleBlock(nameKey) {
+  // 例: nameKey = "modal-partner-ABC"
+  const wrap = document.createElement('div');
+  wrap.className = 'partner-role-wrap';
+  wrap.id = `role-${nameKey}`;
+  wrap.style.display = 'none'; // チェックONでだけ表示
+
+  const radioName = `${nameKey}-role`; // ← submit側の参照と一致させる
+
+  wrap.innerHTML = `
+    <div class="partner-role-grid partner-role-grid--col">
+      <label class="role-card">
+        <input type="radio" name="${radioName}" value="only">
+        <span>協力会社のみ</span>
+      </label>
+      <label class="role-card">
+        <input type="radio" name="${radioName}" value="leader">
+        <span>協力会社＋職長</span>
+      </label>
+      <label class="role-card">
+        <input type="radio" name="${radioName}" value="other">
+        <span>協力会社＋その他資格</span>
+      </label>
+    </div>
+  `;
+  return wrap;
+}
+
 
   // ------------------------------------------
   // 編集モーダル下部の「新規追加」用チェックボックス＆入力欄を描画
@@ -242,7 +271,7 @@
 
       if (type === 'partner') {
         // ★役割（最初は非表示、チェックONで出る）
-        container.appendChild(createPartnerRoleBlock(`modal-partner-${safeName}`));
+        partnerContainer.appendChild(createEditPartnerRoleBlock(`modal-partner-${safeName}`));
       }
 
       const inputs = createTimeInputs(`modal-${type}-${safeName}`);
