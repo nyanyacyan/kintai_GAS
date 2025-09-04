@@ -123,30 +123,32 @@
     // === 協力会社用：役割3択（ラジオ）を作る ===
     // name: 'partner-サニタイズ済み名前' を想定
     function createPartnerRoleBlock(nameKey) {
-      // nameKey 例: "partner-BULLPOWERS"
+      // nameKey 例: "partner-ABC"
       const wrap = document.createElement('div');
       wrap.className = 'partner-role-wrap';
       wrap.id = `role-${nameKey}`;
-      wrap.style.display = 'none'; // 初期は非表示
+      wrap.style.display = 'none'; // チェックされるまで非表示
 
-      const radioName = `${nameKey}-role`; // ← submitForm 側のセレクタと一致
-
-      // それぞれ label for= で結び、行を grid で並べる
+      const radioName = `${nameKey}-role`;
       const idOnly = `${nameKey}-role-only`;
-      const idLead = `${nameKey}-role-leader`;
+      const idLeader = `${nameKey}-role-leader`;
       const idOther = `${nameKey}-role-other`;
 
       wrap.innerHTML = `
     <div class="partner-role-title">役割を選択</div>
-    <div class="partner-role-grid">
-      <label class="txt" for="${idOnly}">協力会社のみ</label>
-      <input type="radio" id="${idOnly}"   name="${radioName}" value="only">
-
-      <label class="txt" for="${idLead}">協力会社＋職長</label>
-      <input type="radio" id="${idLead}"   name="${radioName}" value="leader">
-
-      <label class="txt" for="${idOther}">協力会社＋その他資格</label>
-      <input type="radio" id="${idOther}"  name="${radioName}" value="other">
+    <div class="role-set">
+      <label class="role-option" for="${idOnly}">
+        <input type="radio" id="${idOnly}" name="${radioName}" value="only">
+        <span class="text">協力会社のみ</span>
+      </label>
+      <label class="role-option" for="${idLeader}">
+        <input type="radio" id="${idLeader}" name="${radioName}" value="leader">
+        <span class="text">協力会社＋職長</span>
+      </label>
+      <label class="role-option" for="${idOther}">
+        <input type="radio" id="${idOther}" name="${radioName}" value="other">
+        <span class="text">協力会社＋その他資格</span>
+      </label>
     </div>
   `;
       return wrap;

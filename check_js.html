@@ -90,10 +90,10 @@
   // ------------------------------------------
   // チェックされた人（作業者/協力会社）に紐づく「人工/残業」入力欄を生成して返す
   // ------------------------------------------
-  function createTimeInputs(name, kind /* 'partner' | 'worker' */) {
-    const container = document.createElement('div');
-    container.className = 'time-inputs';
-    container.id = `inputs-${name}`;
+  function createTimeInputs(nameKey) {
+    const box = document.createElement('div');
+    box.className = 'time-inputs';          // ← デフォルト非表示（CSS）
+    box.id = `inputs-${nameKey}`;
 
     const labelMap = { man: '人工', overtime: '残業' };
 
@@ -104,30 +104,29 @@
       input.step = '0.25';
       input.inputMode = 'decimal';
       input.placeholder = labelMap[type];
-      input.name = `${name}-${type}`;
+      input.name = `${nameKey}-${type}`;
       input.dataset.type = type;
-      input.dataset.name = name;
-
-      input.className = `work-input ${kind}-input`;
-      container.appendChild(input);
+      input.dataset.name = nameKey;
+      input.className = 'work-input';
+      box.appendChild(input);
     });
 
-    return container;
+    return box;
   }
 
 
   // ------------------------------------------
   // チェックボックスON/OFFに応じて、その行の「人工/残業」入力欄の表示切替
   // ------------------------------------------
-function toggleTimeInputs(checkbox, nameKey) {
-  // nameKey 例: "partner-BULLPOWERS"
-  const role   = document.getElementById(`role-${nameKey}`);
-  const inputs = document.getElementById(`inputs-${nameKey}`);
 
-  const show = checkbox.checked;
-  if (role)   role.style.display   = show ? 'block' : 'none';
-  if (inputs) inputs.style.display = show ? 'grid'  : 'none'; // ← gridで横並び
-}
+  // チェックON/OFFで 役割 と 時間 を同時に制御
+  function toggleTimeInputs(checkbox, nameKey) {
+    const role = document.getElementById(`role-${nameKey}`);
+    const inputs = document.getElementById(`inputs-${nameKey}`);
+    const show = checkbox.checked;
+    if (role) role.style.display = show ? 'block' : 'none';
+    if (inputs) inputs.classList.toggle('show', show); // ← grid 2分割で表示
+  }
 
 
 
