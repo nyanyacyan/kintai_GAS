@@ -1,17 +1,17 @@
 <script>
-/* ------------------------------------------
- * フォーム描画まわり（候補生成・連動・UIトグル）
- *
- * 依存：
- *  - グローバル変数 : masterData, lastFetchedRecords, formData, isSubmitted
- *    （init_js で let 宣言しておく）
- *  - ユーティリティ : sanitize(), isValidQuarterHour()
- *    （check_js or utils.js に定義）
- * 役割：
- *  - 会社/担当者/現場の連動
- *  - 作業者/協力会社のチェックボックスと時間入力の生成
- *  - 日付トグル、セクションの開閉、フォームリセット
- * ------------------------------------------*/
+  /* ------------------------------------------
+   * フォーム描画まわり（候補生成・連動・UIトグル）
+   *
+   * 依存：
+   *  - グローバル変数 : masterData, lastFetchedRecords, formData, isSubmitted
+   *    （init_js で let 宣言しておく）
+   *  - ユーティリティ : sanitize(), isValidQuarterHour()
+   *    （check_js or utils.js に定義）
+   * 役割：
+   *  - 会社/担当者/現場の連動
+   *  - 作業者/協力会社のチェックボックスと時間入力の生成
+   *  - 日付トグル、セクションの開閉、フォームリセット
+   * ------------------------------------------*/
 
 
   // ------------------------------------------
@@ -120,33 +120,58 @@
         workerContainer.appendChild(createTimeInputs(`worker-${safeName}`));
       });
 
+    // === 協力会社用：役割3択（ラジオ）を作る ===
+    // name: 'partner-サニタイズ済み名前' を想定
+    function createPartnerRoleBlock(prefix) {
+      // prefix 例: "partner-サニタイズ済み会社名"
+      const wrap = document.createElement('div');
+      wrap.className = 'partner-role-wrap';
+      wrap.id = `roleblk-${prefix}`;
+      wrap.style.display = 'none'; // 最初は非表示
 
-    // ✅ 協力会社の表示（関数内に含めること！）
-    masterData.partner
-      .filter(p => p.staffIds.includes(staffId))
-      .filter(p => !registeredNames.has(`協力会社:${p.name}`))  // ✅ 登録済は除外
-      .forEach(p => {
-        const safeName = sanitize(p.name);
-        const wrapper = document.createElement('label');
-        wrapper.className = 'checkbox-wrapper';
+      // ★ submitForm 側の前提に合わせる
+      const radioName = `${prefix}-role`;
+
+      wrap.innerHTML = `
+        <div class="partner-role-title">役割を選択</div>
+        <div class="partner-role-group">
+          <label><input type="radio" name="${radioName}" value="only"> 協力会社のみ</label>
+          <label><input type="radio" name="${radioName}" value="leader"> 協力会社＋職長</label>
+          <label><input type="radio" name="${radioName}" value="other"> 協力会社＋その他資格</label>
+        </div>
+      `;
+      return wrap;
+    }
 
 
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.name = 'partner';
-        checkbox.value = p.name;
-        checkbox.onchange = () => toggleTimeInputs(checkbox, `partner-${safeName}`);
+    // ✅ 協力会社の表示（updateWorkerAndPartner 内）
+masterData.partner
+  .filter(p => p.staffIds.includes(staffId))
+  .filter(p => !registeredNames.has(`協力会社:${p.name}`))
+  .forEach(p => {
+    const safeName = sanitize(p.name);
+    const wrapper = document.createElement('label');
+    wrapper.className = 'checkbox-wrapper';
 
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.name = 'partner';
+    checkbox.value = p.name;
+    checkbox.onchange = () => toggleTimeInputs(checkbox, `partner-${safeName}`);
 
-        const span = document.createElement('span');
-        span.textContent = p.name;
+    const span = document.createElement('span');
+    span.textContent = p.name;
 
+    wrapper.appendChild(checkbox);
+    wrapper.appendChild(span);
 
-        wrapper.appendChild(checkbox);
-        wrapper.appendChild(span);
-        partnerContainer.appendChild(wrapper);
-        partnerContainer.appendChild(createTimeInputs(`partner-${safeName}`));
-      });
+    // ① チェック行
+    partnerContainer.appendChild(wrapper);
+    // ② 役割3択（非表示スタート）
+    partnerContainer.appendChild(createPartnerRoleBlock(`partner-${safeName}`));
+    // ③ 時間入力（非表示スタート）
+    partnerContainer.appendChild(createTimeInputs(`partner-${safeName}`));
+  });
   }
 
 
@@ -181,11 +206,11 @@
     }
   }
 
-console.log('[form_js] exporting handlers to window');
-window.toggleDateInput       = toggleDateInput;
-window.updateStaffOptions    = updateStaffOptions;
-window.updateSiteOptions     = updateSiteOptions;
-window.updateWorkerAndPartner= updateWorkerAndPartner;
-window.resetForm             = resetForm;
-console.log('[form_js] exports done');
+  console.log('[form_js] exporting handlers to window');
+  window.toggleDateInput = toggleDateInput;
+  window.updateStaffOptions = updateStaffOptions;
+  window.updateSiteOptions = updateSiteOptions;
+  window.updateWorkerAndPartner = updateWorkerAndPartner;
+  window.resetForm = resetForm;
+  console.log('[form_js] exports done');
 </script>
