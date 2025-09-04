@@ -219,7 +219,7 @@ function updateEditedRecords(meta, records) {
   const FN = '[updateEditedRecords]';
   const start = new Date();
 
-  // 小さなユーティリティ
+  // --- utils ---
   const sleep = (ms) => Utilities.sleep(ms);
   const doWithRetry = (fn, { retries = 1, waitMs = 500 } = {}) => {
     let lastErr;
@@ -233,14 +233,14 @@ function updateEditedRecords(meta, records) {
     throw lastErr;
   };
 
-  // ---- ロック（同時実行ガード）----
+  // --- lock ---
   const lock = LockService.getDocumentLock();
-  if (!lock.tryLock(5000)) { // 5秒以内に取れなければエラー
+  if (!lock.tryLock(5000)) {
     throw new Error('他の処理が実行中です。しばらくしてから再度お試しください。');
   }
 
   try {
-    // ---- 参照準備 ----
+    // --- resolve masters ---
     const ss     = getSS();
     const sheet  = ss.getSheetByName(SHEETS.RESPONSES);
     const logSh  = ss.getSheetByName('編集ログ') || ss.insertSheet('編集ログ');
@@ -249,60 +249,61 @@ function updateEditedRecords(meta, records) {
     const siteMap    = getMapFromSheet(ss.getSheetByName(SHEETS.SITE));
     const staffMap   = getMapFromSheet(ss.getSheetByName(SHEETS.STAFF));
 
-    const dateStr    = String(meta.date || ''); // 'yyyy-MM-dd' 想定
+    const dateStr     = String(meta.date || ''); // yyyy-MM-dd
     const companyName = companyMap[meta.companyId];
     const siteName    = siteMap[meta.siteId];
     const staffName   = staffMap[meta.staffId];
 
     if (!companyName || !siteName || !staffName) {
-      throw new Error('マスター解決に失敗しました（company/site/staffの名前が取得できません）。' +
-        JSON.stringify({ companyId: meta.companyId, siteId: meta.siteId, staffId: meta.staffId }));
+      throw new Error(
+        'マスター解決に失敗しました（company/site/staffの名前が取得できません）。' +
+        JSON.stringify({ companyId: meta.companyId, siteId: meta.siteId, staffId: meta.staffId })
+      );
     }
 
     Logger.log('%s meta=%s', FN, JSON.stringify(meta));
     Logger.log('%s records.length=%s', FN, (records || []).length);
+    Logger.log('%s records(raw)=%s', FN, JSON.stringify(records || []));
 
-    const all = sheet.getDataRange().getValues(); // [0]はヘッダー
+    const all = sheet.getDataRange().getValues(); // [0] header
     const newTimestamp = new Date();
 
-    // ---- 条件に合う既存行の抽出 ----
-    const matchRowIndexes = []; // シートの1-based行番号
+    // --- find matched rows ---
+    const matchRowIndexes = []; // 1-based
     for (let i = 1; i < all.length; i++) {
       const r = all[i];
 
-      // r[1] が Date or 文字列の両対応で 'yyyy-MM-dd' に正規化
+      // r[1] may be Date or string
       let rowDateStr = '';
       try {
         const cell = r[1];
         const d = (cell instanceof Date) ? cell : (cell ? new Date(cell) : null);
         if (d && !isNaN(d.getTime())) {
           rowDateStr = Utilities.formatDate(d, 'Asia/Tokyo', 'yyyy-MM-dd');
+        } else {
+          rowDateStr = String(cell || '');
         }
-      } catch (e) { /* noop */ }
+      } catch (e) {}
 
       if (rowDateStr === dateStr && r[2] === companyName && r[3] === staffName && r[4] === siteName) {
-        matchRowIndexes.push(i + 1); // 1-based
+        matchRowIndexes.push(i + 1); // to 1-based
       }
     }
     Logger.log('%s matched rows=%s', FN, JSON.stringify(matchRowIndexes));
 
-    // ---- ログ転記 → 削除（各行で独立にリトライ）----
-    // 上から削除すると行番号がずれるため、下から処理
+    // --- log & delete matched rows (bottom-up) ---
     matchRowIndexes.sort((a, b) => b - a).forEach(rowIndex => {
       const row = sheet.getRange(rowIndex, 1, 1, sheet.getLastColumn()).getValues()[0];
 
-      // 1) ログ転記（最大1回リトライ）
       let logged = false;
       try {
         doWithRetry(() => logSh.appendRow(['編集前', ...row]), { retries: 1, waitMs: 1000 });
         logged = true;
       } catch (e) {
         Logger.log('%s log append failed row=%s err=%s', FN, rowIndex, e);
-        // L列(12列目)にメモ（存在しない場合もあるため try/catch）
         try { sheet.getRange(rowIndex, 12).setValue('編集ログへの転記エラー'); } catch (e2) {}
       }
 
-      // 2) ログ成功時のみ削除（最大1回リトライ）
       if (logged) {
         try {
           doWithRetry(() => sheet.deleteRow(rowIndex), { retries: 1, waitMs: 600 });
@@ -315,15 +316,28 @@ function updateEditedRecords(meta, records) {
 
     SpreadsheetApp.flush();
 
-    // ---- 追記（各行でリトライ）----
+    // --- append new rows (compose name with role for 協力会社) ---
+    const roleLabelMap = {
+      only:  '協力会社のみ',
+      leader:'協力会社＋職長',
+      other: '協力会社＋その他資格'
+    };
+
     (records || []).forEach(r => {
+      // ★保存用の name をここで確定（協力会社 かつ role が only 以外なら合成）
+      const nameForSave = (r.type === '協力会社' && r.role && r.role !== 'only')
+        ? `${r.name}（${roleLabelMap[r.role] || r.role}）`
+        : r.name;
+
       const row = [
         newTimestamp, dateStr,
         companyName, staffName, siteName,
         r.type,
-        r.name,
+        nameForSave,                                // ← ここに合成後の名前
         toNumber(r.man), toNumber(r.overtime)
       ];
+
+      Logger.log('%s append row=%s', FN, JSON.stringify(row));
       doWithRetry(() => sheet.appendRow(row), { retries: 1, waitMs: 500 });
     });
 
@@ -334,7 +348,6 @@ function updateEditedRecords(meta, records) {
 
   } catch (e) {
     Logger.log('%s error: %s', FN, e && e.stack || e);
-    // ここで throw するとフロントの withFailureHandler に飛ぶ
     throw e;
   } finally {
     try { lock.releaseLock(); } catch (e) {}
