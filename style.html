@@ -840,4 +840,68 @@
 
 
 
+/* --- 編集テーブルの役割列をはみ出させない --- */
+#edit-table th:nth-child(3),
+#edit-table td:nth-child(3) {
+  width: 260px;            /* ← 横幅をしっかり確保（必要に応じて増減） */
+  max-width: 260px;
+  vertical-align: top;
+}
+
+/* セル内の文字が1文字ごとに折り返されないように */
+#edit-table .role-cell {
+  white-space: normal;     /* 横幅に応じて自然に折返し */
+  line-height: 1.3;
+}
+
+/* 役割カード全体のレイアウト：2列並び + 自動折返し */
+.partner-role-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(120px, 1fr));
+  gap: 8px;
+}
+
+/* 役割カード（ラジオ＋ラベル） */
+.role-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 6px 8px;
+  background: #fff;
+  box-sizing: border-box;
+  white-space: nowrap;     /* ここは1カード内で文字を折り返さない */
+}
+
+.role-card input[type="radio"] {
+  flex: 0 0 auto;
+}
+
+/* 文字が潰れないよう適度なサイズに */
+.role-card span {
+  font-size: 14px;
+}
+
+/* 数値入力が大きすぎて列を押し広げないよう編集モーダル内で抑える */
+#historyModal .work-input {
+  width: 120px;
+  max-width: 100%;
+  font-size: 18px;
+  padding: 8px 10px;
+}
+
+/* 画面が狭い時は役割カードを1列にして縦に並べる */
+@media (max-width: 520px) {
+  .partner-role-grid {
+    grid-template-columns: 1fr;
+  }
+  #edit-table th:nth-child(3),
+  #edit-table td:nth-child(3) {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+
 </style>

@@ -145,8 +145,8 @@
       html += `<tr>
       <td>${r.type}</td>
       <td>${r.name}</td>
-  <td>${r.type === '協力会社'
-          ? `
+  <td class="role-cell">${
+    r.type === '協力会社' ? `
       <div class="partner-role-grid">
         <label class="role-card">
           <input type="radio" name="${roleName}" value="only"   ${role === 'only' ? 'checked' : ''}>
