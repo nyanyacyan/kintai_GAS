@@ -1,22 +1,5 @@
 <script>
 
-  /* ------------------------------------------
-   * 履歴表示＆編集モーダルまわり
-   *
-   * 依存：
-   *  - グローバル変数 : masterData, lastFetchedRecords, formData, isEditMode
-   *    （init_js で let 宣言しておく）
-   *  - ユーティリティ : sanitize(), isValidQuarterHour()
-   *    （check_js / utils に定義）
-   *  - フォーム系関数 : createTimeInputs(), toggleTimeInputs(), updateWorkerAndPartner()
-   *    （form_js に定義）
-   *  - 送信系関数 : showConfirmation(), closeConfirmation()
-   *    （send_js に定義）
-   * 参照するHTML要素ID：
-   *  - #historyModal, #modalHistoryDate, #modalHistoryContent, #loadingOverlay
-   *  - #historyRecords, #editButton
-   * ------------------------------------------*/
-
   // ------------------------------------------
   // 送信履歴のモーダルを開く（初回モーダル表示時）
   // 日付＋送信履歴を取得
@@ -150,27 +133,48 @@
     const container = document.getElementById('modalHistoryContent');
 
     let html = '<h3>編集フォーム</h3>';
-    html += '<table style="width:100%; border-collapse: collapse;">';
-    // html += '<tr><th>種別</th><th>名前</th><th>日勤</th><th>夕勤</th><th>夜勤</th><th>残業</th></tr>';
-    html += '<tr><th>種別</th><th>名前</th><th>人工</th><th>残業</th></tr>';
+
+    html += '<table id="edit-table" style="width:100%; border-collapse: collapse;">';
+    html += '<tr><th>種別</th><th>名前</th><th>役割</th><th>人工</th><th>残業</th></tr>';
+
     lastFetchedRecords.forEach((r, i) => {
+      const safe = sanitize(r.name);
+      const roleName = `edit-partner-${safe}-role`;  // ★編集用のラジオname
+      const role = r.role || 'only';                 // ★既存が無ければ only
+
       html += `<tr>
       <td>${r.type}</td>
       <td>${r.name}</td>
-      <td><input type="number" step="0.25" class="work-input" placeholder="人工" value="${r.man}" id="edit-man-${i}" /></td>
-      <td><input type="number" step="0.25" class="work-input" placeholder="残業" value="${r.overtime}" id="edit-overtime-${i}" /></td>
+  <td>${r.type === '協力会社'
+          ? `
+      <div class="partner-role-grid">
+        <label class="role-card">
+          <input type="radio" name="${roleName}" value="only"   ${role === 'only' ? 'checked' : ''}>
+          <span>協力会社のみ</span>
+        </label>
+        <label class="role-card">
+          <input type="radio" name="${roleName}" value="leader" ${role === 'leader' ? 'checked' : ''}>
+          <span>協力会社＋職長</span>
+        </label>
+        <label class="role-card">
+          <input type="radio" name="${roleName}" value="other"  ${role === 'other' ? 'checked' : ''}>
+          <span>協力会社＋その他資格</span>
+        </label>
+      </div>
+    ` : '—'
+        }</td>
 
+      <td><input type="number" step="0.25" class="work-input" placeholder="人工"   value="${r.man}"      id="edit-man-${i}" /></td>
+      <td><input type="number" step="0.25" class="work-input" placeholder="残業" value="${r.overtime}" id="edit-overtime-${i}" /></td>
     </tr>`;
     });
     html += '</table>';
     html += `
-      <div id="editUploader" class="upload-section" style="margin:12px 0;"></div>
-      <button onclick="showEditConfirmationModal()">再送信（更新）</button>
-    `;
+    <div id="editUploader" class="upload-section" style="margin:12px 0;"></div>
+    <button onclick="showEditConfirmationModal()">再送信（更新）</button>
+  `;
     container.innerHTML = html;
-    renderAdditionalInputs(); // ✅ 履歴外の追加候補を表示
-
-    // ★ DOMができた“後”に添付UIを初期化
+    renderAdditionalInputs();
     renderEditUploader();
   }
 
@@ -235,6 +239,11 @@
       wrapper.appendChild(checkbox);
       wrapper.appendChild(span);
       container.appendChild(wrapper);
+
+      if (type === 'partner') {
+        // ★役割（最初は非表示、チェックONで出る）
+        container.appendChild(createPartnerRoleBlock(`modal-partner-${safeName}`));
+      }
 
       const inputs = createTimeInputs(`modal-${type}-${safeName}`);
       container.appendChild(inputs);
@@ -302,7 +311,13 @@
       });
 
       if (!isRowInvalid) {
-        editedRecords.push({ ...r, man, overtime });
+        const entry = { ...r, man, overtime };
+        if (r.type === '協力会社') {
+          const safe = sanitize(r.name);
+          const roleEl = document.querySelector(`input[name="edit-partner-${safe}-role"]:checked`);
+          entry.role = roleEl ? roleEl.value : (r.role || 'only');
+        }
+        editedRecords.push(entry);
       }
     });
 
@@ -417,7 +432,7 @@
       staffId: document.getElementById('staff').value,
       site: document.getElementById('site').value,
       workers: editedRecords.filter(r => r.type === '作業者').map(({ name, man, overtime }) => ({ name, man, overtime })),
-      partners: editedRecords.filter(r => r.type === '協力会社').map(({ name, man, overtime }) => ({ name, man, overtime }))
+      partners: editedRecords.filter(r => r.type === '協力会社').map(({ name, man, overtime, role }) => ({ name, man, overtime, role }))
     };
 
     // 確認画面を表示
