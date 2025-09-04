@@ -186,6 +186,13 @@
   }
 
 
+  // 役割を「会社名＋役割」に整形
+  function partnerDisplayName(baseName, roleVal) {
+    if (roleVal === 'leader') return `${baseName}＋職長`;
+    if (roleVal === 'other') return `${baseName}＋その他資格`;
+    return baseName; // only or 未選択
+  }
+
 
   // ------------------------------------------
   // 画面全体を初期状態に戻す（送信完了後などに使用）

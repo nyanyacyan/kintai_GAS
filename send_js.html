@@ -247,12 +247,12 @@
 
       // 表示名を役割ラベルに置換（完全置換）
       const roleLabel = roleLabelMap[roleVal] || '';
-      const displayName = roleLabel || name;
 
+      const displayName = partnerDisplayName(name, roleVal);
       formData.partners.push({
-        rawName: name,                 // 元の会社名を保持したい場合
-        name: displayName,          // 置換後の表示・保存用
-        role: roleVal,              // 'only' | 'leader' | 'other'
+        rawName: name,           // 会社名（必要なら残す）
+        name: displayName,       // ← 会社名＋役割 を保存/表示に使う
+        role: roleVal,
         man: inputs[0].value,
         overtime: inputs[1].value
       });

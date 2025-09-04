@@ -332,14 +332,16 @@
         role = sel ? sel.value : role; // only | leader | other
       }
 
-      // 表示名を置き換える場合はここで
-      const displayName = (r.type === '協力会社' && role) ? roleLabelMap[role] : r.name;
+      // ★ 表示名（UIで見せたい用）
+      const displayName = (r.type === '協力会社')
+        ? partnerDisplayName(r.name, role)  // ← 会社名＋役割
+        : r.name;
 
       editedRecords.push({
         ...r,
-        name: r.name,       // ← シート保存用は会社名
-        role,               // ← role 別フィールド
-        displayName,        // ← UI表示用（任意）
+        name: r.name,       // ← 保存用は純粋な会社名
+        role,               // ← 保存用に役割を保持
+        displayName,        // ← UIや確認画面用
         man,
         overtime
       });
@@ -351,21 +353,22 @@
       const safe = sanitize(name);
       const manInput = document.querySelector(`input[data-name="modal-partner-${safe}"][data-type="man"]`);
       const overtimeInput = document.querySelector(`input[data-name="modal-partner-${safe}"][data-type="overtime"]`);
-      const roleEl = document.querySelector(`input[name="role-modal-partner-${safe}"]:checked`); // createPartnerRoleBlock の name と一致させる
       const role = roleEl ? roleEl.value : 'only';
 
       const man = parseFloat(manInput?.value || 0);
       const overtime = parseFloat(overtimeInput?.value || 0);
       const displayName = roleLabelMap[role];
 
-      editedRecords.push({
-        type: '協力会社',
-        name: displayName,
-        role,
-        man,
-        overtime
+      // 役割ラジオの取得（追加用）
+      const roleEl = document.querySelector(`input[name="modal-partner-${safeName}-role"]:checked`);
+      const roleVal = roleEl?.value || '';
+
+      if (!isRowInvalid) {
+
+        const displayName = partnerDisplayName(name, roleVal);
+        editedRecords.push({ type: '協力会社', name: displayName, rawName: name, role: roleVal, man, overtime });
+        }
       });
-    });
 
     // workers も従来通り push 済みなら OK。最後に formData を作成
     formData = {

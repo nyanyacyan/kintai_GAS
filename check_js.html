@@ -75,6 +75,9 @@ lastFetchedRecords.forEach((r, i) => {
     .withFailureHandler(/* …省略… */)
     .updateEditedRecords(meta, edited);
 
+  console.log('[submitEditFromModal] meta:', JSON.parse(JSON.stringify(meta)));
+  console.table(edited);           // 1行ずつ見やすい
+  console.log('[submitEditFromModal] payload:', edited);
   console.log('[submitEditFromModal] end (request queued)');
 }
 
