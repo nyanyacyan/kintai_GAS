@@ -365,39 +365,36 @@ let formData = window.formData || {};  // 念のためグローバルに
   pendingEditPayload = { meta, records };   // ← 保存用はコレを使う
 
   // ---- ここから「表示用」formData を作る ----
-  const roleLabelMap = {
-    only:   '協力会社のみ',
-    leader: '協力会社＋職長',
-    other:  '協力会社＋その他資格'
-  };
+const roleSuffixMap = {
+  only:   '',            // 協力会社のみ → 会社名だけ
+  leader: '＋職長',      // フル幅の＋（半角+でもOK）
+  other:  '＋その他資格'
+};
 
-  // 確認モーダルに出す配列（workers / partners）を作る
-  const workersDisp = records
-    .filter(r => r.type === '作業者')
-    .map(({ name, man, overtime }) => ({ name, man, overtime }));
+const workersDisp = records
+  .filter(r => r.type === '作業者')
+  .map(({ name, man, overtime }) => ({ name, man, overtime }));
 
-  const partnersDisp = records
-    .filter(r => r.type === '協力会社')
-    .map(({ name, role, man, overtime }) => {
-      // 表示名は「会社名（役割）」にしたいなら下記。会社名だけで良ければ name のみ。
-      const roleText = role && role !== 'only' ? `（${roleLabelMap[role]}）` : '';
-      return { name: name + roleText, man, overtime };
-    });
+const partnersDisp = records
+  .filter(r => r.type === '協力会社')
+  .map(({ name, role, man, overtime }) => {
+    const suffix = roleSuffixMap[role] ?? '';
+    return { name: name + suffix, man, overtime };   // ← 会社名の後ろにだけ役割を付ける
+  });
 
-  // showConfirmation が参照する形に揃える
-  formData = {
-    companyId: meta.companyId,
-    staffId:   meta.staffId,
-    site:      meta.siteId,
-    date:      meta.date,
-    workers:   workersDisp,
-    partners:  partnersDisp
-  };
-  console.log('[showEditConfirmationModal] formData for modal =',
-              JSON.parse(JSON.stringify(formData)));
+// showConfirmation が参照する形に揃える
+formData = {
+  companyId: meta.companyId,
+  staffId:   meta.staffId,
+  site:      meta.siteId,
+  date:      meta.date,
+  workers:   workersDisp,
+  partners:  partnersDisp
+};
+console.log('[showEditConfirmationModal] formData for modal =',
+            JSON.parse(JSON.stringify(formData)));
 
-  // これで showConfirmation 内の formData 参照が成立する
-  showConfirmation(true);
+showConfirmation(true);
 }
 
 
