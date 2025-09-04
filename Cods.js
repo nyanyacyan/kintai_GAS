@@ -326,7 +326,7 @@ function updateEditedRecords(meta, records) {
     (records || []).forEach(r => {
       // ★保存用の name をここで確定（協力会社 かつ role が only 以外なら合成）
       const nameForSave = (r.type === '協力会社' && r.role && r.role !== 'only')
-        ? `${r.name}（${roleLabelMap[r.role] || r.role}）`
+        ? `${r.name}${roleLabelMap[r.role] || r.role}`
         : r.name;
 
       const row = [
