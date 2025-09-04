@@ -199,17 +199,17 @@
     setupUploader('uploaderEdit', { max: 5, mode: 'carousel', queueKey: 'edit' });
   }
 
-// 編集モーダル用：協力会社の「役割」を縦並びラジオで作る
-function createEditPartnerRoleBlock(nameKey) {
-  // 例: nameKey = "modal-partner-ABC"
-  const wrap = document.createElement('div');
-  wrap.className = 'partner-role-wrap';
-  wrap.id = `role-${nameKey}`;
-  wrap.style.display = 'none'; // チェックONでだけ表示
+  // 編集モーダル用：協力会社の「役割」を縦並びラジオで作る
+  function createEditPartnerRoleBlock(nameKey) {
+    // 例: nameKey = "modal-partner-ABC"
+    const wrap = document.createElement('div');
+    wrap.className = 'partner-role-wrap';
+    wrap.id = `role-${nameKey}`;
+    wrap.style.display = 'none'; // チェックONでだけ表示
 
-  const radioName = `${nameKey}-role`; // ← submit側の参照と一致させる
+    const radioName = `${nameKey}-role`; // ← submit側の参照と一致させる
 
-  wrap.innerHTML = `
+    wrap.innerHTML = `
     <div class="partner-role-grid partner-role-grid--col">
       <label class="role-card">
         <input type="radio" name="${radioName}" value="only">
@@ -225,8 +225,8 @@ function createEditPartnerRoleBlock(nameKey) {
       </label>
     </div>
   `;
-  return wrap;
-}
+    return wrap;
+  }
 
 
   // ------------------------------------------
@@ -304,80 +304,81 @@ function createEditPartnerRoleBlock(nameKey) {
   // モーダル内編集フォームの「再送信（更新）」ボタン押下時：
   // 入力検証→formData組み立て→確認モーダルへ
   // ------------------------------------------
-function showEditConfirmationModal() {
-  isEditMode = true;
-  // 既存のバリデーション処理はそのまま…
+  function showEditConfirmationModal() {
+    isEditMode = true;
+    // 既存のバリデーション処理はそのまま…
 
-  const roleLabelMap = {
-    only: '協力会社のみ',
-    leader: '協力会社＋職長',
-    other: '協力会社＋その他資格'
-  };
+    const roleLabelMap = {
+      only: '協力会社のみ',
+      leader: '協力会社＋職長',
+      other: '協力会社＋その他資格'
+    };
 
-  const editedRecords = [];
+    const editedRecords = [];
 
-  lastFetchedRecords.forEach((r, i) => {
-    const manInput = document.getElementById(`edit-man-${i}`);
-    const overtimeInput = document.getElementById(`edit-overtime-${i}`);
-    if (!manInput || !overtimeInput) return;
+    lastFetchedRecords.forEach((r, i) => {
+      const manInput = document.getElementById(`edit-man-${i}`);
+      const overtimeInput = document.getElementById(`edit-overtime-${i}`);
+      if (!manInput || !overtimeInput) return;
 
-    const man = parseFloat(manInput.value || 0);
-    const overtime = parseFloat(overtimeInput.value || 0);
+      const man = parseFloat(manInput.value || 0);
+      const overtime = parseFloat(overtimeInput.value || 0);
 
-    // ★ 役割の取得（協力会社のみ）
-    let role = r.role || 'only';
-    if (r.type === '協力会社') {
-      const safe = sanitize(r.name);
-      const sel = document.querySelector(`input[name="edit-partner-${safe}-role"]:checked`);
-      role = sel ? sel.value : role; // only | leader | other
-    }
+      // ★ 役割の取得（協力会社のみ）
+      let role = r.role || 'only';
+      if (r.type === '協力会社') {
+        const safe = sanitize(r.name);
+        const sel = document.querySelector(`input[name="edit-partner-${safe}-role"]:checked`);
+        role = sel ? sel.value : role; // only | leader | other
+      }
 
-    // 表示名を置き換える場合はここで
-    const displayName = (r.type === '協力会社' && role) ? roleLabelMap[role] : r.name;
+      // 表示名を置き換える場合はここで
+      const displayName = (r.type === '協力会社' && role) ? roleLabelMap[role] : r.name;
 
-    editedRecords.push({
-      ...r,
-      name: displayName,
-      role,
-      man,
-      overtime
+      editedRecords.push({
+        ...r,
+        name: r.name,       // ← シート保存用は会社名
+        role,               // ← role 別フィールド
+        displayName,        // ← UI表示用（任意）
+        man,
+        overtime
+      });
     });
-  });
 
-  // 追加の協力会社（モーダル下部の新規追加）にも役割がある場合は同様に拾う
-  document.querySelectorAll('.additional-partner:checked').forEach(cb => {
-    const name = cb.value;
-    const safe = sanitize(name);
-    const manInput = document.querySelector(`input[data-name="modal-partner-${safe}"][data-type="man"]`);
-    const overtimeInput = document.querySelector(`input[data-name="modal-partner-${safe}"][data-type="overtime"]`);
-    const roleEl = document.querySelector(`input[name="role-modal-partner-${safe}"]:checked`); // createPartnerRoleBlock の name と一致させる
-    const role = roleEl ? roleEl.value : 'only';
+    // 追加の協力会社（モーダル下部の新規追加）にも役割がある場合は同様に拾う
+    document.querySelectorAll('.additional-partner:checked').forEach(cb => {
+      const name = cb.value;
+      const safe = sanitize(name);
+      const manInput = document.querySelector(`input[data-name="modal-partner-${safe}"][data-type="man"]`);
+      const overtimeInput = document.querySelector(`input[data-name="modal-partner-${safe}"][data-type="overtime"]`);
+      const roleEl = document.querySelector(`input[name="role-modal-partner-${safe}"]:checked`); // createPartnerRoleBlock の name と一致させる
+      const role = roleEl ? roleEl.value : 'only';
 
-    const man = parseFloat(manInput?.value || 0);
-    const overtime = parseFloat(overtimeInput?.value || 0);
-    const displayName = roleLabelMap[role];
+      const man = parseFloat(manInput?.value || 0);
+      const overtime = parseFloat(overtimeInput?.value || 0);
+      const displayName = roleLabelMap[role];
 
-    editedRecords.push({
-      type: '協力会社',
-      name: displayName,
-      role,
-      man,
-      overtime
+      editedRecords.push({
+        type: '協力会社',
+        name: displayName,
+        role,
+        man,
+        overtime
+      });
     });
-  });
 
-  // workers も従来通り push 済みなら OK。最後に formData を作成
-  formData = {
-    date: document.getElementById('modalHistoryDate').value,
-    companyId: document.getElementById('company').value,
-    staffId: document.getElementById('staff').value,
-    site: document.getElementById('site').value,
-    workers: editedRecords.filter(r => r.type === '作業者').map(({ name, man, overtime }) => ({ name, man, overtime })),
-    partners: editedRecords.filter(r => r.type === '協力会社').map(({ name, man, overtime }) => ({ name, man, overtime }))
-  };
+    // workers も従来通り push 済みなら OK。最後に formData を作成
+    formData = {
+      date: document.getElementById('modalHistoryDate').value,
+      companyId: document.getElementById('company').value,
+      staffId: document.getElementById('staff').value,
+      site: document.getElementById('site').value,
+      workers: editedRecords.filter(r => r.type === '作業者').map(({ name, man, overtime }) => ({ name, man, overtime })),
+      partners: editedRecords.filter(r => r.type === '協力会社').map(({ name, man, overtime }) => ({ name, man, overtime }))
+    };
 
-  showConfirmation(true);
-}
+    showConfirmation(true);
+  }
 
 
 

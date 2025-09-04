@@ -15,24 +15,30 @@ function submitEditFromModal() {
   };
 
   const edited = [];
-  lastFetchedRecords.forEach((r, i) => {
-    const manInput = document.getElementById(`edit-man-${i}`);
-    const overtimeInput = document.getElementById(`edit-overtime-${i}`);
-    if (!manInput || !overtimeInput) return;
+lastFetchedRecords.forEach((r, i) => {
+  const manInput = document.getElementById(`edit-man-${i}`);
+  const overtimeInput = document.getElementById(`edit-overtime-${i}`);
+  if (!manInput || !overtimeInput) return;
 
-    let role = r.role || 'only';
-    if (r.type === '協力会社') {
-      const safe = sanitize(r.name);
-      const sel = document.querySelector(`input[name="edit-partner-${safe}-role"]:checked`);
-      role = sel ? sel.value : role;
-    }
+  let role = r.role || 'only';
+  if (r.type === '協力会社') {
+    const safe = sanitize(r.name);
+    const sel = document.querySelector(`input[name="edit-partner-${safe}-role"]:checked`);
+    role = sel ? sel.value : role;
+  }
 
-    const man = parseFloat(manInput.value || 0);
-    const overtime = parseFloat(overtimeInput.value || 0);
-    const displayName = (r.type === '協力会社' && role) ? roleLabelMap[role] : r.name;
+  const man = parseFloat(manInput.value || 0);
+  const overtime = parseFloat(overtimeInput.value || 0);
 
-    edited.push({ ...r, name: displayName, role, man, overtime });
+  // ★ 修正：シートには会社名をそのまま渡す
+  edited.push({
+    ...r,
+    name: r.name,   // ← 元の会社名を維持
+    role,           // ← role を別フィールドに格納
+    man,
+    overtime
   });
+});
 
   // 追加作業者
   document.querySelectorAll('.additional-worker:checked').forEach(cb => {
