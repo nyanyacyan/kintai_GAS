@@ -135,7 +135,8 @@
     let html = '<h3>編集フォーム</h3>';
 
     html += '<table id="edit-table" style="width:100%; border-collapse: collapse;">';
-    html += '<tr><th>種別</th><th>名前</th><th>役割</th><th>人工</th><th>残業</th></tr>';
+    html += '<thead><tr><th>種別</th><th>名前</th><th>役割</th><th>人工</th><th>残業</th></tr></thead>';
+    html += '<tbody id="edit-tbody">';
 
     lastFetchedRecords.forEach((r, i) => {
       const safe = sanitize(r.name);
@@ -145,8 +146,7 @@
       html += `<tr>
       <td>${r.type}</td>
       <td>${r.name}</td>
-  <td class="role-cell">${
-    r.type === '協力会社' ? `
+  <td class="role-cell">${r.type === '協力会社' ? `
       <div class="partner-role-grid">
         <label class="role-card">
           <input type="radio" name="${roleName}" value="only"   ${role === 'only' ? 'checked' : ''}>
