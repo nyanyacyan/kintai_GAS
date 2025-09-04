@@ -216,74 +216,129 @@ function getPreviousRecords(date, companyId, staffId, siteId) {
 
 // 以下の関数は、Google Sheetsを使用してデータを取得、保存、および更新するためのものです。
 function updateEditedRecords(meta, records) {
-  const ss = getSS();
-  const sheet = ss.getSheetByName(SHEETS.RESPONSES);
-  const logSheet = ss.getSheetByName('編集ログ') || ss.insertSheet('編集ログ');
+  const FN = '[updateEditedRecords]';
+  const start = new Date();
 
-  const companyMap = getMapFromSheet(ss.getSheetByName(SHEETS.COMPANY));
-  const siteMap = getMapFromSheet(ss.getSheetByName(SHEETS.SITE));
-  const staffMap = getMapFromSheet(ss.getSheetByName(SHEETS.STAFF));
-
-  const date = meta.date;
-  const companyName = companyMap[meta.companyId];
-  const siteName = siteMap[meta.siteId];
-  const staffName = staffMap[meta.staffId];
-
-  const all = sheet.getDataRange().getValues();
-  const newTimestamp = new Date();
-
-  // 全行チェックして、条件に一致した行に処理
-  for (let i = all.length - 1; i >= 1; i--) {
-    const r = all[i];
-    if (
-      Utilities.formatDate(new Date(r[1]), "Asia/Tokyo", "yyyy-MM-dd") === date &&
-      r[2] === companyName &&
-      r[3] === staffName &&
-      r[4] === siteName
-    ) {
-      const rowIndex = i + 1; // シート上の行番号（1スタート）
-
-      // 編集ログへの追記を試みる
-      let logSuccess = false;  // 初期値のフラグ→最初はfalseにして成功したらフラグが立つようにする
-      try {
-        logSheet.appendRow(["編集前", ...r]);
-        logSuccess = true;  // ここで成功フラグを立てる→もし成功してない場合には検知してリトライ
-      } catch (e) {
-        // 1回だけリトライ
-        try {
-          Utilities.sleep(1000); // 少し待機
-          logSheet.appendRow(["編集前", ...r]);
-          logSuccess = true;
-        } catch (retryError) {
-          // リトライも失敗 → L列に「編集ログへの転記エラー」
-          sheet.getRange(rowIndex, 12).setValue("編集ログへの転記エラー");
-        }
-      }
-
-      // ログ追記が成功しているときのみ削除を試みる
-      if (logSuccess) {
-        try {
-          sheet.deleteRow(rowIndex);  // 行を削除
-        } catch (e) {
-          // 削除失敗した場合もエラー記録
-          sheet.getRange(rowIndex, 12).setValue("編集ログへの転記エラー");
-        }
+  // 小さなユーティリティ
+  const sleep = (ms) => Utilities.sleep(ms);
+  const doWithRetry = (fn, { retries = 1, waitMs = 500 } = {}) => {
+    let lastErr;
+    for (let i = 0; i <= retries; i++) {
+      try { return fn(); }
+      catch (e) {
+        lastErr = e;
+        if (i < retries) sleep(waitMs);
       }
     }
+    throw lastErr;
+  };
+
+  // ---- ロック（同時実行ガード）----
+  const lock = LockService.getDocumentLock();
+  if (!lock.tryLock(5000)) { // 5秒以内に取れなければエラー
+    throw new Error('他の処理が実行中です。しばらくしてから再度お試しください。');
   }
 
-  // 編集後データの追加処理
-  records.forEach(r => {
-    sheet.appendRow([
-      newTimestamp, date,
-      companyName, staffName, siteName,
-      r.type,
-      r.name,
-      toNumber(r.man), toNumber(r.overtime)
-    ]);
-  });
+  try {
+    // ---- 参照準備 ----
+    const ss     = getSS();
+    const sheet  = ss.getSheetByName(SHEETS.RESPONSES);
+    const logSh  = ss.getSheetByName('編集ログ') || ss.insertSheet('編集ログ');
 
-  return 'ok';
+    const companyMap = getMapFromSheet(ss.getSheetByName(SHEETS.COMPANY));
+    const siteMap    = getMapFromSheet(ss.getSheetByName(SHEETS.SITE));
+    const staffMap   = getMapFromSheet(ss.getSheetByName(SHEETS.STAFF));
+
+    const dateStr    = String(meta.date || ''); // 'yyyy-MM-dd' 想定
+    const companyName = companyMap[meta.companyId];
+    const siteName    = siteMap[meta.siteId];
+    const staffName   = staffMap[meta.staffId];
+
+    if (!companyName || !siteName || !staffName) {
+      throw new Error('マスター解決に失敗しました（company/site/staffの名前が取得できません）。' +
+        JSON.stringify({ companyId: meta.companyId, siteId: meta.siteId, staffId: meta.staffId }));
+    }
+
+    Logger.log('%s meta=%s', FN, JSON.stringify(meta));
+    Logger.log('%s records.length=%s', FN, (records || []).length);
+
+    const all = sheet.getDataRange().getValues(); // [0]はヘッダー
+    const newTimestamp = new Date();
+
+    // ---- 条件に合う既存行の抽出 ----
+    const matchRowIndexes = []; // シートの1-based行番号
+    for (let i = 1; i < all.length; i++) {
+      const r = all[i];
+
+      // r[1] が Date or 文字列の両対応で 'yyyy-MM-dd' に正規化
+      let rowDateStr = '';
+      try {
+        const cell = r[1];
+        const d = (cell instanceof Date) ? cell : (cell ? new Date(cell) : null);
+        if (d && !isNaN(d.getTime())) {
+          rowDateStr = Utilities.formatDate(d, 'Asia/Tokyo', 'yyyy-MM-dd');
+        }
+      } catch (e) { /* noop */ }
+
+      if (rowDateStr === dateStr && r[2] === companyName && r[3] === staffName && r[4] === siteName) {
+        matchRowIndexes.push(i + 1); // 1-based
+      }
+    }
+    Logger.log('%s matched rows=%s', FN, JSON.stringify(matchRowIndexes));
+
+    // ---- ログ転記 → 削除（各行で独立にリトライ）----
+    // 上から削除すると行番号がずれるため、下から処理
+    matchRowIndexes.sort((a, b) => b - a).forEach(rowIndex => {
+      const row = sheet.getRange(rowIndex, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+      // 1) ログ転記（最大1回リトライ）
+      let logged = false;
+      try {
+        doWithRetry(() => logSh.appendRow(['編集前', ...row]), { retries: 1, waitMs: 1000 });
+        logged = true;
+      } catch (e) {
+        Logger.log('%s log append failed row=%s err=%s', FN, rowIndex, e);
+        // L列(12列目)にメモ（存在しない場合もあるため try/catch）
+        try { sheet.getRange(rowIndex, 12).setValue('編集ログへの転記エラー'); } catch (e2) {}
+      }
+
+      // 2) ログ成功時のみ削除（最大1回リトライ）
+      if (logged) {
+        try {
+          doWithRetry(() => sheet.deleteRow(rowIndex), { retries: 1, waitMs: 600 });
+        } catch (e) {
+          Logger.log('%s delete failed row=%s err=%s', FN, rowIndex, e);
+          try { sheet.getRange(rowIndex, 12).setValue('行削除エラー'); } catch (e2) {}
+        }
+      }
+    });
+
+    SpreadsheetApp.flush();
+
+    // ---- 追記（各行でリトライ）----
+    (records || []).forEach(r => {
+      const row = [
+        newTimestamp, dateStr,
+        companyName, staffName, siteName,
+        r.type,
+        r.name,
+        toNumber(r.man), toNumber(r.overtime)
+      ];
+      doWithRetry(() => sheet.appendRow(row), { retries: 1, waitMs: 500 });
+    });
+
+    SpreadsheetApp.flush();
+    const ms = new Date() - start;
+    Logger.log('%s done in %sms', FN, ms);
+    return 'ok';
+
+  } catch (e) {
+    Logger.log('%s error: %s', FN, e && e.stack || e);
+    // ここで throw するとフロントの withFailureHandler に飛ぶ
+    throw e;
+  } finally {
+    try { lock.releaseLock(); } catch (e) {}
+  }
 }
 
 // --------------------------------------------------------------------------

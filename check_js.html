@@ -5,7 +5,9 @@
   // 実際に updateEditedRecords(meta, edited) を呼び出す
   // ------------------------------------------
   function submitEditFromModal() {
-    document.getElementById('loadingOverlay').style.display = 'flex';
+    const showLoading = () => document.getElementById('loadingOverlay').style.display = 'flex';
+    const hideLoading = () => document.getElementById('loadingOverlay').style.display = 'none';
+    showLoading();
 
     const edited = [];
     lastFetchedRecords.forEach((r, i) => {
@@ -24,7 +26,7 @@
       const name = cb.value;
       const safeName = sanitize(name);
       const inputs = document.querySelectorAll(`.worker-input[data-name="modal-worker-${safeName}"]`);
-      const entry = { type: '作業者', name };
+      const entry = { type: '作業者', name, man: 0, overtime: 0 };
       inputs.forEach(input => {
         const raw = input.value;
         entry[input.dataset.type] = raw === '' ? 0 : parseFloat(raw);
@@ -36,7 +38,7 @@
       const name = cb.value;
       const safeName = sanitize(name);
       const inputs = document.querySelectorAll(`.partner-input[data-name="modal-partner-${safeName}"]`);
-      const entry = { type: '協力会社', name };
+      const entry = { type: '協力会社', name, man: 0, overtime: 0 };
       inputs.forEach(input => {
         const raw = input.value;
         entry[input.dataset.type] = raw === '' ? 0 : parseFloat(raw);
@@ -51,22 +53,34 @@
       siteId: document.getElementById('site').value,
     };
 
-    google.script.run.withSuccessHandler(() => {
-      document.getElementById('loadingOverlay').style.display = 'none';
-      document.getElementById('confirmationText').textContent = '✅ 送信が完了しました！\n別の場所をタップしてフォームに戻ってください。';
+    // ★ 送信前ログ（確認用）
+    console.log('[submitEditFromModal] meta =', meta);
+    console.log('[submitEditFromModal] edited.length =', edited.length);
+    console.log('[submitEditFromModal] edited sample =', edited.slice(0, 3));
 
-      // ボタンエリアを「閉じる」ボタンで上書き
-      const buttonRow = document.querySelector('#confirmationBox .button-row');
-      buttonRow.innerHTML = '<button onclick="closeConfirmation()">閉じる</button>';
-
-      setTimeout(() => {
-        if (isEditMode) {
-          // 編集モードでの送信が完了したら、履歴モーダルを非表示にする
-          document.getElementById('historyModal').style.display = 'none';
+    google.script.run
+      .withSuccessHandler(res => {
+        hideLoading();
+        console.log('[updateEditedRecords] success:', res);
+        document.getElementById('confirmationText').textContent =
+          '✅ 送信が完了しました！\n別の場所をタップしてフォームに戻ってください。';
+        document.querySelector('#confirmationBox .button-row').innerHTML =
+          '<button onclick="closeConfirmation()">閉じる</button>';
+        setTimeout(() => {
+          if (isEditMode) document.getElementById('historyModal').style.display = 'none';
+        }, 300);
+      })
+      .withFailureHandler(err => {
+        hideLoading();
+        console.error('[updateEditedRecords] failed:', err);
+        // いつものエラーモーダルがあるなら：
+        if (typeof showSendErrorScreen === 'function') {
+          showSendErrorScreen(err);
+        } else {
+          alert('更新に失敗しました：' + (err && (err.message || err)));
         }
-      }, 300);
-
-    }).updateEditedRecords(meta, edited);
+      })
+      .updateEditedRecords(meta, edited);
   }
 
 
