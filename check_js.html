@@ -4,86 +4,108 @@
   // 編集モーダル→確認モーダル→送信の最終段階
   // 実際に updateEditedRecords(meta, edited) を呼び出す
   // ------------------------------------------
-  function submitEditFromModal() {
-    console.log('[submitEditFromModal] start');
-    document.getElementById('loadingOverlay').style.display = 'flex';
+function submitEditFromModal() {
+  console.log('[submitEditFromModal] start');
+  document.getElementById('loadingOverlay').style.display = 'flex';
 
-    const roleLabelMap = {
-      only: '協力会社のみ',
-      leader: '協力会社＋職長',
-      other: '協力会社＋その他資格'
-    };
+  // 1) 既存行の編集値を収集
+  const edited = [];
+  lastFetchedRecords.forEach((r, i) => {
+    const manInput = document.getElementById(`edit-man-${i}`);
+    const overtimeInput = document.getElementById(`edit-overtime-${i}`);
+    if (!manInput || !overtimeInput) return;
 
-    const edited = [];
-    lastFetchedRecords.forEach((r, i) => {
-      const manInput = document.getElementById(`edit-man-${i}`);
-      const overtimeInput = document.getElementById(`edit-overtime-${i}`);
-      if (!manInput || !overtimeInput) return;
+    // （任意）協力会社の役割も拾っておく（保存は会社名のまま）
+    let role = r.role || 'only';
+    if (r.type === '協力会社') {
+      const safe = sanitize(r.name);
+      const sel = document.querySelector(`input[name="edit-partner-${safe}-role"]:checked`);
+      if (sel) role = sel.value;
+    }
 
-      let role = r.role || 'only';
-      if (r.type === '協力会社') {
-        const safe = sanitize(r.name);
-        const sel = document.querySelector(`input[name="edit-partner-${safe}-role"]:checked`);
-        role = sel ? sel.value : role;
-      }
-
-      const man = parseFloat(manInput.value || 0);
-      const overtime = parseFloat(overtimeInput.value || 0);
-
-      // ★ 修正：シートには会社名をそのまま渡す
-      edited.push({
-        ...r,
-        name: r.name,   // ← 元の会社名を維持
-        role,           // ← role を別フィールドに格納
-        man,
-        overtime
-      });
+    edited.push({
+      type: r.type,
+      name: r.name,                                 // ★保存は会社名そのまま
+      role,                                         // （使わないならサーバで無視されてもOK）
+      man: parseFloat(manInput.value || 0),
+      overtime: parseFloat(overtimeInput.value || 0)
     });
+  });
 
-    // 追加作業者
-    document.querySelectorAll('.additional-worker:checked').forEach(cb => {
-      const name = cb.value;
-      const safe = sanitize(name);
-      const inputs = document.querySelectorAll(`.worker-input[data-name="modal-worker-${safe}"]`);
-      const entry = { type: '作業者', name };
-      inputs.forEach(input => entry[input.dataset.type] = parseFloat(input.value || 0));
-      edited.push(entry);
+  // 2) 追加の作業者
+  document.querySelectorAll('.additional-worker:checked').forEach(cb => {
+    const name = cb.value;
+    const safe = sanitize(name);
+    const manEl = document.querySelector(`input[data-name="modal-worker-${safe}"][data-type="man"]`);
+    const otEl  = document.querySelector(`input[data-name="modal-worker-${safe}"][data-type="overtime"]`);
+    if (!manEl || !otEl) return;
+    edited.push({
+      type: '作業者',
+      name,
+      man: parseFloat(manEl.value || 0),
+      overtime: parseFloat(otEl.value || 0)
     });
+  });
 
-    // 追加協力会社（役割付き）
-    document.querySelectorAll('.additional-partner:checked').forEach(cb => {
-      const name = cb.value;
-      const safe = sanitize(name);
-      const inputs = document.querySelectorAll(`.partner-input[data-name="modal-partner-${safe}"]`);
-      const roleEl = document.querySelector(`input[name="role-modal-partner-${safe}"]:checked`);
-      const role = roleEl ? roleEl.value : 'only';
-      const entry = { type: '協力会社', name: roleLabelMap[role], role };
-      inputs.forEach(input => entry[input.dataset.type] = parseFloat(input.value || 0));
-      edited.push(entry);
+  // 3) 追加の協力会社
+  document.querySelectorAll('.additional-partner:checked').forEach(cb => {
+    const name = cb.value;          // 会社名
+    const safe = sanitize(name);
+    const key  = `modal-partner-${safe}`;
+    const manEl = document.querySelector(`input[data-name="${key}"][data-type="man"]`);
+    const otEl  = document.querySelector(`input[data-name="${key}"][data-type="overtime"]`);
+    const roleEl= document.querySelector(`input[name="${key}-role"]:checked`);
+    if (!manEl || !otEl) return;
+    edited.push({
+      type: '協力会社',
+      name,                          // ★保存は会社名のまま
+      role: roleEl ? roleEl.value : 'only',
+      man: parseFloat(manEl.value || 0),
+      overtime: parseFloat(otEl.value || 0)
     });
+  });
 
-    const meta = {
-      date: document.getElementById('modalHistoryDate').value,
-      companyId: document.getElementById('company').value,
-      staffId: document.getElementById('staff').value,
-      siteId: document.getElementById('site').value,
-    };
+  const meta = {
+    date:     document.getElementById('modalHistoryDate').value, // yyyy-MM-dd
+    companyId:document.getElementById('company').value,
+    staffId:  document.getElementById('staff').value,
+    siteId:   document.getElementById('site').value,
+  };
 
-    // ここからは既に入れてある success/failure handler でOK
-    google.script.run
-      .withSuccessHandler((res) => {
-        console.log('[submitEditFromModal] success:', res);
-        document.getElementById('loadingOverlay').style.display = 'none';
-        // ここで表示名を使うなら formData を displayName で上書き等…
-        showSendSuccessScreen(formData);  // 既存の成功表示関数。テキスト直書きより安全
-      })
-      .withFailureHandler((err) => {
-        console.error('[submitEditFromModal] failure:', err);
-        document.getElementById('loadingOverlay').style.display = 'none';
-        showSendErrorScreen(err && (err.message || err)); // 既存のエラー表示関数
-      })
-      .updateEditedRecords(meta, edited);
+  // 可視化（必ずプレーンなJSONで）
+  console.log('[submitEditFromModal] meta =', JSON.parse(JSON.stringify(meta)));
+  console.log('[submitEditFromModal] edited =', JSON.parse(JSON.stringify(edited)));
+
+  // 何も編集対象がない時のガード
+  if (edited.length === 0) {
+    document.getElementById('loadingOverlay').style.display = 'none';
+    alert('更新対象がありません。');
+    return;
   }
+
+  const onOK = (res) => {
+    console.log('[submitEditFromModal] server result:', res);
+    document.getElementById('loadingOverlay').style.display = 'none';
+    // 成功UI
+    document.getElementById('confirmationText').textContent =
+      '✅ 送信が完了しました！\n別の場所をタップしてフォームに戻ってください。';
+    const buttonRow = document.querySelector('#confirmationBox .button-row');
+    if (buttonRow) buttonRow.innerHTML = '<button onclick="closeConfirmation()">閉じる</button>';
+    // 履歴モーダル閉じる
+    try { document.getElementById('historyModal').style.display = 'none'; } catch(e){}
+  };
+
+  const onErr = (err) => {
+    console.error('[submitEditFromModal] server error:', err);
+    document.getElementById('loadingOverlay').style.display = 'none';
+    alert('更新に失敗しました：' + (err && err.message ? err.message : err));
+  };
+
+  google.script.run
+    .withSuccessHandler(onOK)
+    .withFailureHandler(onErr)
+    .updateEditedRecords(meta, edited);
+}
 
 
   // ------------------------------------------
