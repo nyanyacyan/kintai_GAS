@@ -122,56 +122,65 @@
 
     // === 協力会社用：役割3択（ラジオ）を作る ===
     // name: 'partner-サニタイズ済み名前' を想定
-    function createPartnerRoleBlock(prefix) {
-      // prefix 例: "partner-サニタイズ済み会社名"
+    function createPartnerRoleBlock(nameKey) {
+      // nameKey 例: "partner-BULLPOWERS"
       const wrap = document.createElement('div');
       wrap.className = 'partner-role-wrap';
-      wrap.id = `roleblk-${prefix}`;
-      wrap.style.display = 'none'; // 最初は非表示
+      wrap.id = `role-${nameKey}`;
+      wrap.style.display = 'none'; // 初期は非表示
 
-      // ★ submitForm 側の前提に合わせる
-      const radioName = `${prefix}-role`;
+      const radioName = `${nameKey}-role`; // ← submitForm 側のセレクタと一致
+
+      // それぞれ label for= で結び、行を grid で並べる
+      const idOnly = `${nameKey}-role-only`;
+      const idLead = `${nameKey}-role-leader`;
+      const idOther = `${nameKey}-role-other`;
 
       wrap.innerHTML = `
-        <div class="partner-role-title">役割を選択</div>
-        <div class="partner-role-group">
-          <label><input type="radio" name="${radioName}" value="only"> 協力会社のみ</label>
-          <label><input type="radio" name="${radioName}" value="leader"> 協力会社＋職長</label>
-          <label><input type="radio" name="${radioName}" value="other"> 協力会社＋その他資格</label>
-        </div>
-      `;
+    <div class="partner-role-title">役割を選択</div>
+    <div class="partner-role-grid">
+      <label class="txt" for="${idOnly}">協力会社のみ</label>
+      <input type="radio" id="${idOnly}"   name="${radioName}" value="only">
+
+      <label class="txt" for="${idLead}">協力会社＋職長</label>
+      <input type="radio" id="${idLead}"   name="${radioName}" value="leader">
+
+      <label class="txt" for="${idOther}">協力会社＋その他資格</label>
+      <input type="radio" id="${idOther}"  name="${radioName}" value="other">
+    </div>
+  `;
       return wrap;
     }
 
 
     // ✅ 協力会社の表示（updateWorkerAndPartner 内）
-masterData.partner
-  .filter(p => p.staffIds.includes(staffId))
-  .filter(p => !registeredNames.has(`協力会社:${p.name}`))
-  .forEach(p => {
-    const safeName = sanitize(p.name);
-    const wrapper = document.createElement('label');
-    wrapper.className = 'checkbox-wrapper';
+    masterData.partner
+      .filter(p => p.staffIds.includes(staffId))
+      .filter(p => !registeredNames.has(`協力会社:${p.name}`))
+      .forEach(p => {
+        const safeName = sanitize(p.name);
+        const wrapper = document.createElement('label');
+        wrapper.className = 'checkbox-wrapper';
 
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.name = 'partner';
-    checkbox.value = p.name;
-    checkbox.onchange = () => toggleTimeInputs(checkbox, `partner-${safeName}`);
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.name = 'partner';
+        checkbox.value = p.name;
+        checkbox.onchange = () => toggleTimeInputs(checkbox, `partner-${safeName}`);
 
-    const span = document.createElement('span');
-    span.textContent = p.name;
+        const span = document.createElement('span');
+        span.textContent = p.name;
 
-    wrapper.appendChild(checkbox);
-    wrapper.appendChild(span);
+        wrapper.appendChild(checkbox);
+        wrapper.appendChild(span);
 
-    // ① チェック行
-    partnerContainer.appendChild(wrapper);
-    // ② 役割3択（非表示スタート）
-    partnerContainer.appendChild(createPartnerRoleBlock(`partner-${safeName}`));
-    // ③ 時間入力（非表示スタート）
-    partnerContainer.appendChild(createTimeInputs(`partner-${safeName}`));
-  });
+        // ① チェック行
+        partnerContainer.appendChild(wrapper);
+        // ② 役割3択（非表示スタート）
+        partnerContainer.appendChild(createPartnerRoleBlock(`partner-${safeName}`));
+        // ③ 時間入力（非表示スタート）
+        partnerContainer.appendChild(createTimeInputs(`partner-${safeName}`));
+      });
   }
 
 

@@ -119,15 +119,15 @@
   // ------------------------------------------
   // チェックボックスON/OFFに応じて、その行の「人工/残業」入力欄の表示切替
   // ------------------------------------------
-  function toggleTimeInputs(checkbox, prefix) {
-    // prefix 例: "partner-サニタイズ済み会社名"
-    const inputs = document.getElementById(`inputs-${prefix}`);   // createTimeInputs が作るID
-    const roleBlk = document.getElementById(`roleblk-${prefix}`);  // 上で付けたID
-    const show = checkbox.checked;
+function toggleTimeInputs(checkbox, nameKey) {
+  // nameKey 例: "partner-BULLPOWERS"
+  const role   = document.getElementById(`role-${nameKey}`);
+  const inputs = document.getElementById(`inputs-${nameKey}`);
 
-    if (inputs) inputs.style.display = show ? 'flex' : 'none';
-    if (roleBlk) roleBlk.style.display = show ? 'block' : 'none';
-  }
+  const show = checkbox.checked;
+  if (role)   role.style.display   = show ? 'block' : 'none';
+  if (inputs) inputs.style.display = show ? 'grid'  : 'none'; // ← gridで横並び
+}
 
 
 
