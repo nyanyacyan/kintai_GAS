@@ -306,40 +306,49 @@
 function showConfirmation(isEdit = false) {
   console.log('[showConfirmation] start isEdit=', isEdit);
 
+  // ← ここでローカルに定義（これで必ず見える）
+  const styleValueWithLabel = (label, value, isOvertime = false) => {
+    const unit = isOvertime ? 'h' : '人工';
+    const v = Number(value) || 0;
+    const display = v > 0
+      ? `<span style="color:#d33;font-weight:700;">${v}${unit}</span>`
+      : `<span style="color:#999;">0${unit}</span>`;
+    return `${label}：${display}`;
+  };
+
+  const roleSuffix = {
+    only:   '',         // 一般作業員 → サフィックスなし
+    leader: ' 職長',
+    other:  ' 有資格者'
+  };
+
   const box = document.getElementById('confirmationBox');
   box.classList.remove('compact');
   isEditMode = isEdit;
 
   const company = masterData.company.find(c => c.id === formData.companyId)?.name || '（未選択）';
-  const staff   = masterData.staff.find(s => s.id === formData.staffId)?.name || '（未選択）';
-  const site    = masterData.site.find(s => s.id === formData.site)?.name || '（未選択）';
+  const staff   = masterData.staff.find(s => s.id === formData.staffId)?.name   || '（未選択）';
+  const site    = masterData.site.find(s => s.id === formData.site)?.name       || '（未選択）';
 
   let message = `出面日付：${formData.date || new Date().toLocaleDateString('ja-JP')}<br>
 元請会社：${company}<br>
 TTC担当者：${staff}<br>
 現場名：${site}`;
 
-  if (formData.workers.length > 0) {
+  if (formData.workers?.length) {
     message += `<br><br><strong>作業者：</strong>`;
     formData.workers.forEach(w => {
-      message += `<br>　${w.name}（人工:${w.man} 残業:${w.overtime}h）`;
+      message += `<br>　${w.name}（${styleValueWithLabel('人工', w.man)} ${styleValueWithLabel('残業', w.overtime, true)}）`;
     });
   }
-if (formData.partners.length > 0) {
-  message += `<br><br><strong>協力会社：</strong>`;
 
-  const roleSuffix = {
-    only:   '',          // 一般作業員は会社名のみ
-    leader: ' 職長',
-    other:  ' 有資格者'
-  };
-
-  formData.partners.forEach(p => {
-    const suffix = roleSuffix[p.role] ?? '';
-    const displayName = `${p.name}${suffix}`;
-    message += `<br>　${displayName}（${styleValueWithLabel('人工', p.man)} ${styleValueWithLabel('残業', p.overtime, true)}）`;
-  });
-}
+  if (formData.partners?.length) {
+    message += `<br><br><strong>協力会社：</strong>`;
+    formData.partners.forEach(p => {
+      const displayName = `${p.name}${roleSuffix[p.role] ?? ''}`;
+      message += `<br>　${displayName}（${styleValueWithLabel('人工', p.man)} ${styleValueWithLabel('残業', p.overtime, true)}）`;
+    });
+  }
 
   document.getElementById('confirmationText').innerHTML = message;
   document.getElementById('confirmationModal').style.display = 'flex';
@@ -354,6 +363,7 @@ if (formData.partners.length > 0) {
       <button onclick="confirmSend()">✅ 確定して送信</button>
       <button onclick="closeConfirmation()">戻る</button>
     `;
+
   console.log('[showConfirmation] end');
 }
 
