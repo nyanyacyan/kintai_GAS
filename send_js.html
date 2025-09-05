@@ -303,6 +303,51 @@
   }
 
 
+function showConfirmation(isEdit = false) {
+  console.log('[showConfirmation] start isEdit=', isEdit);
+
+  const box = document.getElementById('confirmationBox');
+  box.classList.remove('compact');
+  isEditMode = isEdit;
+
+  const company = masterData.company.find(c => c.id === formData.companyId)?.name || '（未選択）';
+  const staff   = masterData.staff.find(s => s.id === formData.staffId)?.name || '（未選択）';
+  const site    = masterData.site.find(s => s.id === formData.site)?.name || '（未選択）';
+
+  let message = `出面日付：${formData.date || new Date().toLocaleDateString('ja-JP')}<br>
+元請会社：${company}<br>
+TTC担当者：${staff}<br>
+現場名：${site}`;
+
+  if (formData.workers.length > 0) {
+    message += `<br><br><strong>作業者：</strong>`;
+    formData.workers.forEach(w => {
+      message += `<br>　${w.name}（人工:${w.man} 残業:${w.overtime}h）`;
+    });
+  }
+  if (formData.partners.length > 0) {
+    message += `<br><br><strong>協力会社：</strong>`;
+    formData.partners.forEach(p => {
+      message += `<br>　${p.name}（人工:${p.man} 残業:${p.overtime}h）`;
+    });
+  }
+
+  document.getElementById('confirmationText').innerHTML = message;
+  document.getElementById('confirmationModal').style.display = 'flex';
+
+  const buttonRow = document.querySelector('#confirmationBox .button-row');
+  buttonRow.innerHTML = isEdit
+    ? `
+      <button type="button" onclick="submitEditFromModal()">✅ 確定して編集内容を送信</button>
+      <button onclick="closeConfirmation()">← 修正する</button>
+    `
+    : `
+      <button onclick="confirmSend()">✅ 確定して送信</button>
+      <button onclick="closeConfirmation()">戻る</button>
+    `;
+  console.log('[showConfirmation] end');
+}
+
   /***** ========== 送信 ========== *****/
 
   // 確定送信（画像アップロード → スプレッドシート保存）
