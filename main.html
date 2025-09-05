@@ -396,61 +396,65 @@
   // 確認モーダルの表示＆内容組み立て
   // 編集モードの場合はボタン表示を変更
   // ------------------------------------------
-  function showConfirmation(isEdit = false) {
-    isEditMode = isEdit;
-    const company = masterData.company.find(c => c.id === formData.companyId)?.name || '（未選択）';
-    const staff = masterData.staff.find(s => s.id === formData.staffId)?.name || '（未選択）';
-    const site = masterData.site.find(s => s.id === formData.site)?.name || '（未選択）';
+// ★ submitForm の外に置く！（グローバル）
+function showConfirmation(isEdit = false) {
+  console.log('[showConfirmation] start isEdit=', isEdit, 'formData=', JSON.parse(JSON.stringify(formData)));
 
+  const box = document.getElementById('confirmationBox');
+  box.classList.remove('compact');
+  isEditMode = isEdit;
 
-    let message = `出面日付：${formData.date || new Date().toLocaleDateString('ja-JP')}<br>
+  const company = masterData.company.find(c => c.id === formData.companyId)?.name || '（未選択）';
+  const staff   = masterData.staff.find(s => s.id === formData.staffId)?.name || '（未選択）';
+  const site    = masterData.site.find(s => s.id === formData.site)?.name || '（未選択）';
+
+  // 役割 → 表示サフィックス
+  const roleSuffix = { only: '', leader: '＋職長', other: '＋有資格者' };
+
+  const styleValueWithLabel = (label, value, isOvertime = false) => {
+    const unit = isOvertime ? 'h' : '人工';
+    const display = value && value > 0
+      ? `<span style="color: red; font-weight: bold;">${value}${unit}</span>`
+      : `<span style="color: #999;">0${unit}</span>`;
+    return `${label}：${display}`;
+  };
+
+  let message = `出面日付：${formData.date || new Date().toLocaleDateString('ja-JP')}<br>
 元請会社：${company}<br>
 TTC担当者：${staff}<br>
 現場名：${site}`;
 
+  if (formData.workers?.length) {
+    message += `<br><br><strong>作業者：</strong>`;
+    formData.workers.forEach(w => {
+      message += `<br>　${w.name}（${styleValueWithLabel('人工', w.man)} ${styleValueWithLabel('残業', w.overtime, true)}）`;
+    });
+  }
 
-    // 項目名と単位を表示用に整形
-    const styleValueWithLabel = (label, value, isOvertime = false) => {
-      const unit = isOvertime ? 'h' : '人工';
-      const display = value && value > 0
-        ? `<span style="color: red; font-weight: bold;">${value}${unit}</span>`
-        : `<span style="color: #999;">0${unit}</span>`;
-      return `${label}：${display}`;
-    };
+  if (formData.partners?.length) {
+    message += `<br><br><strong>協力会社：</strong>`;
+    formData.partners.forEach(p => {
+      const dispName = `${p.name}${roleSuffix[p.role] ?? ''}`; // ★ サフィックス
+      message += `<br>　${dispName}（${styleValueWithLabel('人工', p.man)} ${styleValueWithLabel('残業', p.overtime, true)}）`;
+    });
+  }
 
-    if (formData.workers.length > 0) {
-      message += `<br><br><strong>作業者：</strong>`;
-      formData.workers.forEach(w => {
-        // message += `<br>　${w.name}（${styleValueWithLabel('日勤', w.day)} ${styleValueWithLabel('夕勤', w.evening)} ${styleValueWithLabel('夜勤', w.night)} ${styleValueWithLabel('残業', w.overtime, true)}）`;
-        message += `<br>　${w.name}（${styleValueWithLabel('人工', w.man)} ${styleValueWithLabel('残業', w.overtime, true)}）`;
-      });
-    }
+  document.getElementById('confirmationText').innerHTML = message;
+  document.getElementById('confirmationModal').style.display = 'flex';
 
+  const buttonRow = document.querySelector('#confirmationBox .button-row');
+  buttonRow.innerHTML = isEdit
+    ? `
+      <button type="button" onclick="submitEditFromModal()">✅ 確定して編集内容を送信</button>
+      <button onclick="closeConfirmation()">← 修正する</button>
+    `
+    : `
+      <button onclick="confirmSend()">✅ 確定して送信</button>
+      <button onclick="closeConfirmation()">戻る</button>
+    `;
 
-    if (formData.partners.length > 0) {
-      message += `<br><br><strong>協力会社：</strong>`;
-      formData.partners.forEach(p => {
-        // message += `<br>　${p.name}（${styleValueWithLabel('日勤', p.day)} ${styleValueWithLabel('夕勤', p.evening)} ${styleValueWithLabel('夜勤', p.night)} ${styleValueWithLabel('残業', p.overtime, true)}）`;
-        message += `<br>　${p.name}（${styleValueWithLabel('人工', p.man)} ${styleValueWithLabel('残業', p.overtime, true)}）`;
-      });
-    }
-
-
-    document.getElementById('confirmationText').innerHTML = message;
-    document.getElementById('confirmationModal').style.display = 'flex';
-
-
-    const buttonRow = document.querySelector('#confirmationBox .button-row');
-    buttonRow.innerHTML = isEdit
-      ? `
-    <button type="button" onclick="submitEditFromModal()">✅ 確定して編集内容を送信</button>
-    <button onclick="closeConfirmation()">← 修正する</button>
-  `
-      : `
-    <button onclick="confirmSend()">✅ 確定して送信</button>
-    <button onclick="closeConfirmation()">戻る</button>
-  `;
-
+  console.log('[showConfirmation] end');
+}
   }
 
   // function loadPreviousRecords() {

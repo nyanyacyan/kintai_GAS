@@ -183,21 +183,31 @@
       });
   }
 
-  function togglePartnerMatrix(checkbox, nameKey) {
-    const matrix = document.getElementById(`matrix-${nameKey}`);
-    if (!matrix) return;
-    const show = checkbox.checked;
-    matrix.style.display = show ? 'block' : 'none';
+function togglePartnerMatrix(checkbox, nameKey) {
+  console.log('[togglePartnerMatrix] nameKey=', nameKey, 'checked=', checkbox?.checked);
 
-    if (!show) {
-      // OFFなら値リセット
-      ['general', 'leader', 'qualified'].forEach(role => {
-        matrix.querySelector(`input[name="${nameKey}-${role}-checked"]`).checked = false;
-        matrix.querySelector(`input[name="${nameKey}-${role}-man"]`).value = '';
-        matrix.querySelector(`input[name="${nameKey}-${role}-overtime"]`).value = '';
-      });
-    }
+  const matrix = document.getElementById(`matrix-${nameKey}`);
+  if (!matrix) {
+    console.warn('[togglePartnerMatrix] matrix not found for', `matrix-${nameKey}`);
+    return;
   }
+
+  const show = !!checkbox.checked;
+  matrix.style.display = show ? 'block' : 'none';
+
+  if (!show) {
+    ['general', 'leader', 'qualified'].forEach(role => {
+      const chk = matrix.querySelector(`input[name="${nameKey}-${role}-checked"]`);
+      const man = matrix.querySelector(`input[name="${nameKey}-${role}-man"]`);
+      const ot  = matrix.querySelector(`input[name="${nameKey}-${role}-overtime"]`);
+
+      if (chk) chk.checked = false;
+      if (man) man.value = '';
+      if (ot)  ot.value  = '';
+    });
+    console.log('[togglePartnerMatrix] cleared values for', nameKey);
+  }
+}
 
   // 協力会社マトリクス（一般/職長/有資格者 それぞれに check + 人工/残業）
   // === 協力会社用：役割マトリクス（チェック＋人工/残業） ===
