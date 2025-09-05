@@ -88,50 +88,57 @@ function isValidQuarterHour(value) {
 function saveFormResponse(data) {
   const ss = getSS();
   const sheet = ss.getSheetByName(SHEETS.RESPONSES);
-  const timestamp = new Date();
+  const timestamp  = new Date();
   const reportDate = data.date || Utilities.formatDate(new Date(), "Asia/Tokyo", "yyyy-MM-dd");
-
 
   // マスタ取得
   const companyMap = getMapFromSheet(ss.getSheetByName('元請会社マスタ'));
-  const siteMap = getMapFromSheet(ss.getSheetByName('現場名マスタ'));
-  const staffMap = getMapFromSheet(ss.getSheetByName('TTC担当者名マスタ'));
-
+  const siteMap    = getMapFromSheet(ss.getSheetByName('現場名マスタ'));
+  const staffMap   = getMapFromSheet(ss.getSheetByName('TTC担当者名マスタ'));
 
   const companyName = companyMap[data.companyId] || data.companyId;
-  const siteName = siteMap[data.site] || data.site;
-  const staffName = staffMap[data.staffId] || data.staffId;
+  const siteName    = siteMap[data.site]        || data.site;
+  const staffName   = staffMap[data.staffId]    || data.staffId;
 
+  // 役割 → サフィックス（末尾に足す文字列）
+  // 「一般作業員」は会社名のみ（サフィックスなし）
+  const roleSuffix = {
+    only:   '',        // 一般作業員 → 「会社名」
+    leader: ' 職長',   // 職長       → 「会社名 職長」
+    other:  ' 有資格者'// 有資格者   → 「会社名 有資格者」
+  };
 
   // 作業者
-if (Array.isArray(data.workers)) {
-  data.workers.forEach(w => {
-    sheet.appendRow([
-      timestamp, reportDate,
-      companyName, staffName, siteName,
-      '作業者',
-      w.name,
-//      toNumber(w.day), toNumber(w.evening), toNumber(w.night), toNumber(w.overtime)
-      toNumber(w.man), toNumber(w.overtime)
-    ]);
-  });
-}
+  if (Array.isArray(data.workers)) {
+    data.workers.forEach(w => {
+      sheet.appendRow([
+        timestamp, reportDate,
+        companyName, staffName, siteName,
+        '作業者',
+        w.name,
+        toNumber(w.man), toNumber(w.overtime)
+      ]);
+    });
+  }
 
-// 協力会社
-if (Array.isArray(data.partners)) {
-  data.partners.forEach(p => {
-    sheet.appendRow([
-      timestamp, reportDate,
-      companyName, staffName, siteName,
-      '協力会社',
-      p.name,
-//      toNumber(p.day), toNumber(p.evening), toNumber(p.night), toNumber(p.overtime)
-      toNumber(p.man), toNumber(p.overtime)
-    ]);
-  });
-}
+  // 協力会社（ここで表示名を組み立て）
+  if (Array.isArray(data.partners)) {
+    data.partners.forEach(p => {
+      // p.name は会社名、p.role は 'only' | 'leader' | 'other'（無い場合は空扱い）
+      const suffix = roleSuffix[p.role] || '';
+      const displayName = (p.name || '') + suffix;
 
-  Logger.log(data);
+      sheet.appendRow([
+        timestamp, reportDate,
+        companyName, staffName, siteName,
+        '協力会社',
+        displayName,
+        toNumber(p.man), toNumber(p.overtime)
+      ]);
+    });
+  }
+
+  Logger.log('[saveFormResponse] data=%s', JSON.stringify(data));
   return 'ok';
 }
 
