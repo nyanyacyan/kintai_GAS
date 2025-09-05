@@ -263,7 +263,15 @@
       checkbox.type = 'checkbox';
       checkbox.className = `additional-${type}`;
       checkbox.value = name;
-      checkbox.onchange = () => toggleTimeInputs(checkbox, key);
+
+      // 作業者は従来の時間UI、協力会社はマトリクスUIをON/OFF
+      checkbox.onchange = () => {
+        if (type === 'partner') {
+          togglePartnerMatrix(checkbox, key);  // ← 新ハンドラ
+        } else {
+          toggleTimeInputs(checkbox, key);     // ← 既存（作業者）
+        }
+      };
 
       const span = document.createElement('span');
       span.textContent = name;
@@ -273,14 +281,15 @@
       container.appendChild(wrapper);
 
       if (type === 'partner') {
-        // ★ 役割ラジオ（最初は非表示、チェックONで表示）
-        const roleBlock = createPartnerRoleBlock(key);     // name="${key}-role" を作る実装にしておく
-        roleBlock.style.display = 'none';
-        container.appendChild(roleBlock);
+        // ★ 新：3役割×(人工/残業) のマトリクス（最初は非表示）
+        const matrix = createPartnerMatrixBlock(key);
+        matrix.style.display = 'none';
+        container.appendChild(matrix);
+      } else {
+        // 作業者は従来どおり人工/残業を1セット
+        const inputs = createTimeInputs(key);
+        container.appendChild(inputs);
       }
-
-      const inputs = createTimeInputs(key);                // name="${key}-man" / "${key}-overtime"
-      container.appendChild(inputs);
     };
 
     // ✅ 作業者の見出し
@@ -310,7 +319,7 @@
   // 入力検証→formData組み立て→確認モーダルへ
   // ------------------------------------------
   let pendingEditPayload = null;
-let formData = window.formData || {};  // 念のためグローバルに
+  let formData = window.formData || {};  // 念のためグローバルに
   function showEditConfirmationModal() {
     isEditMode = true;
 
@@ -318,84 +327,84 @@ let formData = window.formData || {};  // 念のためグローバルに
 
 
     // --- 1) 既存レコード（テーブル行）の収集 ---
-  const records = [];
+    const records = [];
 
-  // 既存行
-  lastFetchedRecords.forEach((r, i) => {
-    const man = parseFloat(document.getElementById(`edit-man-${i}`)?.value || 0);
-    const ot  = parseFloat(document.getElementById(`edit-overtime-${i}`)?.value || 0);
+    // 既存行
+    lastFetchedRecords.forEach((r, i) => {
+      const man = parseFloat(document.getElementById(`edit-man-${i}`)?.value || 0);
+      const ot = parseFloat(document.getElementById(`edit-overtime-${i}`)?.value || 0);
 
-    let role = undefined; // 作業者は role 不要
-    if (r.type === '協力会社') {
-      const safe = sanitize(r.name);
-      const sel  = document.querySelector(`input[name="edit-partner-${safe}-role"]:checked`);
-      role = sel ? sel.value : 'only'; // only | leader | other
-    }
+      let role = undefined; // 作業者は role 不要
+      if (r.type === '協力会社') {
+        const safe = sanitize(r.name);
+        const sel = document.querySelector(`input[name="edit-partner-${safe}-role"]:checked`);
+        role = sel ? sel.value : 'only'; // only | leader | other
+      }
 
-    records.push({ type: r.type, name: r.name, role, man, overtime: ot });
-  });
+      records.push({ type: r.type, name: r.name, role, man, overtime: ot });
+    });
 
-  // 追加の協力会社
-  document.querySelectorAll('.additional-partner:checked').forEach(cb => {
-    const name = cb.value, safe = sanitize(name);
-    const key  = `modal-partner-${safe}`;
-    const man  = parseFloat(document.querySelector(`input[data-name="${key}"][data-type="man"]`)?.value || 0);
-    const ot   = parseFloat(document.querySelector(`input[data-name="${key}"][data-type="overtime"]`)?.value || 0);
-    const sel  = document.querySelector(`input[name="${key}-role"]:checked`);
-    const role = sel ? sel.value : 'only';
-    records.push({ type: '協力会社', name, role, man, overtime: ot });
-  });
+    // 追加の協力会社
+    document.querySelectorAll('.additional-partner:checked').forEach(cb => {
+      const name = cb.value, safe = sanitize(name);
+      const key = `modal-partner-${safe}`;
+      const man = parseFloat(document.querySelector(`input[data-name="${key}"][data-type="man"]`)?.value || 0);
+      const ot = parseFloat(document.querySelector(`input[data-name="${key}"][data-type="overtime"]`)?.value || 0);
+      const sel = document.querySelector(`input[name="${key}-role"]:checked`);
+      const role = sel ? sel.value : 'only';
+      records.push({ type: '協力会社', name, role, man, overtime: ot });
+    });
 
-  // 追加の作業者（role は不要）
-  document.querySelectorAll('.additional-worker:checked').forEach(cb => {
-    const name = cb.value, safe = sanitize(name);
-    const man  = parseFloat(document.querySelector(`input[data-name="modal-worker-${safe}"][data-type="man"]`)?.value || 0);
-    const ot   = parseFloat(document.querySelector(`input[data-name="modal-worker-${safe}"][data-type="overtime"]`)?.value || 0);
-    records.push({ type: '作業者', name, man, overtime: ot });
-  });
+    // 追加の作業者（role は不要）
+    document.querySelectorAll('.additional-worker:checked').forEach(cb => {
+      const name = cb.value, safe = sanitize(name);
+      const man = parseFloat(document.querySelector(`input[data-name="modal-worker-${safe}"][data-type="man"]`)?.value || 0);
+      const ot = parseFloat(document.querySelector(`input[data-name="modal-worker-${safe}"][data-type="overtime"]`)?.value || 0);
+      records.push({ type: '作業者', name, man, overtime: ot });
+    });
 
-  const meta = {
-    date: document.getElementById('modalHistoryDate').value,
-    companyId: document.getElementById('company').value,
-    staffId: document.getElementById('staff').value,
-    siteId: document.getElementById('site').value,
-  };
+    const meta = {
+      date: document.getElementById('modalHistoryDate').value,
+      companyId: document.getElementById('company').value,
+      staffId: document.getElementById('staff').value,
+      siteId: document.getElementById('site').value,
+    };
 
-  // ★ここで退避（submitEditFromModal はこれをそのまま送る）
-  pendingEditPayload = { meta, records };   // ← 保存用はコレを使う
+    // ★ここで退避（submitEditFromModal はこれをそのまま送る）
+    pendingEditPayload = { meta, records };   // ← 保存用はコレを使う
 
-  // ---- ここから「表示用」formData を作る ----
-const roleSuffixMap = {
-  only:   '',            // 協力会社のみ → 会社名だけ
-  leader: ' 職長',      // フル幅の＋（半角+でもOK）
-  other:  ' 有資格者'
-};
+    // ---- ここから「表示用」formData を作る ----
+    const roleSuffixMap = {
+      only: '',            // 協力会社のみ → 会社名だけ
+      leader: ' 職長',      // フル幅の＋（半角+でもOK）
+      other: ' 有資格者'
+    };
 
-const workersDisp = records
-  .filter(r => r.type === '作業者')
-  .map(({ name, man, overtime }) => ({ name, man, overtime }));
+    const workersDisp = records
+      .filter(r => r.type === '作業者')
+      .map(({ name, man, overtime }) => ({ name, man, overtime }));
 
-const partnersDisp = records
-  .filter(r => r.type === '協力会社')
-  .map(({ name, role, man, overtime }) => {
-    const suffix = roleSuffixMap[role] ?? '';
-    return { name: name + suffix, man, overtime };   // ← 会社名の後ろにだけ役割を付ける
-  });
+    const partnersDisp = records
+      .filter(r => r.type === '協力会社')
+      .map(({ name, role, man, overtime }) => {
+        const suffix = roleSuffixMap[role] ?? '';
+        return { name: name + suffix, man, overtime };   // ← 会社名の後ろにだけ役割を付ける
+      });
 
-// showConfirmation が参照する形に揃える
-formData = {
-  companyId: meta.companyId,
-  staffId:   meta.staffId,
-  site:      meta.siteId,
-  date:      meta.date,
-  workers:   workersDisp,
-  partners:  partnersDisp
-};
-console.log('[showEditConfirmationModal] formData for modal =',
-            JSON.parse(JSON.stringify(formData)));
+    // showConfirmation が参照する形に揃える
+    formData = {
+      companyId: meta.companyId,
+      staffId: meta.staffId,
+      site: meta.siteId,
+      date: meta.date,
+      workers: workersDisp,
+      partners: partnersDisp
+    };
+    console.log('[showEditConfirmationModal] formData for modal =',
+      JSON.parse(JSON.stringify(formData)));
 
-showConfirmation(true);
-}
+    showConfirmation(true);
+  }
 
 
 
