@@ -168,7 +168,7 @@
         checkbox.type = 'checkbox';
         checkbox.name = 'partner';
         checkbox.value = p.name;
-        checkbox.onchange = () => toggleTimeInputs(checkbox, `partner-${safeName}`);
+        checkbox.onchange = () => togglePartnerMatrix(checkbox, `partner-${safeName}`);
 
         const span = document.createElement('span');
         span.textContent = p.name;
@@ -178,19 +178,61 @@
 
         // ① チェック行
         partnerContainer.appendChild(wrapper);
-        // ② 役割3択（非表示スタート）
-        partnerContainer.appendChild(createPartnerRoleBlock(`partner-${safeName}`));
-        // ③ 時間入力（非表示スタート）
-        partnerContainer.appendChild(createTimeInputs(`partner-${safeName}`));
+        // ② 役割マトリクス（非表示スタート）
+        partnerContainer.appendChild(createPartnerRoleMatrix(`partner-${safeName}`));
       });
+  }
+
+  function togglePartnerMatrix(checkbox, nameKey) {
+    const matrix = document.getElementById(`matrix-${nameKey}`);
+    if (!matrix) return;
+    const show = checkbox.checked;
+    matrix.style.display = show ? 'block' : 'none';
+
+    if (!show) {
+      // OFFなら値リセット
+      ['general', 'leader', 'qualified'].forEach(role => {
+        matrix.querySelector(`input[name="${nameKey}-${role}-checked"]`).checked = false;
+        matrix.querySelector(`input[name="${nameKey}-${role}-man"]`).value = '';
+        matrix.querySelector(`input[name="${nameKey}-${role}-overtime"]`).value = '';
+      });
+    }
+  }
+
+  // 協力会社マトリクス（一般/職長/有資格者 それぞれに check + 人工/残業）
+  // === 協力会社用：役割マトリクス（チェック＋人工/残業） ===
+  function createPartnerRoleMatrix(nameKey) {
+    const wrap = document.createElement('div');
+    wrap.className = 'partner-role-matrix';
+    wrap.id = `matrix-${nameKey}`;
+    wrap.style.display = 'none'; // デフォルト非表示
+
+    wrap.innerHTML = `
+    <div class="role-row">
+      <label><input type="checkbox" name="${nameKey}-general-checked"> 一般作業員</label>
+      <input type="number" step="0.25" min="0" placeholder="人工" name="${nameKey}-general-man">
+      <input type="number" step="0.25" min="0" placeholder="残業" name="${nameKey}-general-overtime">
+    </div>
+    <div class="role-row">
+      <label><input type="checkbox" name="${nameKey}-leader-checked"> 職長</label>
+      <input type="number" step="0.25" min="0" placeholder="人工" name="${nameKey}-leader-man">
+      <input type="number" step="0.25" min="0" placeholder="残業" name="${nameKey}-leader-overtime">
+    </div>
+    <div class="role-row">
+      <label><input type="checkbox" name="${nameKey}-qualified-checked"> 有資格者</label>
+      <input type="number" step="0.25" min="0" placeholder="人工" name="${nameKey}-qualified-man">
+      <input type="number" step="0.25" min="0" placeholder="残業" name="${nameKey}-qualified-overtime">
+    </div>
+  `;
+    return wrap;
   }
 
 
   // 役割を「会社名＋役割」に整形
-const roleSuffixMap = { only:'', leader:' 職長', other:' 有資格者' };
-function partnerDisplayName(name, role) {
-  return `${name}${roleSuffixMap[role] || ''}`;
-}
+  const roleSuffixMap = { only: '', leader: ' 職長', other: ' 有資格者' };
+  function partnerDisplayName(name, role) {
+    return `${name}${roleSuffixMap[role] || ''}`;
+  }
 
 
   // ------------------------------------------
