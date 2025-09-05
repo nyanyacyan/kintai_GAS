@@ -325,12 +325,21 @@ TTC担当者：${staff}<br>
       message += `<br>　${w.name}（人工:${w.man} 残業:${w.overtime}h）`;
     });
   }
-  if (formData.partners.length > 0) {
-    message += `<br><br><strong>協力会社：</strong>`;
-    formData.partners.forEach(p => {
-      message += `<br>　${p.name}（人工:${p.man} 残業:${p.overtime}h）`;
-    });
-  }
+if (formData.partners.length > 0) {
+  message += `<br><br><strong>協力会社：</strong>`;
+
+  const roleSuffix = {
+    only:   '',          // 一般作業員は会社名のみ
+    leader: ' 職長',
+    other:  ' 有資格者'
+  };
+
+  formData.partners.forEach(p => {
+    const suffix = roleSuffix[p.role] ?? '';
+    const displayName = `${p.name}${suffix}`;
+    message += `<br>　${displayName}（${styleValueWithLabel('人工', p.man)} ${styleValueWithLabel('残業', p.overtime, true)}）`;
+  });
+}
 
   document.getElementById('confirmationText').innerHTML = message;
   document.getElementById('confirmationModal').style.display = 'flex';
