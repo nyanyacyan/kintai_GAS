@@ -398,7 +398,7 @@
   // ------------------------------------------
 // ★ submitForm の外に置く！（グローバル）
 function showConfirmation(isEdit = false) {
-  console.log('[showConfirmation] start isEdit=', isEdit, 'formData=', JSON.parse(JSON.stringify(formData)));
+  console.log('[showConfirmation] start isEdit=', isEdit);
 
   const box = document.getElementById('confirmationBox');
   box.classList.remove('compact');
@@ -408,34 +408,21 @@ function showConfirmation(isEdit = false) {
   const staff   = masterData.staff.find(s => s.id === formData.staffId)?.name || '（未選択）';
   const site    = masterData.site.find(s => s.id === formData.site)?.name || '（未選択）';
 
-  // 役割 → 表示サフィックス
-  const roleSuffix = { only: '', leader: '＋職長', other: '＋有資格者' };
-
-  const styleValueWithLabel = (label, value, isOvertime = false) => {
-    const unit = isOvertime ? 'h' : '人工';
-    const display = value && value > 0
-      ? `<span style="color: red; font-weight: bold;">${value}${unit}</span>`
-      : `<span style="color: #999;">0${unit}</span>`;
-    return `${label}：${display}`;
-  };
-
   let message = `出面日付：${formData.date || new Date().toLocaleDateString('ja-JP')}<br>
 元請会社：${company}<br>
 TTC担当者：${staff}<br>
 現場名：${site}`;
 
-  if (formData.workers?.length) {
+  if (formData.workers.length > 0) {
     message += `<br><br><strong>作業者：</strong>`;
     formData.workers.forEach(w => {
-      message += `<br>　${w.name}（${styleValueWithLabel('人工', w.man)} ${styleValueWithLabel('残業', w.overtime, true)}）`;
+      message += `<br>　${w.name}（人工:${w.man} 残業:${w.overtime}h）`;
     });
   }
-
-  if (formData.partners?.length) {
+  if (formData.partners.length > 0) {
     message += `<br><br><strong>協力会社：</strong>`;
     formData.partners.forEach(p => {
-      const dispName = `${p.name}${roleSuffix[p.role] ?? ''}`; // ★ サフィックス
-      message += `<br>　${dispName}（${styleValueWithLabel('人工', p.man)} ${styleValueWithLabel('残業', p.overtime, true)}）`;
+      message += `<br>　${p.name}（人工:${p.man} 残業:${p.overtime}h）`;
     });
   }
 
@@ -452,10 +439,8 @@ TTC担当者：${staff}<br>
       <button onclick="confirmSend()">✅ 確定して送信</button>
       <button onclick="closeConfirmation()">戻る</button>
     `;
-
   console.log('[showConfirmation] end');
 }
-  }
 
   // function loadPreviousRecords() {
   //   const date = document.getElementById('customDate').value;
