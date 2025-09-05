@@ -139,15 +139,15 @@
     <div class="role-set">
       <label class="role-option" for="${idOnly}">
         <input type="radio" id="${idOnly}" name="${radioName}" value="only">
-        <span class="text">協力会社のみ</span>
+        <span class="text">一般作業員</span>
       </label>
       <label class="role-option" for="${idLeader}">
         <input type="radio" id="${idLeader}" name="${radioName}" value="leader">
-        <span class="text">協力会社＋職長</span>
+        <span class="text">職長</span>
       </label>
       <label class="role-option" for="${idOther}">
         <input type="radio" id="${idOther}" name="${radioName}" value="other">
-        <span class="text">協力会社＋その他資格</span>
+        <span class="text">有資格者</span>
       </label>
     </div>
   `;
@@ -187,7 +187,7 @@
 
 
   // 役割を「会社名＋役割」に整形
-const roleSuffixMap = { only:'', leader:'＋職長', other:'＋その他資格' };
+const roleSuffixMap = { only:'', leader:' 職長', other:' 有資格者' };
 function partnerDisplayName(name, role) {
   return `${name}${roleSuffixMap[role] || ''}`;
 }

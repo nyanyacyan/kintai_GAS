@@ -206,9 +206,9 @@
       const roleEl = document.querySelector(`input[name='${prefix}-role']:checked`);
       const roleVal = roleEl?.value || '';   // 'only' | 'leader' | 'other' | ''
       const roleLabelMap = {
-        only: '協力会社のみ',
-        leader: '協力会社＋職長',
-        other: '協力会社＋その他資格'
+        only: '',
+        leader: '職長',
+        other: '有資格者'
       };
 
       // 時間

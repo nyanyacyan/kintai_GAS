@@ -150,15 +150,15 @@
       <div class="partner-role-grid">
         <label class="role-card">
           <input type="radio" name="${roleName}" value="only"   ${role === 'only' ? 'checked' : ''}>
-          <span>協力会社のみ</span>
+          <span>一般作業員</span>
         </label>
         <label class="role-card">
           <input type="radio" name="${roleName}" value="leader" ${role === 'leader' ? 'checked' : ''}>
-          <span>協力会社＋職長</span>
+          <span>職長</span>
         </label>
         <label class="role-card">
           <input type="radio" name="${roleName}" value="other"  ${role === 'other' ? 'checked' : ''}>
-          <span>協力会社＋その他資格</span>
+          <span>有資格者</span>
         </label>
       </div>
     ` : '—'
@@ -187,7 +187,7 @@
     if (!container) return;
 
     container.innerHTML = `
-      <label style="display:block;margin:8px 0;">📎 添付ファイル</label>
+      <label style="display:block;margin:8px 0;">画像添付</label>
       <div id="uploaderEdit" class="uploader">
         <input type="file" accept="image/*" multiple hidden>
         <label class="file-button">ファイル選択 <span class="file-count">0 枚</span></label>
@@ -213,15 +213,15 @@
     <div class="partner-role-grid partner-role-grid--col">
       <label class="role-card">
         <input type="radio" name="${radioName}" value="only">
-        <span>協力会社のみ</span>
+        <span>一般作業員</span>
       </label>
       <label class="role-card">
         <input type="radio" name="${radioName}" value="leader">
-        <span>協力会社＋職長</span>
+        <span>職長</span>
       </label>
       <label class="role-card">
         <input type="radio" name="${radioName}" value="other">
-        <span>協力会社＋その他資格</span>
+        <span>有資格者</span>
       </label>
     </div>
   `;
@@ -367,8 +367,8 @@ let formData = window.formData || {};  // 念のためグローバルに
   // ---- ここから「表示用」formData を作る ----
 const roleSuffixMap = {
   only:   '',            // 協力会社のみ → 会社名だけ
-  leader: '＋職長',      // フル幅の＋（半角+でもOK）
-  other:  '＋その他資格'
+  leader: ' 職長',      // フル幅の＋（半角+でもOK）
+  other:  ' 有資格者'
 };
 
 const workersDisp = records
