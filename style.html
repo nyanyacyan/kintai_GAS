@@ -306,38 +306,52 @@
   }
 
   .carousel-nav {
-  display: flex;                /* 横並びにする */
-  justify-content: space-between; /* 左右に押し広げる */
-  width: 100%;                  /* 親要素いっぱいに広げる */
-  margin-top: 8px;              /* 上に少し余白 */
-}
+    display: flex;
+    /* 横並びにする */
+    justify-content: space-between;
+    /* 左右に押し広げる */
+    width: 100%;
+    /* 親要素いっぱいに広げる */
+    margin-top: 8px;
+    /* 上に少し余白 */
+  }
 
-.carousel-nav button {
-  flex: 1;                        /* 均等幅 */
-  padding: 20px 0;                /* 縦幅を倍に（以前10px → 20px） */
-  border: none;
-  background: #007bff;            /* 青 */
-  color: #fff;                    /* 文字色は白に */
-  font-size: 18px;                /* 少し大きく */
-  cursor: pointer;
-  border-radius: 6px;             /* 角丸にするとタップしやすい */
-  max-width: 120px;               /* 横幅を少し狭める上限 */
-}
+  .carousel-nav button {
+    flex: 1;
+    /* 均等幅 */
+    padding: 20px 0;
+    /* 縦幅を倍に（以前10px → 20px） */
+    border: none;
+    background: #007bff;
+    /* 青 */
+    color: #fff;
+    /* 文字色は白に */
+    font-size: 18px;
+    /* 少し大きく */
+    cursor: pointer;
+    border-radius: 6px;
+    /* 角丸にするとタップしやすい */
+    max-width: 120px;
+    /* 横幅を少し狭める上限 */
+  }
 
-.carousel-nav button:first-child {
-  margin-right: 10px;            /* ボタン間に少し隙間 */
-}
+  .carousel-nav button:first-child {
+    margin-right: 10px;
+    /* ボタン間に少し隙間 */
+  }
 
-.carousel-nav button:last-child {
-  margin-left: 10px;
-}
+  .carousel-nav button:last-child {
+    margin-left: 10px;
+  }
 
-.carousel-dots {
-  display: flex;
-  justify-content: center;
-  align-items: center;   /* 縦方向も中央 */
-  width: 100%;           /* 横幅を親いっぱいに広げる */
-}
+  .carousel-dots {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* 縦方向も中央 */
+    width: 100%;
+    /* 横幅を親いっぱいに広げる */
+  }
 
   .carousel-prev,
   .carousel-next {
@@ -1053,21 +1067,23 @@
   }
 
   /* ボタンのラベルを確実に見せる */
-.upload-section .file-button,
-.uploader .file-button {
-  display: inline-flex !important;
-  align-items: center;
-  justify-content: center;
-  gap: .5rem;
-  padding: .9rem 1.4rem;
-  border: 1px solid #bbb;
-  border-radius: 10px;
-  background: #f8f8f8;
-  cursor: pointer;
+  .upload-section .file-button,
+  .uploader .file-button {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    padding: .9rem 1.4rem;
+    border: 1px solid #bbb;
+    border-radius: 10px;
+    background: #f8f8f8;
+    cursor: pointer;
 
-  font-size: 20px;   /* ← 追加：文字サイズ */
-  font-weight: bold; /* ← 追加：太字で見やすく */
-}
+    font-size: 20px;
+    /* ← 追加：文字サイズ */
+    font-weight: bold;
+    /* ← 追加：太字で見やすく */
+  }
 
   /* input[type=file] はラベルで開くので隠す */
   #uploaderEdit input[type="file"] {
@@ -1097,8 +1113,10 @@
     /* パディング込みで幅計算 */
     margin-top: 8px;
     /* 上の要素と少しだけ余白 */
-    font-size: 20px;   /* ← 追加：文字サイズ */
-    font-weight: bold; /* ← 追加：太字で見やすく */
+    font-size: 20px;
+    /* ← 追加：文字サイズ */
+    font-weight: bold;
+    /* ← 追加：太字で見やすく */
   }
 
   /* 文字サイズ・高さが小さくなっていた場合の底上げ */
@@ -1124,5 +1142,15 @@
     .uploader .file-button {
       width: 100%;
     }
+  }
+
+  #uploaderEdit .file-button,
+  #uploaderMain .file-button,
+  .upload-section .file-button,
+  .uploader .file-button {
+    font-size: 2rem !important;
+    /* ← 確実に大きく */
+    padding: 1.2rem 1.8rem !important;
+    font-weight: bold;
   }
 </style>
