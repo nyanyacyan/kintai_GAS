@@ -1154,28 +1154,37 @@
     font-weight: bold;
   }
 
-/* 1行の全体レイアウト */
+/* 1行全体の横並び */
 .role-row {
   display: flex;
   align-items: center;
-  gap: 12px;        /* 各要素の間隔 */
+  gap: 12px;               /* チェックボックスと入力欄の間隔 */
   margin-bottom: 10px;
 }
 
-/* ラベル（一般作業員 / 職長 / 有資格者） */
+/* ラベル部分（チェック＋一般作業員 / 職長 / 有資格者） */
 .role-row label {
-  font-size: 1.6rem;
-  font-weight: 700;
+  flex: 0 0 120px;         /* 固定幅：ラベルは幅120px */
+  font-size: 1.4rem;
+  font-weight: bold;
   white-space: nowrap;
-  min-width: 120px;   /* ラベル幅を揃える */
 }
 
-/* 入力欄（人工 / 残業） */
-.role-row input[type="number"] {
+/* 入力欄を包むコンテナ */
+.role-row .work-inputs {
+  flex: 1;                 /* 残りスペースを全部使う */
+  display: flex;
+  gap: 12px;               /* 人工と残業の間隔 */
+}
+
+/* 人工 / 残業の入力欄 */
+.role-row .work-inputs input[type="number"] {
+  flex: 1;                 /* 均等幅に広げる */
   font-size: 1.4rem;
-  padding: 0.6rem;
-  width: 100px;
+  padding: 0.8rem 1rem;
   text-align: center;
+  border: 1px solid #ccc;
+  border-radius: 6px;
 }
 
 
