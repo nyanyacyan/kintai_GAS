@@ -565,16 +565,22 @@
 
   /* モーダル枠 */
   #confirmationBox {
-    width: clamp(360px, 92vw, 720px);
-    max-width: 560px;
-    max-height: 80vh;
-    /* 画面の80%でカット */
+    width: 96vw;
+    /* ← 横幅を画面の96%まで */
+    max-width: none;
+    /* ← 固定上限を解除 */
+    height: 90vh;
+    /* ← 高さを画面の90%まで */
+    max-height: none;
+    /* ← 高さ制限を解除 */
     overflow-y: auto;
-    /* 縦スクロール */
-    padding: 16px 18px;
-    border-radius: 14px;
+    /* ← 長い内容はスクロール */
+    padding: 20px 24px;
+    /* ← 余白はやや多めでもOK */
+    border-radius: 12px;
+    /* ← 角丸を少し残す（完全四角でも可） */
     background: #fff;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, .25);
   }
 
   /* 全体の文字サイズと行間を控えめに */
@@ -1154,50 +1160,55 @@
     font-weight: bold;
   }
 
-/* 1行のレイアウトを整える */
-.role-row{
-  display:flex;
-  align-items:center;
-  gap:14px;
-  margin-bottom:10px;
-}
+  /* 1行のレイアウトを整える */
+  .role-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 10px;
+  }
 
-/* 左ラベル（☑ + 役割名）：全行で同じ幅・大きく太く */
-.role-row label{
-  flex:0 0 clamp(160px, 28vw, 220px); /* 画面に応じて 160〜220px で固定幅 */
-  font-size:2rem;                     /* ← 大きく */
-  font-weight:700;                    /* 太字 */
-  white-space:nowrap;
-  display:flex;
-  align-items:center;
-  gap:10px;                           /* チェックボックスとの間 */
-}
+  /* 左ラベル（☑ + 役割名）：全行で同じ幅・大きく太く */
+  .role-row label {
+    flex: 0 0 clamp(160px, 28vw, 220px);
+    /* 画面に応じて 160〜220px で固定幅 */
+    font-size: 2rem;
+    /* ← 大きく */
+    font-weight: 700;
+    /* 太字 */
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    /* チェックボックスとの間 */
+  }
 
-/* 右側（人工・残業）の器：残り幅を全部使って横並び均等 */
-.role-row .work-inputs{
-  flex:1;
-  display:flex;
-  gap:12px;                           /* 人工と残業の間 */
-}
+  /* 右側（人工・残業）の器：残り幅を全部使って横並び均等 */
+  .role-row .work-inputs {
+    flex: 1;
+    display: flex;
+    gap: 12px;
+    /* 人工と残業の間 */
+  }
 
-/* 人工・残業の入力欄：均等幅で広げる（小さめフォントに上書き） */
-.role-row .work-inputs input[type="number"]{
-  flex:1;                             /* ← 均等幅 */
-  width:auto;                         /* 以前の width:100px を打ち消し */
-  font-size:2rem;                     /* ← 入力文字は少し小さめ（全体4remより縮小） */
-  padding:1.2rem 1.4rem;
-  text-align:center;
-  border:1px solid #ccc;
-  border-radius:8px;
-  box-sizing:border-box;
-}
+  /* 人工・残業の入力欄：均等幅で広げる（小さめフォントに上書き） */
+  .role-row .work-inputs input[type="number"] {
+    flex: 1;
+    /* ← 均等幅 */
+    width: auto;
+    /* 以前の width:100px を打ち消し */
+    font-size: 2rem;
+    /* ← 入力文字は少し小さめ（全体4remより縮小） */
+    padding: 1.2rem 1.4rem;
+    text-align: center;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-sizing: border-box;
+  }
 
-/* プレースホルダも控えめに */
-.role-row .work-inputs input::placeholder{
-  font-size:1.8rem;
-  color:#9a9a9a;
-}
-
-
-
+  /* プレースホルダも控えめに */
+  .role-row .work-inputs input::placeholder {
+    font-size: 1.8rem;
+    color: #9a9a9a;
+  }
 </style>
