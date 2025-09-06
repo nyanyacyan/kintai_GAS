@@ -1154,24 +1154,30 @@
     font-weight: bold;
   }
 
-  /* 役割の見出しも大きく */
-  .partner-role-title {
-    font-size: 1.4rem;
-    font-weight: 700;
-  }
+/* 1行の全体レイアウト */
+.role-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;        /* 各要素の間隔 */
+  margin-bottom: 10px;
+}
 
-  /* 行自体を少し大きく＆タップしやすく */
-  .role-option {
-    padding: 18px 16px;
-    gap: 16px;
-  }
+/* ラベル（一般作業員 / 職長 / 有資格者） */
+.role-row label {
+  font-size: 1.6rem;
+  font-weight: 700;
+  white-space: nowrap;
+  min-width: 120px;   /* ラベル幅を揃える */
+}
+
+/* 入力欄（人工 / 残業） */
+.role-row input[type="number"] {
+  font-size: 1.4rem;
+  padding: 0.6rem;
+  width: 100px;
+  text-align: center;
+}
 
 
-  /* ラベルの文字を大きく太く */
-  .role-option .text {
-    font-size: 1.6rem;
-    /* ← ここを好みで 1.8rem などに */
-    font-weight: 700;
-    line-height: 1.2;
-  }
+
 </style>
