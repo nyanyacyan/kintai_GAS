@@ -1230,38 +1230,32 @@
     box-shadow: 0 6px 24px rgba(0, 0, 0, .25);
   }
 
-  /* ラジオボタン行全体 */
-  .role-card {
-    display: flex;
-    align-items: center;
-    /* 縦方向の中央寄せ */
-    justify-content: center;
-    /* 横方向も中央寄せ */
-    gap: 12px;
-    /* ボタンと文字の間 */
-    padding: 20px;
-    /* 枠の内側に余白 */
-    border: 1px solid #ccc;
-    border-radius: 10px;
-    background: #fff;
-    cursor: pointer;
-    width: 100%;
-    /* 横幅いっぱいに広げる */
-    box-sizing: border-box;
-  }
+/* ラジオボタン行全体 */
+.role-card {
+  display: flex;
+  align-items: center;        /* 縦方向の中央寄せ */
+  justify-content: center;    /* 横方向の中央寄せ */
+  gap: 10px;                  /* ボタンと文字の間 */
+  padding: 16px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+  width: 100%;
+  box-sizing: border-box;
+}
 
-  /* ラジオボタン */
-  .role-card input[type="radio"] {
-    width: 24px;
-    height: 24px;
-  }
+/* ラジオボタン */
+.role-card input[type="radio"] {
+  width: 20px;
+  height: 20px;
+}
 
-  /* ラベル文字 */
-  .role-card span {
-    font-size: 2rem;
-    /* ← 大きく */
-    font-weight: bold;
-    /* 太字に */
-    text-align: center;
-  }
+/* ラベル文字 */
+.role-card span {
+  font-size: 1.35rem;   /* ← 2remの約2/3サイズ */
+  font-weight: bold;
+  text-align: center;
+}
+
 </style>
