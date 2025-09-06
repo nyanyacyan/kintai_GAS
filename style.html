@@ -301,8 +301,30 @@
   .carousel-nav {
     display: flex;
     justify-content: center;
-    gap: 12px;
-    margin: 6px 0 0;
+    width: 100%;
+    /* 親要素いっぱいに広げる */
+    margin-top: 8px;
+    /* 上に少し余白 */
+  }
+
+  .carousel-nav button {
+    flex: 1;
+    /* 2ボタンを均等に広げる */
+    padding: 10px 0;
+    /* 高さを確保 */
+    border: none;
+    background: #f0f0f0;
+    font-size: 16px;
+    cursor: pointer;
+  }
+
+  .carousel-nav button:first-child {
+    margin-right: 4px;
+    /* ボタン間に少し隙間 */
+  }
+
+  .carousel-nav button:last-child {
+    margin-left: 4px;
   }
 
   .carousel-prev,
