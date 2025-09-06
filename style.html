@@ -1154,37 +1154,48 @@
     font-weight: bold;
   }
 
-/* 1行全体の横並び */
-.role-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;               /* チェックボックスと入力欄の間隔 */
-  margin-bottom: 10px;
+/* 1行のレイアウトを整える */
+.role-row{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  margin-bottom:10px;
 }
 
-/* ラベル部分（チェック＋一般作業員 / 職長 / 有資格者） */
-.role-row label {
-  flex: 0 0 120px;         /* 固定幅：ラベルは幅120px */
-  font-size: 1.4rem;
-  font-weight: bold;
-  white-space: nowrap;
+/* 左ラベル（☑ + 役割名）：全行で同じ幅・大きく太く */
+.role-row label{
+  flex:0 0 clamp(160px, 28vw, 220px); /* 画面に応じて 160〜220px で固定幅 */
+  font-size:2rem;                     /* ← 大きく */
+  font-weight:700;                    /* 太字 */
+  white-space:nowrap;
+  display:flex;
+  align-items:center;
+  gap:10px;                           /* チェックボックスとの間 */
 }
 
-/* 入力欄を包むコンテナ */
-.role-row .work-inputs {
-  flex: 1;                 /* 残りスペースを全部使う */
-  display: flex;
-  gap: 12px;               /* 人工と残業の間隔 */
+/* 右側（人工・残業）の器：残り幅を全部使って横並び均等 */
+.role-row .work-inputs{
+  flex:1;
+  display:flex;
+  gap:12px;                           /* 人工と残業の間 */
 }
 
-/* 人工 / 残業の入力欄 */
-.role-row .work-inputs input[type="number"] {
-  flex: 1;                 /* 均等幅に広げる */
-  font-size: 1.4rem;
-  padding: 0.8rem 1rem;
-  text-align: center;
-  border: 1px solid #ccc;
-  border-radius: 6px;
+/* 人工・残業の入力欄：均等幅で広げる（小さめフォントに上書き） */
+.role-row .work-inputs input[type="number"]{
+  flex:1;                             /* ← 均等幅 */
+  width:auto;                         /* 以前の width:100px を打ち消し */
+  font-size:2rem;                     /* ← 入力文字は少し小さめ（全体4remより縮小） */
+  padding:1.2rem 1.4rem;
+  text-align:center;
+  border:1px solid #ccc;
+  border-radius:8px;
+  box-sizing:border-box;
+}
+
+/* プレースホルダも控えめに */
+.role-row .work-inputs input::placeholder{
+  font-size:1.8rem;
+  color:#9a9a9a;
 }
 
 
