@@ -301,31 +301,37 @@
   .carousel-nav {
     display: flex;
     justify-content: center;
-    width: 100%;
-    /* 親要素いっぱいに広げる */
-    margin-top: 8px;
-    /* 上に少し余白 */
+    gap: 12px;
+    margin: 6px 0 0;
   }
 
-  .carousel-nav button {
-    flex: 1;
-    /* 2ボタンを均等に広げる */
-    padding: 10px 0;
-    /* 高さを確保 */
-    border: none;
-    background: #f0f0f0;
-    font-size: 16px;
-    cursor: pointer;
-  }
+  .carousel-nav {
+  display: flex;                /* 横並びにする */
+  justify-content: space-between; /* 左右に押し広げる */
+  width: 100%;                  /* 親要素いっぱいに広げる */
+  margin-top: 8px;              /* 上に少し余白 */
+}
 
-  .carousel-nav button:first-child {
-    margin-right: 4px;
-    /* ボタン間に少し隙間 */
-  }
+.carousel-nav button {
+  flex: 1;                        /* 均等幅 */
+  padding: 20px 0;                /* 縦幅を倍に（以前10px → 20px） */
+  border: none;
+  background: #007bff;            /* 青 */
+  color: #fff;                    /* 文字色は白に */
+  font-size: 18px;                /* 少し大きく */
+  cursor: pointer;
+  border-radius: 6px;             /* 角丸にするとタップしやすい */
+  max-width: 120px;               /* 横幅を少し狭める上限 */
+}
 
-  .carousel-nav button:last-child {
-    margin-left: 4px;
-  }
+.carousel-nav button:first-child {
+  margin-right: 10px;            /* ボタン間に少し隙間 */
+}
+
+.carousel-nav button:last-child {
+  margin-left: 10px;
+}
+
 
   .carousel-prev,
   .carousel-next {
