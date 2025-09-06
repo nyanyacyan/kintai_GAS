@@ -1053,7 +1053,8 @@
   }
 
   /* ボタンのラベルを確実に見せる */
-#uploaderEdit .file-button {
+.upload-section .file-button,
+.uploader .file-button {
   display: inline-flex !important;
   align-items: center;
   justify-content: center;
@@ -1084,28 +1085,6 @@
     width: 100%;
   }
 
-  .upload-section .file-button,
-  .uploader .file-button {
-    display: flex;
-    /* 中身を中央寄せに */
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    /* 横いっぱい */
-    box-sizing: border-box;
-    /* パディング込みで幅計算 */
-    margin-top: 8px;
-    /* 上の要素と少しだけ余白 */
-  }
-
-  /* 文字サイズ・高さが小さくなっていた場合の底上げ */
-  .upload-section .file-button,
-  .uploader .file-button {
-    min-height: 48px;
-    /* 押しやすい高さ */
-    font-size: 1.1rem;
-    /* ボタン文字の見やすさ */
-  }
 
   /* プレビューも親幅で崩れないように */
   .upload-section .preview-grid,
