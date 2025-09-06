@@ -1211,4 +1211,20 @@
     font-size: 1.8rem;
     color: #9a9a9a;
   }
+
+  /* ===== モーダルを画面ギリギリまで広げる（最優先） ===== */
+  #confirmationBox,
+  #confirmationModal.modal--success #confirmationBox {
+    width: 96vw !important;
+    /* 横 96% まで */
+    height: 92vh !important;
+    /* 縦 92% まで */
+    max-width: none !important;
+    max-height: none !important;
+    overflow: auto;
+    /* 中身が長いときはスクロール */
+    border-radius: 12px;
+    padding: 20px 24px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, .25);
+  }
 </style>
