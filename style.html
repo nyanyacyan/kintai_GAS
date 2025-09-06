@@ -1213,17 +1213,55 @@
   }
 
   /* ===== モーダルを画面ギリギリまで広げる（最優先） ===== */
-/* ===== モーダルを画面ギリギリまで広げる（確認モーダル＋編集モーダル共通） ===== */
-#confirmationBox,
-#confirmationModal.modal--success #confirmationBox,
-#historyModal .modal-body {
-  width: 96vw !important;   /* 横幅を画面の96% */
-  height: 92vh !important;  /* 縦幅を画面の92% */
-  max-width: none !important;
-  max-height: none !important;
-  overflow: auto !important; /* 内容が長いときはスクロール */
-  border-radius: 12px;
-  padding: 20px 24px;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, .25);
-}
+  /* ===== モーダルを画面ギリギリまで広げる（確認モーダル＋編集モーダル共通） ===== */
+  #confirmationBox,
+  #confirmationModal.modal--success #confirmationBox,
+  #historyModal .modal-body {
+    width: 96vw !important;
+    /* 横幅を画面の96% */
+    height: 92vh !important;
+    /* 縦幅を画面の92% */
+    max-width: none !important;
+    max-height: none !important;
+    overflow: auto !important;
+    /* 内容が長いときはスクロール */
+    border-radius: 12px;
+    padding: 20px 24px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, .25);
+  }
+
+  /* ラジオボタン行全体 */
+  .role-card {
+    display: flex;
+    align-items: center;
+    /* 縦方向の中央寄せ */
+    justify-content: center;
+    /* 横方向も中央寄せ */
+    gap: 12px;
+    /* ボタンと文字の間 */
+    padding: 20px;
+    /* 枠の内側に余白 */
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    background: #fff;
+    cursor: pointer;
+    width: 100%;
+    /* 横幅いっぱいに広げる */
+    box-sizing: border-box;
+  }
+
+  /* ラジオボタン */
+  .role-card input[type="radio"] {
+    width: 24px;
+    height: 24px;
+  }
+
+  /* ラベル文字 */
+  .role-card span {
+    font-size: 2rem;
+    /* ← 大きく */
+    font-weight: bold;
+    /* 太字に */
+    text-align: center;
+  }
 </style>
