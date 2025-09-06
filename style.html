@@ -1052,6 +1052,22 @@
     display: block !important;
   }
 
+  /* ボタンのラベルを確実に見せる */
+#uploaderEdit .file-button {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  padding: .9rem 1.4rem;
+  border: 1px solid #bbb;
+  border-radius: 10px;
+  background: #f8f8f8;
+  cursor: pointer;
+
+  font-size: 20px;   /* ← 追加：文字サイズ */
+  font-weight: bold; /* ← 追加：太字で見やすく */
+}
+
   /* input[type=file] はラベルで開くので隠す */
   #uploaderEdit input[type="file"] {
     display: none !important;
@@ -1068,26 +1084,19 @@
     width: 100%;
   }
 
-/* アップロードボタン共通スタイル */
-.upload-section .file-button,
-.uploader .file-button {
-  display: inline-block;
-  padding: 20px 40px;       /* ← 縦幅を倍に */
-  font-size: 20px;          /* ← 文字を大きく */
-  font-weight: bold;        /* ← 太字でさらに目立たせる */
-  background-color: #007bff; /* 青系にしてボタンらしく */
-  color: #fff;              /* 白文字 */
-  border-radius: 6px;       /* 少し丸みを持たせる */
-  cursor: pointer;
-  text-align: center;
-  transition: background 0.2s;
-}
-
-/* ホバー時 */
-.upload-section .file-button:hover,
-.uploader .file-button:hover {
-  background-color: #0056b3; /* 濃い青に */
-}
+  .upload-section .file-button,
+  .uploader .file-button {
+    display: flex;
+    /* 中身を中央寄せに */
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    /* 横いっぱい */
+    box-sizing: border-box;
+    /* パディング込みで幅計算 */
+    margin-top: 8px;
+    /* 上の要素と少しだけ余白 */
+  }
 
   /* 文字サイズ・高さが小さくなっていた場合の底上げ */
   .upload-section .file-button,
