@@ -1,5 +1,10 @@
 <script>
 
+// TODO: あとで直す
+// FIXME: この処理はバグあり
+// REVIEW: 仕様確認必要
+// IDEA: 改善案
+
   // ------------------------------------------
   // 送信履歴のモーダルを開く（初回モーダル表示時）
   // 日付＋送信履歴を取得
@@ -134,45 +139,30 @@
 
     let html = '<h3>編集フォーム</h3>';
 
+    // 役割列を削除 → <th> からも外す
     html += '<table id="edit-table" style="width:100%; border-collapse: collapse;">';
-    html += '<thead><tr><th>種別</th><th>名前</th><th>役割</th><th>人工</th><th>残業</th></tr></thead>';
+    html += '<thead><tr><th>種別</th><th>名前</th><th>人工</th><th>残業</th></tr></thead>';
     html += '<tbody id="edit-tbody">';
 
     lastFetchedRecords.forEach((r, i) => {
       const safe = sanitize(r.name);
-      const roleName = `edit-partner-${safe}-role`;  // ★編集用のラジオname
-      const role = r.role || 'only';                 // ★既存が無ければ only
 
       html += `<tr>
       <td>${r.type}</td>
       <td>${r.name}</td>
-  <td class="role-cell">${r.type === '協力会社' ? `
-      <div class="partner-role-grid">
-        <label class="role-card">
-          <input type="radio" name="${roleName}" value="only"   ${role === 'only' ? 'checked' : ''}>
-          <span>一般作業員</span>
-        </label>
-        <label class="role-card">
-          <input type="radio" name="${roleName}" value="leader" ${role === 'leader' ? 'checked' : ''}>
-          <span>職長</span>
-        </label>
-        <label class="role-card">
-          <input type="radio" name="${roleName}" value="other"  ${role === 'other' ? 'checked' : ''}>
-          <span>有資格者</span>
-        </label>
-      </div>
-    ` : '—'
-        }</td>
 
-      <td><input type="number" step="0.25" class="work-input" placeholder="人工"   value="${r.man}"      id="edit-man-${i}" /></td>
+      <!-- 役割は削除して、人工と残業だけ -->
+      <td><input type="number" step="0.25" class="work-input" placeholder="人工" value="${r.man}" id="edit-man-${i}" /></td>
       <td><input type="number" step="0.25" class="work-input" placeholder="残業" value="${r.overtime}" id="edit-overtime-${i}" /></td>
     </tr>`;
     });
-    html += '</table>';
+
+    html += '</tbody></table>';
     html += `
     <div id="editUploader" class="upload-section" style="margin:12px 0;"></div>
     <button onclick="showEditConfirmationModal()">再送信（更新）</button>
   `;
+
     container.innerHTML = html;
     renderEditUploader();
     renderAdditionalInputs();
@@ -227,21 +217,29 @@
     return wrap;
   }
 
-
   // ------------------------------------------
   // 編集モーダル下部の「新規追加」用チェックボックス＆入力欄を描画
   // 既に表に載っている人は候補から除外
+  // TODO: 修正が必要
   // ------------------------------------------
   function renderAdditionalInputs() {
+    console.group('🧩 追加入力の描画');
+
     const workerContainer = document.getElementById('additionalWorkerInputs');
     const partnerContainer = document.getElementById('additionalPartnerInputs');
     workerContainer.innerHTML = '';
     partnerContainer.innerHTML = '';
 
     const staffId = document.getElementById('staff').value;
-    if (!staffId) return;
+    console.log('選択中のスタッフID:', staffId); // 📝 LOG
+    if (!staffId) {
+      console.warn('⚠ スタッフIDが未選択のため、追加候補は表示しません。'); // 📝 LOG
+      console.groupEnd();
+      return;
+    }
 
     const registered = new Set(lastFetchedRecords.map(r => `${r.type}:${r.name}`));
+    console.log('当日入力済み（初期）の除外キー数:', registered.size); // 📝 LOG
 
     // 🔽 編集テーブルに表示されている作業者／協力会社の名前も除外対象に追加
     document.querySelectorAll('#edit-table tbody tr').forEach(row => {
@@ -249,11 +247,15 @@
       const name = row.querySelector('td:nth-child(2)').textContent.trim();
       registered.add(`${type}:${name}`);
     });
+    console.log('編集テーブル反映後の除外キー総数:', registered.size); // 📝 LOG
 
     // 追加UI：協力会社のときだけ役割ラジオも入れる
     const createCheckboxBlock = (type, name, container) => {
       const safeName = sanitize(name);
       const key = `modal-${type}-${safeName}`;
+
+      // 📝 LOG: 実際に描画する候補
+      console.log(`候補を描画: 種別=${type === 'partner' ? '協力会社' : '作業者'} / 名称=${name} / key=${key}`);
 
       const wrapper = document.createElement('label');
       wrapper.className = 'checkbox-wrapper';
@@ -281,7 +283,7 @@
 
       if (type === 'partner') {
         // ★ 新：3役割×(人工/残業) のマトリクス（最初は非表示）
-        const matrix = createPartnerMatrixBlock(key);
+        const matrix = createPartnerRoleMatrix(key);
         matrix.style.display = 'none';
         container.appendChild(matrix);
       } else {
@@ -291,25 +293,38 @@
       }
     };
 
-    // ✅ 作業者の見出し
-    // const workerHeader = document.createElement('h4');
-    // workerHeader.textContent = '作業者';
-    // workerContainer.appendChild(workerHeader);
+    // ✅ 作業者
+    const workersForStaff = masterData.worker
+      .filter(w => w.staffIds.includes(staffId));
+    console.log('作業者マスタ（スタッフIDで絞り込み後）件数:', workersForStaff.length); // 📝 LOG
 
-    masterData.worker
-      .filter(w => w.staffIds.includes(staffId))
-      .filter(w => !registered.has(`作業者:${w.name}`)) // ✅ 重複回避
-      .forEach(w => createCheckboxBlock('worker', w.name, workerContainer));
+    const workerRemain = workersForStaff
+      .filter(w => !registered.has(`作業者:${w.name}`)); // ✅ 重複回避
+    console.log('作業者：重複除外後に表示する件数:', workerRemain.length); // 📝 LOG
+    workerRemain.forEach(w => createCheckboxBlock('worker', w.name, workerContainer));
 
-    // ✅ 協力会社の見出し
-    // const partnerHeader = document.createElement('h4');
-    // partnerHeader.textContent = '協力会社';
-    // partnerContainer.appendChild(partnerHeader);
+    // ✅ 協力会社
+    const partnersForStaff = masterData.partner
+      .filter(p => p.staffIds.includes(staffId));
+    console.log('協力会社マスタ（スタッフIDで絞り込み後）件数:', partnersForStaff.length); // 📝 LOG
 
-    masterData.partner
-      .filter(p => p.staffIds.includes(staffId))
-      .filter(p => !registered.has(`協力会社:${p.name}`)) // ✅ 重複回避
-      .forEach(p => createCheckboxBlock('partner', p.name, partnerContainer));
+    const partnerRemain = partnersForStaff
+      .filter(p => !registered.has(`協力会社:${p.name}`)); // ✅ 重複回避
+    console.log('協力会社：重複除外後に表示する件数:', partnerRemain.length); // 📝 LOG
+    partnerRemain.forEach(p => createCheckboxBlock('partner', p.name, partnerContainer));
+
+    // 完全一致（追加候補がゼロ）の場合の案内表示
+    if (workerRemain.length === 0) {
+      workerContainer.innerHTML = '<em style="color: gray;">追加できる作業者の候補はありません（全て既に入力済みです）。</em>';
+    }
+    if (partnerRemain.length === 0) {
+      partnerContainer.innerHTML = '<em style="color: gray;">追加できる協力会社の候補はありません（全て既に入力済みです）。</em>';
+    }
+
+    // 仕上げサマリ
+    console.log('描画後DOM数｜作業者:', workerContainer.querySelectorAll('label.checkbox-wrapper').length,
+      '協力会社:', partnerContainer.querySelectorAll('label.checkbox-wrapper').length); // 📝 LOG
+    console.groupEnd();
   }
 
 
