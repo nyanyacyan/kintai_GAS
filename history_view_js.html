@@ -1,4 +1,5 @@
 <script>
+  const ROLE = { GENERAL: 'general', LEADER: 'leader', QUALIFIED: 'qualified' };
 
   // TODO: あとで直す
   // FIXME: この処理はバグあり
@@ -344,167 +345,184 @@
       matrix.style.display = 'none';
       partnerContainer.appendChild(matrix);
     });
-  console.groupEnd();
-}  // ←←← ここで renderAdditionalInputs を閉じる
+    console.groupEnd();
+  }  // ←←← ここで renderAdditionalInputs を閉じる
 
-    // ------------------------------------------
-    // モーダル内編集フォームの「再送信（更新）」ボタン押下時：
-    // 入力検証→formData組み立て→確認モーダルへ
-    // ------------------------------------------
-    let pendingEditPayload = null;
-    let formData = window.formData || {};  // 念のためグローバルに
-    function showEditConfirmationModal() {
-      isEditMode = true;
+  // ------------------------------------------
+  // モーダル内編集フォームの「再送信（更新）」ボタン押下時：
+  // 入力検証→formData組み立て→確認モーダルへ
+  // ------------------------------------------
+  let pendingEditPayload = null;
+  let formData = window.formData || {};  // 念のためグローバルに
+  function showEditConfirmationModal() {
+    isEditMode = true;
 
-      // 既存のバリデーション・エラークリア処理はこの前にある前提
-
-
-      // --- 1) 既存レコード（テーブル行）の収集 ---
-      const records = [];
-
-      // 既存行
-      lastFetchedRecords.forEach((r, i) => {
-        const man = parseFloat(document.getElementById(`edit-man-${i}`)?.value || 0);
-        const ot = parseFloat(document.getElementById(`edit-overtime-${i}`)?.value || 0);
-
-        let role = undefined; // 作業者は role 不要
-        if (r.type === '協力会社') {
-          const safe = sanitize(r.name);
-          const sel = document.querySelector(`input[name="edit-partner-${safe}-role"]:checked`);
-          role = sel ? sel.value : 'only'; // only | leader | other
-        }
-
-        records.push({ type: r.type, name: r.name, role, man, overtime: ot });
-      });
-
-      // 追加の協力会社
-      document.querySelectorAll('.additional-partner:checked').forEach(cb => {
-        const name = cb.value, safe = sanitize(name);
-        const key = `modal-partner-${safe}`;
-        const man = parseFloat(document.querySelector(`input[data-name="${key}"][data-type="man"]`)?.value || 0);
-        const ot = parseFloat(document.querySelector(`input[data-name="${key}"][data-type="overtime"]`)?.value || 0);
-        const sel = document.querySelector(`input[name="${key}-role"]:checked`);
-        const role = sel ? sel.value : 'only';
-        records.push({ type: '協力会社', name, role, man, overtime: ot });
-      });
-
-      // 追加の作業者（role は不要）
-      document.querySelectorAll('.additional-worker:checked').forEach(cb => {
-        const name = cb.value, safe = sanitize(name);
-        const man = parseFloat(document.querySelector(`input[data-name="modal-worker-${safe}"][data-type="man"]`)?.value || 0);
-        const ot = parseFloat(document.querySelector(`input[data-name="modal-worker-${safe}"][data-type="overtime"]`)?.value || 0);
-        records.push({ type: '作業者', name, man, overtime: ot });
-      });
-
-      const meta = {
-        date: document.getElementById('modalHistoryDate').value,
-        companyId: document.getElementById('company').value,
-        staffId: document.getElementById('staff').value,
-        siteId: document.getElementById('site').value,
-      };
-
-      // ★ここで退避（submitEditFromModal はこれをそのまま送る）
-      pendingEditPayload = { meta, records };   // ← 保存用はコレを使う
-
-      // ---- ここから「表示用」formData を作る ----
-      const roleSuffixMap = {
-        only: '',            // 協力会社のみ → 会社名だけ
-        leader: ' 職長',      // フル幅の＋（半角+でもOK）
-        other: ' 有資格者'
-      };
-
-      const workersDisp = records
-        .filter(r => r.type === '作業者')
-        .map(({ name, man, overtime }) => ({ name, man, overtime }));
-
-      const partnersDisp = records
-        .filter(r => r.type === '協力会社')
-        .map(({ name, role, man, overtime }) => {
-          const suffix = roleSuffixMap[role] ?? '';
-          return { name: name + suffix, man, overtime };   // ← 会社名の後ろにだけ役割を付ける
-        });
-
-      // showConfirmation が参照する形に揃える
-      formData = {
-        companyId: meta.companyId,
-        staffId: meta.staffId,
-        site: meta.siteId,
-        date: meta.date,
-        workers: workersDisp,
-        partners: partnersDisp
-      };
-      console.log('[showEditConfirmationModal] formData for modal =',
-        JSON.parse(JSON.stringify(formData)));
-
-      showConfirmation(true);
-    }
+    // 既存のバリデーション・エラークリア処理はこの前にある前提
 
 
-    // -------------------------------------------------------------------------------
-    // スプシにある対象の協力会社のマスターデータを取得
+    // --- 1) 既存レコード（テーブル行）の収集 ---
+    const records = [];
 
-    function getPartnerCompanyMasterData() {
-      // マスターデータがあるか確認
-      if (!window.masterData || !Array.isArray(masterData.partner)) {
-        console.warn('masterData.partner が未初期化です');
-        return [];
+    // 既存行
+    lastFetchedRecords.forEach((r, i) => {
+      const man = parseFloat(document.getElementById(`edit-man-${i}`)?.value || 0);
+      const ot = parseFloat(document.getElementById(`edit-overtime-${i}`)?.value || 0);
+
+      let role = undefined; // 作業者は role 不要
+      if (r.type === '協力会社') {
+        const safe = sanitize(r.name);
+        const sel = document.querySelector(`input[name="edit-partner-${safe}-role"]:checked`);
+        role = sel ? sel.value : 'only'; // only | leader | other
       }
-      const sample = masterData.partner.slice(0, 3); // 先頭3件だけ
-      console.info('masterData.partner 件数:', masterData.partner.length);
-      console.log('masterData.partner 先頭3件サンプル:', sample);
-      console.table(sample); // 表形式でも確認
-      return masterData.partner;
-    }
 
-    // -------------------------------------------------------------------------------
+      records.push({ type: r.type, name: r.name, role, man, overtime: ot });
+    });
 
-    // 役割の定数
-    const ROLE = { GENERAL: 'general', LEADER: 'leader', QUALIFIED: 'qualified' };
+    // 追加の協力会社（マトリクス構造対応）
+    document.querySelectorAll('.additional-partner:checked').forEach(cb => {
+      const name = cb.value;
+      const safe = sanitize(name);
+      const key = `modal-partner-${safe}`;
 
-    // 例: "BULLPOWERS 職長" → { base:"BULLPOWERS", role:"leader" }
-    //     "BULLPOWERS"     → { base:"BULLPOWERS", role:"general" }
-    function parsePartnerDisplay(displayName) {
-      const s = (displayName || '').trim();
-      if (s.endsWith(' 職長')) return { base: s.slice(0, -3).trim(), role: ROLE.LEADER };
-      if (s.endsWith(' 有資格者')) return { base: s.slice(0, -4).trim(), role: ROLE.QUALIFIED };
-      return { base: s, role: ROLE.GENERAL };
-    }
+      // 役割ごとに check されている行だけ records に追加
+      const roles = [
+        { key: 'general', value: 'only' }, // 一般作業員
+        { key: 'leader', value: 'leader' }, // 職長
+        { key: 'qualified', value: 'other' }  // 有資格者
+      ];
 
-    // Map<会社名, Set<role>>
-    function buildUsedPartnerRoleMap() {
-      const used = new Map();
+      roles.forEach(({ key: rkey, value: rvalue }) => {
+        const chk = document.querySelector(`input[name="${key}-${rkey}-checked"]`);
+        if (!chk || !chk.checked) return;
 
-      // ① サーバから取ってある当日レコード
-      (window.lastFetchedRecords || []).forEach(r => {
-        if (r.type !== '協力会社') return;
-        // r.name は「BULLPOWERS」「BULLPOWERS 職長」…のどれか
-        const { base, role } = parsePartnerDisplay(r.name);
-        if (!used.has(base)) used.set(base, new Set());
-        used.get(base).add(role || ROLE.GENERAL);
+        const man = parseFloat(document.querySelector(`input[name="${key}-${rkey}-man"]`)?.value || 0);
+        const ot = parseFloat(document.querySelector(`input[name="${key}-${rkey}-overtime"]`)?.value || 0);
+
+        records.push({
+          type: '協力会社',
+          name,
+          role: rvalue,         // 'only' | 'leader' | 'other'
+          man,
+          overtime: ot
+        });
+      });
+    });
+
+    const meta = {
+      date: document.getElementById('modalHistoryDate').value,
+      companyId: document.getElementById('company').value,
+      staffId: document.getElementById('staff').value,
+      siteId: document.getElementById('site').value,
+    };
+
+    // ★ここで退避（submitEditFromModal はこれをそのまま送る）
+    pendingEditPayload = { meta, records };   // ← 保存用はコレを使う
+
+    // ---- ここから「表示用」formData を作る ----
+    const roleSuffixMap = {
+      only: '',            // 協力会社のみ → 会社名だけ
+      leader: ' 職長',      // フル幅の＋（半角+でもOK）
+      other: ' 有資格者'
+    };
+
+    const workersDisp = records
+      .filter(r => r.type === '作業者')
+      .map(({ name, man, overtime }) => ({ name, man, overtime }));
+
+    const partnersDisp = records
+      .filter(r => r.type === '協力会社')
+      .map(({ name, role, man, overtime }) => {
+        const suffix = roleSuffixMap[role] ?? '';
+        return { name: name + suffix, man, overtime };   // ← 会社名の後ろにだけ役割を付ける
       });
 
-      // ② 画面の編集テーブル行（まだ送信していないが編集中のものも除外）
-      document.querySelectorAll('#edit-table tbody tr').forEach(row => {
-        const type = row.querySelector('td:nth-child(1)')?.textContent.trim();
-        if (type !== '協力会社') return;
-        const dispName = row.querySelector('td:nth-child(2)')?.textContent.trim() || '';
-        const { base, role } = parsePartnerDisplay(dispName);
-        if (!used.has(base)) used.set(base, new Set());
-        used.get(base).add(role || ROLE.GENERAL);
-      });
+    // showConfirmation が参照する形に揃える
+    formData = {
+      companyId: meta.companyId,
+      staffId: meta.staffId,
+      site: meta.siteId,
+      date: meta.date,
+      workers: workersDisp,
+      partners: partnersDisp
+    };
+    console.log('[showEditConfirmationModal] formData for modal =',
+      JSON.parse(JSON.stringify(formData)));
 
-      return used;
+    showConfirmation(true);
+  }
+
+
+  // -------------------------------------------------------------------------------
+  // スプシにある対象の協力会社のマスターデータを取得
+
+  function getPartnerCompanyMasterData() {
+    // マスターデータがあるか確認
+    if (!window.masterData || !Array.isArray(masterData.partner)) {
+      console.warn('masterData.partner が未初期化です');
+      return [];
     }
+    const sample = masterData.partner.slice(0, 3); // 先頭3件だけ
+    console.info('masterData.partner 件数:', masterData.partner.length);
+    console.log('masterData.partner 先頭3件サンプル:', sample);
+    console.table(sample); // 表形式でも確認
+    return masterData.partner;
+  }
 
-    // 既存: createPartnerRoleMatrix(nameKey)
-    // → 第2引数に usedRoles(Set) を追加（互換のためデフォルト空Set）
-    function createPartnerRoleMatrix(nameKey, usedRoles = new Set()) {
-      const wrap = document.createElement('div');
-      wrap.className = 'partner-role-matrix';
-      wrap.id = `matrix-${nameKey}`;
-      wrap.style.display = 'none';
+  // -------------------------------------------------------------------------------
 
-      wrap.innerHTML = `
+  // 役割の定数
+  // 例: "BULLPOWERS 職長" → { base:"BULLPOWERS", role:"leader" }
+  //     "BULLPOWERS"     → { base:"BULLPOWERS", role:"general" }
+  function parsePartnerDisplay(displayName) {
+    const s = (displayName || '').trim();
+    // 末尾の [任意個の空白(半角/全角)] + (職長|有資格者) を吸収
+    // \u3000 は全角スペース
+    const m = s.match(/[\s\u3000]*(職長|有資格者)\s*$/);
+    if (m) {
+      const base = s.slice(0, s.length - m[0].length).trim();
+      const role = m[1] === '職長' ? ROLE.LEADER : ROLE.QUALIFIED;
+      return { base, role };
+    }
+    return { base: s, role: ROLE.GENERAL };
+  }
+
+  // Map<会社名, Set<role>>
+  function buildUsedPartnerRoleMap() {
+    const used = new Map();
+
+    // ① サーバから取ってある当日レコード
+    (window.lastFetchedRecords || []).forEach(r => {
+      if (r.type !== '協力会社') return;
+      // r.name は「BULLPOWERS」「BULLPOWERS 職長」…のどれか
+      const { base, role } = parsePartnerDisplay(r.name);
+      if (!used.has(base)) used.set(base, new Set());
+      used.get(base).add(role || ROLE.GENERAL);
+    });
+
+    // ② 画面の編集テーブル行（まだ送信していないが編集中のものも除外）
+    document.querySelectorAll('#edit-table tbody tr').forEach(row => {
+      const type = row.querySelector('td:nth-child(1)')?.textContent.trim();
+      if (type !== '協力会社') return;
+      const dispName = row.querySelector('td:nth-child(2)')?.textContent.trim() || '';
+      const { base, role } = parsePartnerDisplay(dispName);
+      if (!used.has(base)) used.set(base, new Set());
+      used.get(base).add(role || ROLE.GENERAL);
+    });
+    console.log('[usedRoleMap]', Array.from(used.entries()).map(
+      ([name, set]) => [name, Array.from(set)]
+    ));
+    return used;
+  }
+
+  // 既存: createPartnerRoleMatrix(nameKey)
+  // → 第2引数に usedRoles(Set) を追加（互換のためデフォルト空Set）
+  function createPartnerRoleMatrix(nameKey, usedRoles = new Set()) {
+    const wrap = document.createElement('div');
+    wrap.className = 'partner-role-matrix';
+    wrap.id = `matrix-${nameKey}`;
+    wrap.style.display = 'none';
+
+    wrap.innerHTML = `
     <div class="role-row" data-role="general">
       <label><input type="checkbox" name="${nameKey}-general-checked"> 一般作業員</label>
       <input type="number" step="0.25" min="0" placeholder="人工" name="${nameKey}-general-man">
@@ -522,24 +540,16 @@
     </div>
   `;
 
-      // ここで「使用済みの役割」を無効化
-      ['general', 'leader', 'qualified'].forEach(role => {
-        if (!usedRoles.has(role)) return;
+    // 使用済みの役割は行ごと除去（= 入力UIを生成しない）
+    ['general', 'leader', 'qualified'].forEach(role => {
+      if (usedRoles.has(role)) {
         const row = wrap.querySelector(`.role-row[data-role="${role}"]`);
-        if (!row) return;
-        row.querySelectorAll('input').forEach(el => {
-          el.disabled = true;
-          if (el.type === 'checkbox') el.checked = false;
-          if (el.type === 'number') el.value = '';
-        });
-        // 見た目の補助（任意）
-        row.style.opacity = '0.5';
-        const lab = row.querySelector('label');
-        if (lab) lab.insertAdjacentText('beforeend', '（登録済み）');
-      });
+        if (row) row.remove();
+      }
+    });
 
-      return wrap;
-    }
+    return wrap;
+  }
 
 
 </script>
