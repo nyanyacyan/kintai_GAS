@@ -1,3 +1,8 @@
+// console.log("普通のログ");
+// console.warn("注意が必要なとき");
+// console.error("エラーが発生したとき");
+// console.info("補足説明や情報");
+
 // webアプリを実施する際に一番最初に呼ばれる関数
 // htmlをビルドしていく感じ→ form.html を呼び出す
 function doGet(e) {
@@ -38,44 +43,45 @@ function getMasterData() {
   const workerSheet = ss.getSheetByName(SHEETS.WORKER);
   const partnerSheet = ss.getSheetByName(SHEETS.PARTNER);
 
-
+  // 元請会社マスタの全データ
   const company = companySheet.getRange(2, 1, companySheet.getLastRow() - 1, 2).getValues()
     .map(([id, name]) => ({ id, name }));
 
-
+  // TTC担当者名マスタの全データ
   const staff = staffSheet.getRange(2, 1, staffSheet.getLastRow() - 1, 3).getValues()
     .map(([id, name, companyIds]) => {
       const companies = companyIds.split(',').map(c => c.trim());
       return { id, name, companies };
     });
 
-
+  // 現場名マスタの全データ
   const site = siteSheet.getRange(2, 1, siteSheet.getLastRow() - 1, 4).getValues()
     .map(([id, name, staffId, companyIds]) => {
       const companies = (companyIds || '').split(',').map(c => c.trim());
       return { id, name, staffId, companyIds: companies };
     });
 
+  // 作業者名マスタの全データ
+  const worker = workerSheet.getRange(2, 1, workerSheet.getLastRow() - 1, 3).getValues()
+    .map(([id, name, staffIds]) => {
+      const staffs = (staffIds || '').split(',').map(s => s.trim());
+      return { id, name, staffIds: staffs };
+    });
 
+  // 協力会社名マスタの全データ
+  const partner = partnerSheet.getRange(2, 1, partnerSheet.getLastRow() - 1, 3).getValues()
+    .map(([id, name, staffIds]) => {
+      const staffs = (staffIds || '').split(',').map(s => s.trim());
+      console.info('partner: id=%s, name=%s, staffIds=%s', id, name, JSON.stringify(staffs));
+      return { id, name, staffIds: staffs };
+    });
 
-
-const worker = workerSheet.getRange(2, 1, workerSheet.getLastRow() - 1, 3).getValues()
-  .map(([id, name, staffIds]) => {
-    const staffs = (staffIds || '').split(',').map(s => s.trim());
-    return { id, name, staffIds: staffs };
-  });
-
-
-const partner = partnerSheet.getRange(2, 1, partnerSheet.getLastRow() - 1, 3).getValues()
-  .map(([id, name, staffIds]) => {
-    const staffs = (staffIds || '').split(',').map(s => s.trim());
-    return { id, name, staffIds: staffs };
-  });
-
-
+  console.info('company(3件):', company.slice(0, 3));
+  console.info('staff(3件):',   staff.slice(0, 3));
+  console.info('site(3件):',    site.slice(0, 3));
+  console.info('worker(3件):',  worker.slice(0, 3));
+  console.info('partner(3件):', partner.slice(0, 3));
   return { company, staff, site, worker, partner };
-  Logger.log(JSON.stringify(result));
-  return result;
 }
 
 
@@ -88,24 +94,24 @@ function isValidQuarterHour(value) {
 function saveFormResponse(data) {
   const ss = getSS();
   const sheet = ss.getSheetByName(SHEETS.RESPONSES);
-  const timestamp  = new Date();
+  const timestamp = new Date();
   const reportDate = data.date || Utilities.formatDate(new Date(), "Asia/Tokyo", "yyyy-MM-dd");
 
   // マスタ取得
   const companyMap = getMapFromSheet(ss.getSheetByName('元請会社マスタ'));
-  const siteMap    = getMapFromSheet(ss.getSheetByName('現場名マスタ'));
-  const staffMap   = getMapFromSheet(ss.getSheetByName('TTC担当者名マスタ'));
+  const siteMap = getMapFromSheet(ss.getSheetByName('現場名マスタ'));
+  const staffMap = getMapFromSheet(ss.getSheetByName('TTC担当者名マスタ'));
 
   const companyName = companyMap[data.companyId] || data.companyId;
-  const siteName    = siteMap[data.site]        || data.site;
-  const staffName   = staffMap[data.staffId]    || data.staffId;
+  const siteName = siteMap[data.site] || data.site;
+  const staffName = staffMap[data.staffId] || data.staffId;
 
   // 役割 → サフィックス（末尾に足す文字列）
   // 「一般作業員」は会社名のみ（サフィックスなし）
   const roleSuffix = {
-    only:   '',        // 一般作業員 → 「会社名」
+    only: '',        // 一般作業員 → 「会社名」
     leader: ' 職長',   // 職長       → 「会社名 職長」
-    other:  ' 有資格者'// 有資格者   → 「会社名 有資格者」
+    other: ' 有資格者'// 有資格者   → 「会社名 有資格者」
   };
 
   // 作業者
@@ -205,7 +211,7 @@ function getPreviousRecords(date, companyId, staffId, siteId) {
       return (
         cellDateStr === date &&
         row[2] === companyName &&
-        row[3] === staffName  &&
+        row[3] === staffName &&
         row[4] === siteName
       );
     })
@@ -248,18 +254,18 @@ function updateEditedRecords(meta, records) {
 
   try {
     // --- resolve masters ---
-    const ss     = getSS();
-    const sheet  = ss.getSheetByName(SHEETS.RESPONSES);
-    const logSh  = ss.getSheetByName('編集ログ') || ss.insertSheet('編集ログ');
+    const ss = getSS();
+    const sheet = ss.getSheetByName(SHEETS.RESPONSES);
+    const logSh = ss.getSheetByName('編集ログ') || ss.insertSheet('編集ログ');
 
     const companyMap = getMapFromSheet(ss.getSheetByName(SHEETS.COMPANY));
-    const siteMap    = getMapFromSheet(ss.getSheetByName(SHEETS.SITE));
-    const staffMap   = getMapFromSheet(ss.getSheetByName(SHEETS.STAFF));
+    const siteMap = getMapFromSheet(ss.getSheetByName(SHEETS.SITE));
+    const staffMap = getMapFromSheet(ss.getSheetByName(SHEETS.STAFF));
 
-    const dateStr     = String(meta.date || ''); // yyyy-MM-dd
+    const dateStr = String(meta.date || ''); // yyyy-MM-dd
     const companyName = companyMap[meta.companyId];
-    const siteName    = siteMap[meta.siteId];
-    const staffName   = staffMap[meta.staffId];
+    const siteName = siteMap[meta.siteId];
+    const staffName = staffMap[meta.staffId];
 
     if (!companyName || !siteName || !staffName) {
       throw new Error(
@@ -290,7 +296,7 @@ function updateEditedRecords(meta, records) {
         } else {
           rowDateStr = String(cell || '');
         }
-      } catch (e) {}
+      } catch (e) { }
 
       if (rowDateStr === dateStr && r[2] === companyName && r[3] === staffName && r[4] === siteName) {
         matchRowIndexes.push(i + 1); // to 1-based
@@ -308,7 +314,7 @@ function updateEditedRecords(meta, records) {
         logged = true;
       } catch (e) {
         Logger.log('%s log append failed row=%s err=%s', FN, rowIndex, e);
-        try { sheet.getRange(rowIndex, 12).setValue('編集ログへの転記エラー'); } catch (e2) {}
+        try { sheet.getRange(rowIndex, 12).setValue('編集ログへの転記エラー'); } catch (e2) { }
       }
 
       if (logged) {
@@ -316,7 +322,7 @@ function updateEditedRecords(meta, records) {
           doWithRetry(() => sheet.deleteRow(rowIndex), { retries: 1, waitMs: 600 });
         } catch (e) {
           Logger.log('%s delete failed row=%s err=%s', FN, rowIndex, e);
-          try { sheet.getRange(rowIndex, 12).setValue('行削除エラー'); } catch (e2) {}
+          try { sheet.getRange(rowIndex, 12).setValue('行削除エラー'); } catch (e2) { }
         }
       }
     });
@@ -324,27 +330,27 @@ function updateEditedRecords(meta, records) {
     SpreadsheetApp.flush();
 
     // --- append new rows (compose name with role for 協力会社) ---
-const roleSuffixMap = {
-  only:  '',
-  leader:' 職長',
-  other: ' 有資格者'
-};
+    const roleSuffixMap = {
+      only: '',
+      leader: ' 職長',
+      other: ' 有資格者'
+    };
 
-(records || []).forEach(r => {
-  const nameForSave =
-    (r.type === '協力会社' && r.role && r.role !== 'only')
-      ? `${r.name}${roleSuffixMap[r.role] || ''}`  // ← PR-G＋職長 の形式
-      : r.name;
+    (records || []).forEach(r => {
+      const nameForSave =
+        (r.type === '協力会社' && r.role && r.role !== 'only')
+          ? `${r.name}${roleSuffixMap[r.role] || ''}`  // ← PR-G＋職長 の形式
+          : r.name;
 
-  const row = [
-    newTimestamp, dateStr,
-    companyName, staffName, siteName,
-    r.type,
-    nameForSave,
-    toNumber(r.man), toNumber(r.overtime)
-  ];
-  doWithRetry(() => sheet.appendRow(row), { retries: 1, waitMs: 500 });
-});
+      const row = [
+        newTimestamp, dateStr,
+        companyName, staffName, siteName,
+        r.type,
+        nameForSave,
+        toNumber(r.man), toNumber(r.overtime)
+      ];
+      doWithRetry(() => sheet.appendRow(row), { retries: 1, waitMs: 500 });
+    });
 
     SpreadsheetApp.flush();
     const ms = new Date() - start;
@@ -355,7 +361,7 @@ const roleSuffixMap = {
     Logger.log('%s error: %s', FN, e && e.stack || e);
     throw e;
   } finally {
-    try { lock.releaseLock(); } catch (e) {}
+    try { lock.releaseLock(); } catch (e) { }
   }
 }
 
@@ -395,7 +401,7 @@ function getOrCreateFolderByPath_(parentId, path) {
 function uploadImagesToDrive(meta, files) {
   Logger.log('--- uploadImagesToDrive 開始 ---');
   const SCRIPT_PROPS = PropertiesService.getScriptProperties();
-  const BASE_DIR_ID  = SCRIPT_PROPS.getProperty('BASE_DIR_ID');
+  const BASE_DIR_ID = SCRIPT_PROPS.getProperty('BASE_DIR_ID');
 
   Logger.log('アップロードファイル数=%s 件', files.length);
   Logger.log('メタ情報: %s', JSON.stringify(meta));
@@ -414,8 +420,8 @@ function uploadImagesToDrive(meta, files) {
 
   files.forEach((f, i) => {
     const base64 = String(f.dataUrl).split(',')[1] || '';
-    const bytes  = Utilities.base64Decode(base64);
-    const mime   = f.type || MimeType.JPEG;
+    const bytes = Utilities.base64Decode(base64);
+    const mime = f.type || MimeType.JPEG;
 
     // ファイル名: 出面日付_現場名_01.jpeg
     const baseName = `${meta.reportDate}_${meta.siteName}`;
