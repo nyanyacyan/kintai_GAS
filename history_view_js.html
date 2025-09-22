@@ -1,5 +1,7 @@
 <script>
-  const ROLE = { GENERAL: 'general', LEADER: 'leader', QUALIFIED: 'qualified' };
+  const ROLE = window.ROLE || { GENERAL: 'general', LEADER: 'leader', QUALIFIED: 'qualified' };
+  window.ROLE = ROLE;
+  window.lastFetchedRecords = window.lastFetchedRecords || [];
 
   // TODO: あとで直す
   // FIXME: この処理はバグあり
@@ -31,7 +33,7 @@
   function displayHistory(records) {
     const container = document.getElementById('historyRecords');
     const editButton = document.getElementById('editButton');
-    lastFetchedRecords = records;
+    window.lastFetchedRecords = records;
 
     if (!records || records.length === 0) {
       container.innerHTML = '<em>履歴は見つかりませんでした。</em>';
@@ -102,7 +104,7 @@
     google.script.run.withSuccessHandler(records => {
       console.log("📥 サーバーから返ってきた値:", records);
       document.getElementById('loadingOverlay').style.display = 'none'; // ✅ 表示OFF
-      lastFetchedRecords = records;
+      window.lastFetchedRecords = records;
       if (records.length === 0) {
         container.innerHTML = '<em>履歴が見つかりませんでした。</em>';
         return;
@@ -124,9 +126,6 @@
     }).getPreviousRecords(date, companyId, staffId, siteId);
   }
 
-  let lastFetchedRecords = [];
-
-
   // ------------------------------------------
   // 編集モーダルの移行先のモーダル
   // ここで工数の変更を修正できる
@@ -145,7 +144,7 @@
     html += '<thead><tr><th>種別</th><th>名前</th><th>人工</th><th>残業</th></tr></thead>';
     html += '<tbody id="edit-tbody">';
 
-    lastFetchedRecords.forEach((r, i) => {
+    (window.lastFetchedRecords || []).forEach((r, i) => {
       const safe = sanitize(r.name);
 
       html += `<tr>
@@ -239,7 +238,7 @@
       return;
     }
 
-    const registered = new Set(lastFetchedRecords.map(r => `${r.type}:${r.name}`));
+    const registered = new Set((window.lastFetchedRecords || []).map(r => `${r.type}:${r.name}`));
     console.log('当日入力済み（初期）の除外キー数:', registered.size); // 📝 LOG
 
     // 🔽 編集テーブルに表示されている作業者／協力会社の名前も除外対象に追加
@@ -265,6 +264,7 @@
       checkbox.type = 'checkbox';
       checkbox.className = `additional-${type}`;
       checkbox.value = name;
+      checkbox.dataset.key = key;
 
       // 作業者は従来の時間UI、協力会社はマトリクスUIをON/OFF
       checkbox.onchange = () => {
@@ -330,6 +330,7 @@
       checkbox.type = 'checkbox';
       checkbox.className = 'additional-partner';
       checkbox.value = p.name;
+      checkbox.dataset.key = key;
       checkbox.onchange = () => togglePartnerMatrix(checkbox, key);
 
       const span = document.createElement('span');
@@ -364,7 +365,7 @@
     const records = [];
 
     // 既存行
-    lastFetchedRecords.forEach((r, i) => {
+    (window.lastFetchedRecords || []).forEach((r, i) => {
       const man = parseFloat(document.getElementById(`edit-man-${i}`)?.value || 0);
       const ot = parseFloat(document.getElementById(`edit-overtime-${i}`)?.value || 0);
 
@@ -551,5 +552,13 @@
     return wrap;
   }
 
+  window.openHistoryModal = openHistoryModal;
+  window.closeHistoryModal = closeHistoryModal;
+  window.loadPreviousRecords = loadPreviousRecords;
+  window.loadModalHistory = loadModalHistory;
+  window.showEditFormInModal = showEditFormInModal;
+  window.renderAdditionalInputs = renderAdditionalInputs;
+  window.showEditConfirmationModal = showEditConfirmationModal;
+  window.submitEditFromModal = submitEditFromModal;
 
 </script>

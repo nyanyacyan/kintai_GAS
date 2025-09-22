@@ -1,5 +1,5 @@
 <script>
-  const ROLE = { GENERAL: 'general', LEADER: 'leader', QUALIFIED: 'qualified' };
+
   // ------------------------------------------
   // 編集モーダル→確認モーダル→送信の最終段階
   // 実際に updateEditedRecords(meta, edited) を呼び出す
@@ -41,9 +41,9 @@
     // 2) 追加の作業者
     document.querySelectorAll('.additional-worker:checked').forEach(cb => {
       const name = cb.value;
-      const safe = sanitize(name);
-      const manEl = document.querySelector(`input[data-name="modal-worker-${safe}"][data-type="man"]`);
-      const otEl = document.querySelector(`input[data-name="modal-worker-${safe}"][data-type="overtime"]`);
+      const key = cb.dataset.key || `modal-worker-${sanitize(name)}`;
+      const manEl = document.querySelector(`input[name="${key}-man"]`);
+      const otEl = document.querySelector(`input[name="${key}-overtime"]`);
       if (!manEl || !otEl) return;
       edited.push({
         type: '作業者',
@@ -56,18 +56,30 @@
     // 3) 追加の協力会社
     document.querySelectorAll('.additional-partner:checked').forEach(cb => {
       const name = cb.value;          // 会社名
-      const safe = sanitize(name);
-      const key = `modal-partner-${safe}`;
-      const manEl = document.querySelector(`input[data-name="${key}"][data-type="man"]`);
-      const otEl = document.querySelector(`input[data-name="${key}"][data-type="overtime"]`);
-      const roleEl = document.querySelector(`input[name="${key}-role"]:checked`);
-      if (!manEl || !otEl) return;
-      edited.push({
-        type: '協力会社',
-        name,                          // ★保存は会社名のまま
-        role: roleEl ? roleEl.value : 'only',
-        man: parseFloat(manEl.value || 0),
-        overtime: parseFloat(otEl.value || 0)
+      const key = cb.dataset.key || `modal-partner-${sanitize(name)}`;
+
+      const roleRows = [
+        { suffix: 'general', role: 'only' },
+        { suffix: 'leader', role: 'leader' },
+        { suffix: 'qualified', role: 'other' }
+      ];
+
+      roleRows.forEach(({ suffix, role }) => {
+        const chk = document.querySelector(`input[name="${key}-${suffix}-checked"]`);
+        if (!chk || !chk.checked) return;
+
+        const manEl = document.querySelector(`input[name="${key}-${suffix}-man"]`);
+        const otEl = document.querySelector(`input[name="${key}-${suffix}-overtime"]`);
+        const man = parseFloat(manEl?.value || '') || 0;
+        const overtime = parseFloat(otEl?.value || '') || 0;
+
+        edited.push({
+          type: '協力会社',
+          name,
+          role,
+          man,
+          overtime
+        });
       });
     });
 
@@ -144,21 +156,20 @@ function __debugCheckSanitizeCollision() {
 
     cbs.forEach((cb, idx) => {
       const name = cb.value; // 会社名が入ってる想定
-      const safe = sanitize(name);
-      const key = `modal-partner-${safe}`;
-
-      const manEl = document.querySelector(`input[data-name="${key}"][data-type="man"]`);
-      const otEl = document.querySelector(`input[data-name="${key}"][data-type="overtime"]`);
-      const roleEl = document.querySelector(`input[name="${key}-role"]:checked`);
-      const roleAll = Array.from(document.querySelectorAll(`input[name="${key}-role"]`));
+      const key = cb.dataset.key || `modal-partner-${sanitize(name)}`;
+      const row = (suffix) => ({
+        chk: !!document.querySelector(`input[name="${key}-${suffix}-checked"]`)?.checked,
+        man: document.querySelector(`input[name="${key}-${suffix}-man"]`)?.value,
+        ot: document.querySelector(`input[name="${key}-${suffix}-overtime"]`)?.value
+      });
 
       console.log(`[DEBUG] #${idx + 1}`, {
-        name, safe, key,
+        name,
+        key,
         checked: cb.checked,
-        manEl: !!manEl, manVal: manEl?.value,
-        otEl: !!otEl, otVal: otEl?.value,
-        roleGroupSize: roleAll.length,
-        roleChecked: roleEl?.value
+        general: row('general'),
+        leader: row('leader'),
+        qualified: row('qualified')
       });
     });
   }
