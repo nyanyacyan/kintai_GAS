@@ -4,8 +4,9 @@
   // 編集モーダル→確認モーダル→送信の最終段階
   // 実際に updateEditedRecords(meta, edited) を呼び出す
   // ------------------------------------------
+
   function submitEditFromModal() {
-    console.log('[submitEditFromModal] 開始');
+    console.log('[submitEditFromModal] 開始'); // 処理開始ログ
     document.getElementById('loadingOverlay').style.display = 'flex';
 
     // ★ここで協力会社の状態をダンプ
@@ -16,7 +17,7 @@
 
     // 1) 既存行の編集値を収集
     const edited = [];
-    lastFetchedRecords.forEach((r, i) => {
+    (window.lastFetchedRecords || []).forEach((r, i) => {
       const manInput = document.getElementById(`edit-man-${i}`);
       const overtimeInput = document.getElementById(`edit-overtime-${i}`);
       if (!manInput || !overtimeInput) return;
@@ -29,13 +30,15 @@
         if (sel) role = sel.value;
       }
 
-      edited.push({
+      const row = {
         type: r.type,
         name: r.name,                                 // ★保存は会社名そのまま
         role,                                         // （使わないならサーバで無視されてもOK）
         man: parseFloat(manInput.value || 0),
         overtime: parseFloat(overtimeInput.value || 0)
-      });
+      };
+      edited.push(row);
+      console.log('[submitEditFromModal] 既存行の収集', row);
     });
 
     // 2) 追加の作業者
@@ -45,12 +48,14 @@
       const manEl = document.querySelector(`input[name="${key}-man"]`);
       const otEl = document.querySelector(`input[name="${key}-overtime"]`);
       if (!manEl || !otEl) return;
-      edited.push({
+      const row = {
         type: '作業者',
         name,
         man: parseFloat(manEl.value || 0),
         overtime: parseFloat(otEl.value || 0)
-      });
+      };
+      edited.push(row);
+      console.log('[submitEditFromModal] 追加作業者', row);
     });
 
     // 3) 追加の協力会社
@@ -73,13 +78,15 @@
         const man = parseFloat(manEl?.value || '') || 0;
         const overtime = parseFloat(otEl?.value || '') || 0;
 
-        edited.push({
+        const row = {
           type: '協力会社',
           name,
           role,
           man,
           overtime
-        });
+        };
+        edited.push(row);
+        console.log('[submitEditFromModal] 追加協力会社', row);
       });
     });
 
@@ -91,8 +98,8 @@
     };
 
     // 可視化（必ずプレーンなJSONで）
-    console.log('[submitEditFromModal] meta =', JSON.parse(JSON.stringify(meta)));
-    console.log('[submitEditFromModal] edited =', JSON.parse(JSON.stringify(edited)));
+    console.log('[submitEditFromModal] meta =', JSON.parse(JSON.stringify(meta))); // 送信メタ情報
+    console.log('[submitEditFromModal] edited =', JSON.parse(JSON.stringify(edited))); // 編集結果一覧
 
     // 何も編集対象がない時のガード
     if (edited.length === 0) {
@@ -111,6 +118,7 @@
       if (buttonRow) buttonRow.innerHTML = '<button onclick="closeConfirmation()">閉じる</button>';
       // 履歴モーダル閉じる
       try { document.getElementById('historyModal').style.display = 'none'; } catch (e) { }
+      console.log('[submitEditFromModal] 終了 (成功)');
     };
 
     const onErr = (err) => {
@@ -123,26 +131,30 @@
       .withSuccessHandler(onOK)
       .withFailureHandler(onErr)
       .updateEditedRecords(meta, edited);
+    console.log('[submitEditFromModal] Google Apps Script 呼び出し完了'); // 処理終了ログ
   }
+
+
 
 
   // ------------------------------------------
   // デバッグ用：追加された協力会社の名前のサニタイズ衝突をチェック
   // ------------------------------------------
-function __debugCheckSanitizeCollision() {
-  const names = Array.from(document.querySelectorAll('.additional-partner')).map(cb => cb.value);
-  const seen = new Map();
-  names.forEach(n => {
-    const s = sanitize(n);
-    if (!seen.has(s)) seen.set(s, []);
-    seen.get(s).push(n);
-  });
-  for (const [s, arr] of seen.entries()) {
-    if (arr.length > 1) {
-      console.warn('[WARN] サニタイズ衝突（同じ名前で衝突してしまって出力されない）:\n', s, 'from', arr);
+
+  function __debugCheckSanitizeCollision() {
+    const names = Array.from(document.querySelectorAll('.additional-partner')).map(cb => cb.value);
+    const seen = new Map();
+    names.forEach(n => {
+      const s = sanitize(n);
+      if (!seen.has(s)) seen.set(s, []);
+      seen.get(s).push(n);
+    });
+    for (const [s, arr] of seen.entries()) {
+      if (arr.length > 1) {
+        console.warn('[WARN] サニタイズ衝突（同じ名前で衝突してしまって出力されない）:\n', s, 'from', arr);
+      }
     }
   }
-}
 
 
 
@@ -150,6 +162,12 @@ function __debugCheckSanitizeCollision() {
   // デバッグ用：追加された協力会社の状態をコンソールにダンプ
   // ------------------------------------------
 
+
+
+
+  // ------------------------------------------
+  // __debugDumpPartners: 追加協力会社の入力状況を出力する
+  // ------------------------------------------
   function __debugDumpPartners() {
     const cbs = Array.from(document.querySelectorAll('.additional-partner'));
     console.log('[DEBUG] 追加パートナー数 =', cbs.length);
@@ -177,6 +195,12 @@ function __debugCheckSanitizeCollision() {
   // ------------------------------------------
   // 入力値バリデーション：0.25単位（15分刻み）かどうかを判定
   // ------------------------------------------
+
+
+
+  // ------------------------------------------
+  // isValidQuarterHour: 0.25刻みかどうかを判定する
+  // ------------------------------------------
   function isValidQuarterHour(value) {
     return Number.isFinite(value) && Math.round(value * 100) % 25 === 0;
   }
@@ -184,6 +208,12 @@ function __debugCheckSanitizeCollision() {
 
   // ------------------------------------------
   // 名前などを安全にID化するためのサニタイズ
+  // ------------------------------------------
+
+
+
+  // ------------------------------------------
+  // sanitize: 名前などをIDとして安全な文字列に変換する
   // ------------------------------------------
   function sanitize(str) {
     return str.replace(/[^a-zA-Z0-9\u3040-\u30ff\u4e00-\u9faf]/g, '_');
@@ -193,6 +223,12 @@ function __debugCheckSanitizeCollision() {
 
   // ------------------------------------------
   // チェックされた人（作業者/協力会社）に紐づく「人工/残業」入力欄を生成して返す
+  // ------------------------------------------
+
+
+
+  // ------------------------------------------
+  // createTimeInputs: 作業者の人工・残業入力欄を生成する
   // ------------------------------------------
   function createTimeInputs(nameKey) {
     const box = document.createElement('div');
@@ -224,6 +260,12 @@ function __debugCheckSanitizeCollision() {
   // ------------------------------------------
 
   // チェックON/OFFで 役割 と 時間 を同時に制御
+
+
+
+  // ------------------------------------------
+  // toggleTimeInputs: チェック状態に応じて時間入力欄を表示制御する
+  // ------------------------------------------
   function toggleTimeInputs(checkbox, nameKey) {
     const role = document.getElementById(`role-${nameKey}`);
     const inputs = document.getElementById(`inputs-${nameKey}`);
@@ -236,6 +278,12 @@ function __debugCheckSanitizeCollision() {
 
   // ------------------------------------------
   // シンプルな開閉トグル（見出しクリックでセクション開閉）
+  // ------------------------------------------
+
+
+
+  // ------------------------------------------
+  // toggleSection: セクション見出しの開閉を切り替える
   // ------------------------------------------
   function toggleSection(id) {
     const el = document.getElementById(id);

@@ -1,27 +1,19 @@
 <script>
-  /* ------------------------------------------
-   * フォーム描画まわり（候補生成・連動・UIトグル）
-   *
-   * 依存：
-   *  - グローバル変数 : masterData, lastFetchedRecords, formData, isSubmitted
-   *    （init_js で let 宣言しておく）
-   *  - ユーティリティ : sanitize(), isValidQuarterHour()
-   *    （check_js or utils.js に定義）
-   * 役割：
-   *  - 会社/担当者/現場の連動
-   *  - 作業者/協力会社のチェックボックスと時間入力の生成
-   *  - 日付トグル、セクションの開閉、フォームリセット
-   * ------------------------------------------*/
+
+  window.lastFetchedRecords = window.lastFetchedRecords || [];
 
 
   // ------------------------------------------
   // 過去日入力のON/OFF（トグル）に応じて日付入力欄の表示切替
   // ------------------------------------------
+
   function toggleDateInput(el) {
+    console.log('[toggleDateInput] 開始', { checked: !!el?.checked }); // 処理開始ログ
     const button = document.getElementById('dateToggleButton');
     const checked = el.checked;
     document.getElementById('dateContainer').style.display = checked ? 'block' : 'none';
     button.classList.toggle('checked', checked);
+    console.log('[toggleDateInput] 終了', { dateContainer: document.getElementById('dateContainer')?.style.display }); // 処理終了ログ
   }
 
 
@@ -29,26 +21,34 @@
   // ------------------------------------------
   // 会社選択に応じて担当者セレクトを絞り込み＆現場セレクトも更新
   // ------------------------------------------
+
   function updateStaffOptions() {
+    console.log('[updateStaffOptions] 開始', { companyId: document.getElementById('company')?.value }); // 処理開始ログ
     const staffSelect = document.getElementById('staff');
     const companyId = document.getElementById('company').value;
     staffSelect.innerHTML = '<option value="" disabled selected>選択してください</option>';
 
 
-    if (!companyId) return;
+    if (!companyId) {
+      console.log('[updateStaffOptions] 終了 (会社未選択)'); // 処理終了ログ
+      return;
+    }
 
 
-    masterData.staff
+    const staffIds = masterData.staff
       .filter(staff => staff.companies.includes(companyId))
-      .forEach(staff => {
+      .map(staff => {
         const opt = document.createElement('option');
         opt.value = staff.id;
         opt.textContent = staff.name;
         staffSelect.appendChild(opt);
+        return staff.id;
       });
 
+    console.log('[updateStaffOptions] 候補リスト描画完了', { staffIds });
 
     updateSiteOptions(); // スタッフが変わったら現場も再絞り込み
+    console.log('[updateStaffOptions] 終了'); // 処理終了ログ
   }
 
 
@@ -56,24 +56,32 @@
   // ------------------------------------------
   // 会社＋担当者の選択に応じて現場セレクトを絞り込み
   // ------------------------------------------
+
   function updateSiteOptions() {
     const staffId = document.getElementById('staff').value;
     const companyId = document.getElementById('company').value;
+    console.log('[updateSiteOptions] 開始', { staffId, companyId }); // 処理開始ログ
     const siteSelect = document.getElementById('site');
     siteSelect.innerHTML = '<option value="" disabled selected>選択してください</option>';
 
 
-    if (!staffId || !companyId) return;
+    if (!staffId || !companyId) {
+      console.log('[updateSiteOptions] 終了 (スタッフまたは会社が未選択)'); // 処理終了ログ
+      return;
+    }
 
 
-    masterData.site
+    const siteIds = masterData.site
       .filter(site => site.staffId === staffId && site.companyIds.includes(companyId))
-      .forEach(site => {
+      .map(site => {
         const opt = document.createElement('option');
         opt.value = site.id;
         opt.textContent = site.name;
         siteSelect.appendChild(opt);
+        return site.id;
       });
+
+    console.log('[updateSiteOptions] 終了', { siteIds }); // 処理終了ログ
   }
 
 
@@ -82,15 +90,18 @@
   // 担当者選択に応じて、作業者/協力会社の候補リストを描画
   // （履歴モーダルを開閉すると候補が変わるため、その都度更新）
   // ------------------------------------------
+
   function updateWorkerAndPartner() {
     const staffId = document.getElementById('staff').value;
+    console.log('[updateWorkerAndPartner] 開始', { staffId }); // 処理開始ログ
 
 
     const workerContainer = document.getElementById('worker');
     const partnerContainer = document.getElementById('partner');
     workerContainer.innerHTML = '';
     partnerContainer.innerHTML = '';
-    const registeredNames = new Set(lastFetchedRecords.map(r => `${r.type}:${r.name}`));  // 作業者:山田 など
+    const registeredNames = new Set((window.lastFetchedRecords || []).map(r => `${r.type}:${r.name}`));  // 作業者:山田 など
+    console.log('[updateWorkerAndPartner] 除外対象', Array.from(registeredNames));
 
 
     // 作業者の表示
@@ -107,6 +118,7 @@
         checkbox.type = 'checkbox';
         checkbox.name = 'worker';
         checkbox.value = w.name;
+        checkbox.dataset.key = `modal-worker-${safeName}`;
         checkbox.onchange = () => toggleTimeInputs(checkbox, `worker-${safeName}`);
 
 
@@ -122,6 +134,12 @@
 
     // === 協力会社用：役割3択（ラジオ）を作る ===
     // name: 'partner-サニタイズ済み名前' を想定
+
+
+
+    // ------------------------------------------
+    // createPartnerRoleBlock: 協力会社の役割選択ブロックを構築する
+    // ------------------------------------------
     function createPartnerRoleBlock(nameKey) {
       // nameKey 例: "partner-ABC"
       const wrap = document.createElement('div');
@@ -168,6 +186,7 @@
         checkbox.type = 'checkbox';
         checkbox.name = 'partner';
         checkbox.value = p.name;
+        checkbox.dataset.key = `modal-partner-${safeName}`;
         checkbox.onchange = () => togglePartnerMatrix(checkbox, `partner-${safeName}`);
 
         const span = document.createElement('span');
@@ -181,36 +200,56 @@
         // ② 役割マトリクス（非表示スタート）
         partnerContainer.appendChild(createPartnerRoleMatrix(`partner-${safeName}`));
       });
+
+    console.log('[updateWorkerAndPartner] 終了', {
+      worker候補総数: masterData.worker.filter(w => w.staffIds.includes(staffId)).length,
+      partner候補総数: masterData.partner.filter(p => p.staffIds.includes(staffId)).length,
+      除外済み件数: registeredNames.size
+    }); // 処理終了ログ
   }
 
-function togglePartnerMatrix(checkbox, nameKey) {
-  console.log('[togglePartnerMatrix] nameKey=', nameKey, 'checked=', checkbox?.checked);
 
-  const matrix = document.getElementById(`matrix-${nameKey}`);
-  if (!matrix) {
-    console.warn('[togglePartnerMatrix] matrix not found for', `matrix-${nameKey}`);
-    return;
+
+
+  // ------------------------------------------
+  // togglePartnerMatrix: 協力会社の役割入力マトリクスを表示制御する
+  // ------------------------------------------
+  function togglePartnerMatrix(checkbox, nameKey) {
+    console.log('[togglePartnerMatrix] 開始', { nameKey, チェック状態: !!checkbox?.checked }); // 処理開始ログ
+
+    const matrix = document.getElementById(`matrix-${nameKey}`);
+    if (!matrix) {
+      console.warn('[togglePartnerMatrix] 対象のマトリクスが見つかりません', { nameKey });
+      return;
+    }
+
+    const show = !!checkbox.checked;
+    matrix.style.display = show ? 'block' : 'none';
+
+    if (!show) {
+      ['general', 'leader', 'qualified'].forEach(role => {
+        const chk = matrix.querySelector(`input[name="${nameKey}-${role}-checked"]`);
+        const man = matrix.querySelector(`input[name="${nameKey}-${role}-man"]`);
+        const ot = matrix.querySelector(`input[name="${nameKey}-${role}-overtime"]`);
+
+        if (chk) chk.checked = false;
+        if (man) man.value = '';
+        if (ot) ot.value = '';
+      });
+      console.log('[togglePartnerMatrix] チェック解除のため値を初期化', { nameKey });
+    }
+
+    console.log('[togglePartnerMatrix] 終了', { nameKey, display: matrix.style.display }); // 処理終了ログ
   }
-
-  const show = !!checkbox.checked;
-  matrix.style.display = show ? 'block' : 'none';
-
-  if (!show) {
-    ['general', 'leader', 'qualified'].forEach(role => {
-      const chk = matrix.querySelector(`input[name="${nameKey}-${role}-checked"]`);
-      const man = matrix.querySelector(`input[name="${nameKey}-${role}-man"]`);
-      const ot  = matrix.querySelector(`input[name="${nameKey}-${role}-overtime"]`);
-
-      if (chk) chk.checked = false;
-      if (man) man.value = '';
-      if (ot)  ot.value  = '';
-    });
-    console.log('[togglePartnerMatrix] cleared values for', nameKey);
-  }
-}
 
   // 協力会社マトリクス（一般/職長/有資格者 それぞれに check + 人工/残業）
   // === 協力会社用：役割マトリクス（チェック＋人工/残業） ===
+
+
+
+  // ------------------------------------------
+  // createPartnerRoleMatrix: 協力会社の役割単位入力行を生成する
+  // ------------------------------------------
   function createPartnerRoleMatrix(nameKey) {
     const wrap = document.createElement('div');
     wrap.className = 'partner-role-matrix';
@@ -240,6 +279,12 @@ function togglePartnerMatrix(checkbox, nameKey) {
 
   // 役割を「会社名＋役割」に整形
   const roleSuffixMap = { only: '', leader: ' 職長', other: ' 有資格者' };
+
+
+
+  // ------------------------------------------
+  // partnerDisplayName: 役割に応じた協力会社名の表示文字列を返す
+  // ------------------------------------------
   function partnerDisplayName(name, role) {
     return `${name}${roleSuffixMap[role] || ''}`;
   }
@@ -249,7 +294,9 @@ function togglePartnerMatrix(checkbox, nameKey) {
   // 画面全体を初期状態に戻す（送信完了後などに使用）
   // マスターを使って会社セレクトだけは再構築
   // ------------------------------------------
+
   function resetForm() {
+    console.log('[resetForm] 開始'); // 処理開始ログ
     document.getElementById('company').selectedIndex = 0;
     document.getElementById('staff').innerHTML = '';
     document.getElementById('site').innerHTML = '<option value="" disabled selected>選択してください</option>';
@@ -273,6 +320,7 @@ function togglePartnerMatrix(checkbox, nameKey) {
     if (historyBtn) {
       historyBtn.onclick = () => showHistoryModal();
     }
+    console.log('[resetForm] 終了'); // 処理終了ログ
   }
 
   console.log('[form_js] exporting handlers to window');

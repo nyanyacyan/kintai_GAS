@@ -3,34 +3,37 @@
   window.ROLE = ROLE;
   window.lastFetchedRecords = window.lastFetchedRecords || [];
 
-  // TODO: あとで直す
-  // FIXME: この処理はバグあり
-  // REVIEW: 仕様確認必要
-  // IDEA: 改善案
-
   // ------------------------------------------
   // 送信履歴のモーダルを開く（初回モーダル表示時）
   // 日付＋送信履歴を取得
   // ------------------------------------------
+
   function openHistoryModal() {
+    console.log('[openHistoryModal] 開始'); // 処理開始ログ
     document.getElementById('modalHistoryDate').value = new Date().toISOString().split("T")[0];
     document.getElementById('modalHistoryContent').innerHTML = '';
     document.getElementById('historyModal').style.display = 'flex';
+    console.log('[openHistoryModal] 終了', { modalDate: document.getElementById('modalHistoryDate')?.value }); // 処理終了ログ
   }
 
 
+
   // ------------------------------------------
-  // 履歴モーダルを閉じる
+  // closeHistoryModal: 履歴モーダルを閉じる
   // ------------------------------------------
   function closeHistoryModal() {
+    console.log('[closeHistoryModal] 開始'); // 処理開始ログ
     document.getElementById('historyModal').style.display = 'none';
+    console.log('[closeHistoryModal] 終了'); // 処理終了ログ
   }
 
 
+
   // ------------------------------------------
-  // 画面の「履歴」欄（モーダル外）に表を描画
+  // displayHistory: 取得した履歴を画面の一覧に描画する
   // ------------------------------------------
   function displayHistory(records) {
+    console.log('[displayHistory] 開始', { recordCount: records?.length || 0 }); // 処理開始ログ
     const container = document.getElementById('historyRecords');
     const editButton = document.getElementById('editButton');
     window.lastFetchedRecords = records;
@@ -38,6 +41,7 @@
     if (!records || records.length === 0) {
       container.innerHTML = '<em>履歴は見つかりませんでした。</em>';
       editButton.style.display = 'none';
+      console.log('[displayHistory] 終了 (該当データなし)'); // 処理終了ログ
       return;
     }
 
@@ -55,14 +59,22 @@
     container.innerHTML = html;
 
     editButton.style.display = 'inline-block'; // 編集ボタンを表示
+    console.log('[displayHistory] 終了', { 表示件数: records.length }); // 処理終了ログ
   }
 
 
 
+
   // ------------------------------------------
-  // 画面内の「履歴」欄に、指定条件で過去データを表示
+  // loadPreviousRecords: 条件に合う履歴を一覧領域へ再描画する
   // ------------------------------------------
   function loadPreviousRecords() {
+    console.log('[loadPreviousRecords] 開始', {
+      date: document.getElementById('historyDate')?.value,
+      companyId: document.getElementById('company')?.value,
+      staffId: document.getElementById('staff')?.value,
+      siteId: document.getElementById('site')?.value
+    }); // 処理開始ログ
     const date = document.getElementById('historyDate').value;
     const companyId = document.getElementById('company').value;
     const staffId = document.getElementById('staff').value;
@@ -79,14 +91,21 @@
     } else {
       container.innerHTML = '<em style="color: gray;">※送信履歴を表示するには履歴対象日付・元請・担当者・現場をすべて選択してください。</em>';
     }
+    console.log('[loadPreviousRecords] 終了'); // 処理終了ログ
   }
 
 
+
   // ------------------------------------------
-  // 過去の履歴を検索した結果を表示
-  // ここで編集ボタンが出現→編集ボタンを押すことで編集モーダルへ移行
+  // loadModalHistory: モーダル内に条件一致の履歴と編集ボタンを描画する
   // ------------------------------------------
   function loadModalHistory() {
+    console.log('[loadModalHistory] 開始', {
+      date: document.getElementById('modalHistoryDate')?.value,
+      companyId: document.getElementById('company')?.value,
+      staffId: document.getElementById('staff')?.value,
+      siteId: document.getElementById('site')?.value
+    }); // 処理開始ログ
     const date = document.getElementById('modalHistoryDate').value;
     const companyId = document.getElementById('company').value;
     const staffId = document.getElementById('staff').value;
@@ -107,6 +126,7 @@
       window.lastFetchedRecords = records;
       if (records.length === 0) {
         container.innerHTML = '<em>履歴が見つかりませんでした。</em>';
+        console.log('[loadModalHistory] 終了 (該当データなし)'); // 処理終了ログ
         return;
       }
 
@@ -123,18 +143,18 @@
       html += '</table>';
       html += `<button onclick="showEditFormInModal()">編集する</button>`;
       container.innerHTML = html;
+      console.log('[loadModalHistory] 終了', { 表示件数: records.length }); // 処理終了ログ
     }).getPreviousRecords(date, companyId, staffId, siteId);
   }
 
+
+
   // ------------------------------------------
-  // 編集モーダルの移行先のモーダル
-  // ここで工数の変更を修正できる
-  // ここに画像を添付できるフォームを追加
-  /** モーダル内：編集フォームに切り替える（既存＋追加の入力UI） */
-  // ここで編集ボタンが出現→編集ボタンを押すことで編集モーダルへ移行
+  // showEditFormInModal: モーダルを編集フォーム構成へ切り替える
   // ------------------------------------------
 
   function showEditFormInModal() {
+    console.log('[showEditFormInModal] 開始', { 既存件数: (window.lastFetchedRecords || []).length }); // 処理開始ログ
     const container = document.getElementById('modalHistoryContent');
 
     let html = '<h3>編集フォーム</h3>';
@@ -160,19 +180,36 @@
     html += '</tbody></table>';
     html += `
     <div id="editUploader" class="upload-section" style="margin:12px 0;"></div>
-    <button onclick="showEditConfirmationModal()">再送信（更新）</button>
+
+    <h4 style="margin-top:16px;">追加入力（作業者）</h4>
+    <div id="additionalWorkerInputs"></div>
+
+    <h4 style="margin-top:16px;">追加入力（協力会社）</h4>
+    <div id="additionalPartnerInputs"></div>
+
+    <div style="margin-top:16px;">
+      <button onclick="showEditConfirmationModal()">再送信（更新）</button>
+    </div>
   `;
 
     container.innerHTML = html;
     renderEditUploader();
     renderAdditionalInputs();
+    console.log('[showEditFormInModal] 終了'); // 処理終了ログ
   }
 
 
   // ------------------------------------------
   // 編集ボタンが押されたあとに、画像アップロードUIを描画
   // ------------------------------------------
+
+
+
+  // ------------------------------------------
+  // renderEditUploader: 編集用のアップロードUIを描画する
+  // ------------------------------------------
   function renderEditUploader() {
+    console.log('[renderEditUploader] 開始'); // 処理開始ログ
     const container = document.getElementById('editUploader');
     if (!container) return;
 
@@ -186,9 +223,16 @@
 
     // 既存のアップローダー初期化を使う
     setupUploader('uploaderEdit', { max: 5, mode: 'carousel', queueKey: 'edit' });
+    console.log('[renderEditUploader] 終了'); // 処理終了ログ
   }
 
   // 編集モーダル用：協力会社の「役割」を縦並びラジオで作る
+
+
+
+  // ------------------------------------------
+  // createEditPartnerRoleBlock: 編集モーダル用の役割選択UIを作成する
+  // ------------------------------------------
   function createEditPartnerRoleBlock(nameKey) {
     // 例: nameKey = "modal-partner-ABC"
     const wrap = document.createElement('div');
@@ -217,10 +261,10 @@
     return wrap;
   }
 
+
+
   // ------------------------------------------
-  // 編集モーダル下部の「新規追加」用チェックボックス＆入力欄を描画
-  // 既に表に載っている人は候補から除外
-  // TODO: 修正が必要
+  // renderAdditionalInputs: 追加入力用の作業者・協力会社リストを描画する
   // ------------------------------------------
   function renderAdditionalInputs() {
     console.group('🧩 追加入力の描画');
@@ -355,8 +399,15 @@
   // ------------------------------------------
   let pendingEditPayload = null;
   let formData = window.formData || {};  // 念のためグローバルに
+
+
+
+  // ------------------------------------------
+  // showEditConfirmationModal: 編集内容を確認モーダルに組み立てる
+  // ------------------------------------------
   function showEditConfirmationModal() {
     isEditMode = true;
+    console.log('[showEditConfirmationModal] 開始'); // 処理開始ログ
 
     // 既存のバリデーション・エラークリア処理はこの前にある前提
 
@@ -449,13 +500,15 @@
     console.log('[showEditConfirmationModal] formData for modal =',
       JSON.parse(JSON.stringify(formData)));
 
+    console.log('[showEditConfirmationModal] 最終組み立て', { meta, records件数: records.length });
     showConfirmation(true);
+    console.log('[showEditConfirmationModal] 終了'); // 処理終了ログ
   }
 
 
-  // -------------------------------------------------------------------------------
-  // スプシにある対象の協力会社のマスターデータを取得
-
+  // ------------------------------------------
+  // getPartnerCompanyMasterData: 協力会社マスターデータを取得する
+  // ------------------------------------------
   function getPartnerCompanyMasterData() {
     // マスターデータがあるか確認
     if (!window.masterData || !Array.isArray(masterData.partner)) {
@@ -474,6 +527,12 @@
   // 役割の定数
   // 例: "BULLPOWERS 職長" → { base:"BULLPOWERS", role:"leader" }
   //     "BULLPOWERS"     → { base:"BULLPOWERS", role:"general" }
+
+
+
+  // ------------------------------------------
+  // parsePartnerDisplay: 協力会社の表示名から基底名と役割を抽出する
+  // ------------------------------------------
   function parsePartnerDisplay(displayName) {
     const s = (displayName || '').trim();
     // 末尾の [任意個の空白(半角/全角)] + (職長|有資格者) を吸収
@@ -488,6 +547,12 @@
   }
 
   // Map<会社名, Set<role>>
+
+
+
+  // ------------------------------------------
+  // buildUsedPartnerRoleMap: 使用済み役割を会社単位で集計する
+  // ------------------------------------------
   function buildUsedPartnerRoleMap() {
     const used = new Map();
 
@@ -515,8 +580,12 @@
     return used;
   }
 
-  // 既存: createPartnerRoleMatrix(nameKey)
-  // → 第2引数に usedRoles(Set) を追加（互換のためデフォルト空Set）
+
+
+
+  // ------------------------------------------
+  // createPartnerRoleMatrix: 協力会社向け役割入力マトリクスを生成する
+  // ------------------------------------------
   function createPartnerRoleMatrix(nameKey, usedRoles = new Set()) {
     const wrap = document.createElement('div');
     wrap.className = 'partner-role-matrix';
