@@ -78,22 +78,6 @@
       <button onclick="loadModalHistory()">送信履歴を取得</button>
       <div id="modalHistoryContent" style="margin-top: 1rem;"></div>
 
-      <!-- ✅ 新規追加フォーム（IDを必ず残す） -->
-      <div class="toggle-header" onclick="handleToggleAddArea()">
-        ＋ 新しい作業者／協力会社を追加
-      </div>
-      <div id="toggleAddArea" class="toggle-section">
-        <div class="toggle-header inner" onclick="toggleSection('workerSection')">▶ 作業者</div>
-        <div id="workerSection" class="toggle-section inner">
-          <div id="additionalWorkerInputs"></div>
-        </div>
-
-        <div class="toggle-header inner" onclick="toggleSection('partnerSection')">▶ 協力会社</div>
-        <div id="partnerSection" class="toggle-section inner">
-          <div id="additionalPartnerInputs"></div>
-        </div>
-      </div>
-
       <button onclick="closeHistoryModal()" style="margin-top: 1rem;">閉じる</button>
     </div>
   </div>
