@@ -1,0 +1,80 @@
+<script>
+      //送信中のアニメーション処理追加。４~15行目・21行目・47.53行目
+function showLoading() {
+    const overlay = document.getElementById('loadingOverlay');
+    if (!overlay) return;
+  overlay.style.display = 'flex';      // 表示
+}
+
+function hideLoading() {
+    const overlay = document.getElementById('loadingOverlay');
+    if (!overlay) return;
+  overlay.style.display = 'none';       // 非表示
+}
+  // 確定送信（画像アップロード → スプレッドシート保存）
+function confirmSend() {
+    console.log('[confirmSend] start');
+    console.log('[confirmSend] current formData =', JSON.parse(JSON.stringify(formData)));
+    showLoading();
+
+    // 表示用の名称を逆引き
+    const companyName = masterData.company.find(c => c.id === formData.companyId)?.name || '';
+    const siteObj = masterData.site.find(s => s.id === formData.site) || {};
+    const siteName = siteObj.name || '';
+    const workType = formData.workType || siteObj.workType || '美装';
+    const reportDate = formData.date || new Date().toISOString().slice(0, 10);
+
+    // アップロード用 meta（サーバ側は Script Properties で親フォルダを参照）
+    const meta = { workType, reportDate, siteName, companyName };
+    console.log('[confirmSend] meta =', meta);
+
+    // 画像キュー
+    const files = [
+        ...(window.uploadQueue?.modal || []),
+        ...(window.uploadQueue?.main || [])
+    ];
+    console.log('[confirmSend] files.length =', files.length);
+
+    // 保存処理
+    const runSave = () => {
+        console.log('[confirmSend] runSave() start');
+        google.script.run
+        .withSuccessHandler(res => {
+        console.log('[confirmSend] saveFormResponse success', res);
+        hideLoading();
+        showSendSuccessScreen(formData); // ✅ 完了画面に切り替え
+        console.log('[confirmSend] runSave() end(success)');
+        })
+        .withFailureHandler(err => {
+        console.error('[confirmSend] saveFormResponse failed', err);
+        hideLoading();
+        showSendErrorScreen(err);
+        console.log('[confirmSend] runSave() end(failed)');
+        })
+        .saveFormResponse(formData);
+    };
+
+    if (files.length > 0) {
+        showLoading();
+        console.log('[confirmSend] uploadImagesToDrive start');
+        google.script.run
+        .withSuccessHandler(result => {
+        console.log('[confirmSend] uploadImagesToDrive success', result);
+          formData.photos = result; // [{id,url,name}, ...]
+        hideLoading();
+        runSave();
+        })
+        .withFailureHandler(err => {
+        console.error('[confirmSend] uploadImagesToDrive failed', err);
+        hideLoading();
+        showSendErrorScreen(err);
+        })
+        .uploadImagesToDrive(meta, files);
+    } else {
+        runSave();
+    }
+
+    console.log('[confirmSend] end');
+}
+
+</script>
