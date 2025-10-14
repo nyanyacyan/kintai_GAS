@@ -79,7 +79,7 @@
     white-space: nowrap;
   }
 
-  .time-inputs {
+  /* .time-inputs {
     display: none;
     margin-top: .5rem;
     gap: .5rem;
@@ -95,7 +95,7 @@
     .time-inputs input {
       width: 23%;
     }
-  }
+  } */
 
   button {
     background: #0066cc;
@@ -929,18 +929,25 @@
     grid-template-columns: 1fr 1fr;
     /* 半々 */
     gap: 12px;
+    width: 100%;
     /* 欄と欄の間隔 */
   }
 
   .time-inputs input {
     padding: 14px 16px;
-    font-size: 1.2rem;
+    font-size: 2rem !important;
     text-align: center;
+    height: 90px;
     border: 1px solid #ccc;
     border-radius: 10px;
     width: 100%;
     box-sizing: border-box;
   }
+
+  .time-inputs.show .work-input {
+  width: 100% !important;   /* ← これで上書き強制 */
+  flex: 1 1 auto !important;
+}
 
   /* ====== 協力会社 役割3択（大きい枠・ラジオ左） ====== */
   .partner-role-wrap {
