@@ -844,3 +844,214 @@
   window.submitEditFromModal = submitEditFromModal;
 
 </script>
+
+
+
+
+
+
+
+
+
+<style>
+/* ========= 履歴モーダル ========= */
+  #historyModal {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(0, 0, 0, .5);
+    display: none;
+    /* JSでflexに切り替え */
+    justify-content: center;
+    align-items: center;
+    padding: 24px;
+    box-sizing: border-box;
+  }
+
+  #historyModal .modal-body {
+    width: min(92vw, 720px);
+    max-height: 90vh;
+    overflow: auto;
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+
+  #historyModal .modal-body button {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* ========= テーブル ========= */
+  #historyModal table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #ccc;
+  }
+
+  #historyModal th {
+    background: #f0f8ff;
+    font-weight: bold;
+    font-size: 1.4rem;
+    padding: .75rem;
+    text-align: center;
+    border: 1px solid #ccc;
+  }
+
+  #historyModal td {
+    padding: .6rem;
+    text-align: center;
+    border: 1px solid #ddd;
+    font-size: 1.3rem;
+  }
+
+  #historyModal tr:nth-child(even) {
+    background: #f9f9f9;
+  }
+
+
+  /* --- 編集テーブルの役割列をはみ出させない --- */
+  #edit-table th:nth-child(3),
+  #edit-table td:nth-child(3) {
+    width: 260px;
+    /* ← 横幅をしっかり確保（必要に応じて増減） */
+    max-width: 260px;
+    vertical-align: top;
+  }
+
+  /* セル内の文字が1文字ごとに折り返されないように */
+  #edit-table .role-cell {
+    white-space: normal;
+    /* 横幅に応じて自然に折返し */
+    line-height: 1.3;
+  }
+
+
+  .checkbox-wrapper {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    padding: .75rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+    font-size: 3.25rem;
+  }
+
+  .checkbox-wrapper span {
+    font-size: 3.25rem;
+    font-weight: normal;
+    white-space: nowrap;
+  }
+
+  .checkbox-wrapper input[type="checkbox"]:checked+span {
+    color: #0066cc;
+    font-size: 3.25rem;
+    font-weight: normal;
+    font-family: 'Noto Sans JP', sans-serif;
+    white-space: nowrap;
+  }
+
+
+  .partner-role-wrap {
+    margin: 12px 0 6px;
+  }
+
+   /* 役割カード全体のレイアウト：2列並び + 自動折返し */
+  .partner-role-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    /* ← 縦1列 */
+    gap: 8px;
+  }
+
+  .role-card input[type="radio"] {
+    flex: 0 0 auto;
+  }
+
+  /* ラジオボタン行全体 */
+.role-card {
+  display: flex;
+  align-items: center;        /* 縦方向の中央寄せ */
+  justify-content: center;    /* 横方向の中央寄せ */
+  gap: 10px;                  /* ボタンと文字の間 */
+  padding: 16px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ラジオボタン */
+.role-card input[type="radio"] {
+  width: 20px;
+  height: 20px;
+}
+
+/* ラベル文字 */
+.role-card span {
+  font-size: 1.35rem;   /* ← 2remの約2/3サイズ */
+  font-weight: bold;
+  text-align: center;
+}
+
+/* * 数値入力が大きすぎて列を押し広げないよう編集モーダル内で抑える */ */
+  #historyModal .work-input {
+    width: 120px;
+    max-width: 100%;
+    font-size: 18px;
+    padding: 8px 10px;
+  }
+
+/* 画面が狭い時は役割カードを1列にして縦に並べる */
+@media (max-width: 520px) {
+  .partner-role-grid {
+    grid-template-columns: 1fr;
+  }
+
+  #edit-table th:nth-child(3),
+  #edit-table td:nth-child(3) {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+
+/* 人工・残業の入力欄：均等幅で広げる（小さめフォントに上書き） */
+.role-row .work-inputs input[type="number"] {
+  flex: 1;
+  /* ← 均等幅 */
+  width: auto;
+  /* 以前の width:100px を打ち消し */
+  font-size: 2rem;
+  /* ← 入力文字は少し小さめ（全体4remより縮小） */
+  padding: 1.2rem 1.4rem;
+  text-align: center;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+
+#confirmationBox,
+#confirmationModal.modal--success #confirmationBox,
+#historyModal .modal-body {
+  width: 96vw !important;
+  /* 横幅を画面の96% */
+  height: 92vh !important;
+  /* 縦幅を画面の92% */
+  max-width: none !important;
+  max-height: none !important;
+  overflow: auto !important;
+  /* 内容が長いときはスクロール */
+  border-radius: 12px;
+  padding: 20px 24px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, .25);
+}
+
+</style>

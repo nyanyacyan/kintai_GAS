@@ -296,3 +296,213 @@
 
 
 </script>
+
+
+
+
+
+
+
+
+
+
+<style>
+/* ========= ローディング ========= */
+#loadingOverlay {
+  display: none;
+  position: fixed;
+  z-index: 10000;
+  inset: 0;
+  background: rgba(255, 255, 255, .7);
+  justify-content: center;
+  align-items: center;
+}
+
+.loader {
+  border: 6px solid #f3f3f3;
+  border-top: 6px solid #0066cc;
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  animation: spin 1s linear infinite;
+}
+
+/* ========= 確認モーダル ========= */
+
+
+#confirmationText {
+  margin-bottom: 1.5rem;
+  white-space: pre-wrap;
+}
+
+
+
+/* ===== 送信完了モーダルをコンパクト表示 ===== */
+
+/* モーダル枠 */
+#confirmationBox {
+  width: 96vw;
+  /* ← 横幅を画面の96%まで */
+  max-width: none;
+  /* ← 固定上限を解除 */
+  height: 90vh;
+  /* ← 高さを画面の90%まで */
+  max-height: none;
+  /* ← 高さ制限を解除 */
+  overflow-y: auto;
+  /* ← 長い内容はスクロール */
+  padding: 20px 24px;
+  /* ← 余白はやや多めでもOK */
+  border-radius: 12px;
+  /* ← 角丸を少し残す（完全四角でも可） */
+  background: #fff;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, .25);
+}
+
+/* フッターボタン（“閉じる”）は大きめを維持しつつ上下余白だけ詰める */
+#confirmationBox .button-row {
+    margin-top: 14px;
+  }
+
+
+/* ====== 協力会社 役割3択（大きい枠・ラジオ左） ====== */
+.role-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  /* ラジオと文字の間 */
+  padding: 16px;
+  /* 行の高さはここで揃う */
+  border: 1px solid #cfcfcf;
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+  user-select: none;
+}
+
+.role-option input[type="radio"]:checked+.text {
+  color: #1976d2;
+  font-weight: 700;
+}
+
+/* 選択中の行をハイライト（対応ブラウザ向け） */
+.role-option:has(input[type="radio"]:checked) {
+  border-color: #1976d2;
+  box-shadow: 0 0 0 2px rgba(25, 118, 210, .12) inset;
+}
+
+
+/* ====== 人工/残業の表示制御 ====== */
+/* デフォルトは非表示 */
+.time-inputs {
+  display: none;
+  margin-top: 10px;
+}
+
+/* JSで .show を付けた時だけ2分割で表示 */
+.time-inputs.show {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  /* 半々 */
+  gap: 12px;
+  width: 100%;
+  /* 欄と欄の間隔 */
+}
+
+.time-inputs input {
+  padding: 14px 16px;
+  font-size: 1.2rem;
+  text-align: center;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+
+.time-inputs.show .work-input {
+width: 100% !important;   /* ← これで上書き強制 */
+flex: 1 1 auto !important;
+}
+
+/* ========= 作業者入力 ========= */
+.work-input-group {
+  display: flex;
+  gap: .5rem;
+  margin-top: .5rem;
+}
+
+.work-label {
+  padding: 1rem 2rem;
+  background: #f2f2f2;
+  border: 1px solid #ccc;
+  border-radius: .5rem;
+  font-size: 1.5rem;
+  text-align: center;
+  min-width: 5rem;
+  user-select: none;
+}
+
+.work-input {
+  width: 6rem;
+  font-size: 2rem;
+  padding: 1rem;
+  text-align: center;
+  border: 1px solid #ccc;
+  border-radius: .5rem;
+}
+
+.toggle-header {
+  display: inline-block;
+  font-weight: bold;
+  font-size: 2.25rem;
+  padding: 1rem;
+  border: 2px solid #0066cc;
+  color: #0066cc;
+  border-radius: 10px;
+  cursor: pointer;
+  background: #f0f8ff;
+  text-align: center;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 2rem;
+}
+
+.toggle-header:hover {
+  background: #e0f0ff;
+}
+
+.toggle-header.inner {
+  font-size: 1.4rem;
+  background: #e6f2ff;
+  margin-top: 1rem;
+}
+
+.toggle-section {
+  display: none;
+  padding-left: 1rem;
+  margin-top: .5rem;
+}
+
+/* ← 左:テキスト / 右:ラジオ丸 を縦に並べる */
+.partner-role-grid {
+  display: grid;
+  grid-template-columns: 1fr 28px;
+  /* 右列は丸の幅 */
+  row-gap: 10px;
+  column-gap: 12px;
+  align-items: center;
+}
+
+.partner-role-grid .txt {
+  line-height: 1.3;
+}
+
+.partner-role-grid input[type="radio"] {
+  justify-self: center;
+  width: 20px;
+  height: 20px;
+}
+
+</style>
+

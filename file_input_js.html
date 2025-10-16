@@ -398,3 +398,334 @@ document.addEventListener('DOMContentLoaded', () => {
   console.log('[DOMContentLoaded] end');
 });
 </script>
+
+
+
+
+
+
+
+
+
+
+<style>
+/* ========= アップロード UI（共通） ========= */
+.file-button {
+  display: inline-flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .9rem 1.4rem;
+  border: 1px solid #bbb;
+  border-radius: 10px;
+  font-size: 1.6rem;
+  background: #f8f8f8;
+  cursor: pointer;
+  user-select: none;
+}
+
+.file-button:hover {
+  background: #f1f1f1;
+}
+
+.file-button .file-count {
+  font-size: 1.2rem;
+  color: #666;
+}
+
+.preview-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.preview-card {
+  position: relative;
+  width: 150px;
+  height: 150px;
+}
+
+.preview-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+.preview-badge {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  background: rgba(0, 0, 0, .7);
+  color: #fff;
+  font-size: .8rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+@media (max-width: 560px) {
+  .file-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .preview-card {
+    width: 100px;
+    height: 100px;
+  }
+}
+
+/* ========= 画像プレビュー：カルーセル ========= */
+/* ここが “横スライド1枚表示” を保証する中核 */
+.carousel {
+  width: 100%;
+  max-width: min(92vw, 680px);
+  /* モーダルより少し狭くして横スクロール抑止 */
+  margin: 10px auto 0;
+  box-sizing: border-box;
+}
+
+.carousel-viewport {
+  position: relative;
+  overflow: hidden;
+  /* ★ 枠外は隠す */
+  width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.carousel-track {
+  display: flex;
+  flex-wrap: nowrap;
+  /* ★ 折り返し禁止 */
+  will-change: transform;
+  transition: transform .3s ease;
+  /* ★ JSで transform: translateX(...) する前提 */
+}
+
+.carousel-slide {
+  flex: 0 0 100%;
+  /* ★ 1枚が常に全幅を占有 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+.carousel-slide img {
+  display: block;
+  max-width: 100%;
+  max-height: 60vh;
+  /* 画面高の6割で収める */
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  /* 画像の切れ防止 */
+}
+
+
+/* 前/次ボタン：中央下に並べる（表現を変えたい場合は absolute 版に差替え可） */
+.carousel-nav {
+  display: flex;
+  /* 横並びにする */
+  justify-content: space-between;
+  /* 左右に押し広げる */
+  width: 100%;
+  /* 親要素いっぱいに広げる */
+  margin-top: 8px;
+  /* 上に少し余白 */
+  gap: 12px;
+}
+
+.carousel-nav button {
+  flex: 1;
+  /* 均等幅 */
+  padding: 20px 0;
+  /* 縦幅を倍に（以前10px → 20px） */
+  border: none;
+  background: #007bff;
+  /* 青 */
+  color: #fff;
+  /* 文字色は白に */
+  font-size: 18px;
+  /* 少し大きく */
+  cursor: pointer;
+  border-radius: 6px;
+  /* 角丸にするとタップしやすい */
+  max-width: 120px;
+  /* 横幅を少し狭める上限 */
+}
+
+.carousel-nav button:first-child {
+  margin-right: 10px;
+  /* ボタン間に少し隙間 */
+}
+
+.carousel-nav button:last-child {
+  margin-left: 10px;
+}
+
+.carousel-dots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* 縦方向も中央 */
+  width: 100%;
+  /* 横幅を親いっぱいに広げる */
+  gap: 6px;
+  margin: 8px 0 10px;
+}
+
+.carousel-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #c4c4c4;
+  opacity: .6;
+}
+
+.carousel-dot.active {
+  background: #666;
+  opacity: 1;
+}
+
+.carousel-prev,
+.carousel-next {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  border: none;
+  background: #0066cc;
+  color: #fff;
+  font-size: 1.2rem;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .15);
+}
+
+.carousel-prev:hover,
+.carousel-next:hover {
+  background: #0055aa;
+}
+
+.carousel-prev[disabled],
+.carousel-next[disabled] {
+  background: #d8d8d8;
+  color: #777;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+@media (max-width: 560px) {
+
+  .carousel-prev,
+  .carousel-next {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+  }
+}
+
+
+  /* アップローダは必ず表示 */
+  /* #editUploader,
+  #uploaderEdit {
+    display: block !important;
+  } */
+
+  /* ボタンのラベルを確実に見せる */
+  .upload-section .file-button,
+  .uploader .file-button {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    padding: .9rem 1.4rem;
+    border: 1px solid #bbb;
+    border-radius: 10px;
+    background: #f8f8f8;
+    cursor: pointer;
+
+    font-size: 20px;
+    /* ← 追加：文字サイズ */
+    font-weight: bold;
+    /* ← 追加：太字で見やすく */
+  }
+
+  /* input[type=file] はラベルで開くので隠す */
+  #uploaderEdit input[type="file"] {
+    display: none !important;
+  }
+
+  /* 表や親の overflow で切れないように */
+  #editUploader {
+    overflow: visible !important;
+  }
+
+/* アップローダ共通：横いっぱい */
+.upload-section,
+.uploader {
+  width: 100%;
+}
+
+.upload-section .file-button,
+.uploader .file-button {
+  display: flex;
+  /* 中身を中央寄せに */
+  align-items:center;
+  justify-content: center;
+  width: 100%;
+  /* 横いっぱい */
+  box-sizing: border-box;
+  /* パディング込みで幅計算 */
+  margin-top: 8px;
+  /* 上の要素と少しだけ余白 */
+  font-size: 20px;
+  /* ← 追加：文字サイズ */
+  font-weight: bold;
+  /* ← 追加：太字で見やすく */
+}
+
+/* 文字サイズ・高さが小さくなっていた場合の底上げ */
+.upload-section .file-button,
+.uploader .file-button {
+  min-height: 48px;
+  /* 押しやすい高さ */
+  font-size: 1.1rem;
+  /* ボタン文字の見やすさ */
+
+}
+
+/* プレビューも親幅で崩れないように */
+.upload-section .preview-grid,
+.uploader .preview-grid {
+  width: 100%;
+}
+
+/* スマホ時も常に横いっぱい（保険） */
+@media (max-width: 560px) {
+
+  .upload-section .file-button,
+  .uploader .file-button {
+    width: 100%;
+  }
+}
+
+#uploaderEdit .file-button,
+#uploaderMain .file-button,
+.upload-section .file-button,
+.uploader .file-button {
+  font-size: 2rem !important;
+  /* ← 確実に大きく */
+  padding: 1.2rem 1.8rem !important;
+  font-weight: bold;
+}
+
+
+</style>
+

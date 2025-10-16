@@ -474,3 +474,406 @@ TTC担当者：${staff}<br>
   console.log('[send_js] exports done');
   /***** ========== ここまで ========== *****/
 </script>
+
+
+
+
+
+
+
+
+
+
+
+
+<style>
+
+/* ===== モーダル内をスクロール可能に ===== */
+#confirmationModal {
+  display: none;
+  /* JSでflexになる */
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+}
+
+
+
+/* さらに詰めたいときの“超コンパクト”オプション（必要なら .compact を #confirmationBox に付与） */
+#confirmationBox.compact {
+  max-width: 520px;
+  padding: 12px 14px;
+}
+
+#confirmationBox.compact .sent-summary {
+  font-size: 13px;
+}
+
+#confirmationBox.compact .sent-thumb {
+  width: 84px;
+  height: 63px;
+}
+
+
+/* ===== モーダル内をスクロール可能に ===== */
+#confirmationModal {
+  display: none;
+  /* JSでflexになる */
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+}
+
+
+/* スクロールバーを少し細く */
+#confirmationBox::-webkit-scrollbar {
+  width: 8px;
+}
+
+#confirmationBox::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 4px;
+}
+
+/* ===== 送信完了モーダルをコンパクト表示 ===== */
+
+/* モーダル枠 */
+#confirmationBox {
+  /* width: 96vw;
+  /* ← 横幅を画面の96%まで */
+  max-width: none;
+  /* ← 固定上限を解除 */
+  height: 90vh;
+  /* ← 高さを画面の90%まで */
+  max-height: none;
+  /* ← 高さ制限を解除 */
+  overflow-y: auto;
+  /* ← 長い内容はスクロール */
+  padding: 20px 24px;
+  /* ← 余白はやや多めでもOK */
+  border-radius: 12px;
+  /* ← 角丸を少し残す（完全四角でも可） */
+  background: #fff;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, .25);
+}
+
+
+/* ===== 送信 成功モーダルだけ調整 ===== */
+#confirmationModal.modal--success {
+  display: none;
+  /* JSでflexに */
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .5);
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 本体：本文はスクロール、ボタンは下に固定しやすいようflexレイアウト */
+#confirmationModal.modal--success #confirmationBox {
+  width: 720px;
+  /* ← 横幅固定（必要なら 680〜760で微調整） */
+  max-width: 92vw;
+  max-height: 85vh;
+  /* 画面からはみ出さない */
+  display: flex;
+  flex-direction: column;
+  /* 上：本文 / 下：ボタン */
+  gap: 0;
+  padding: 12px 16px;
+  /* ← タイトル上下の“余白”はここで詰める */
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, .2);
+  line-height: 1.28;
+  /* 全体の行間（詰め気味） */
+  box-sizing: border-box;
+}
+
+/* 本文は伸縮してスクロール */
+#confirmationModal.modal--success #confirmationText {
+  flex: 1 1 auto;
+  overflow-y: auto;
+}
+
+/* タイトル（上下の余白をさらに圧縮） */
+#confirmationModal.modal--success .sent-title {
+  margin: 2px 0 6px;
+  /* ← ここが“タイトルの上下の空き” */
+  font-size: 24px;
+  /* 26〜28に上げてもOK */
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+/* 本文ベースの文字サイズ（メタやリストの基準） */
+#confirmationModal.modal--success .sent-summary {
+  font-size: 18.5px;
+  /* もっと大きく：19〜20 */
+  line-height: 1.28;
+}
+
+/* メタ（出面日付/元請/担当/現場）をタイトな2カラムに */
+#confirmationModal.modal--success .sent-meta {
+  margin: 4px 0 8px;
+  /* 上下のブロック間隔 */
+}
+
+#confirmationModal.modal--success .sent-meta>div {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  /* ← ラベル列の幅。狭めたい：110〜120 */
+  column-gap: 8px;
+  /* ラベルと値の間隔 */
+  row-gap: 4px;
+  /* 行間 */
+  margin: 0;
+  /* 余計な外側余白を消す */
+  align-items: baseline;
+}
+
+#confirmationModal.modal--success .sent-meta dt {
+  margin: 0;
+  color: #666;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+#confirmationModal.modal--success .sent-meta dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* セクション見出しと本文の間隔をさらに詰める */
+#confirmationModal.modal--success .sent-block {
+  margin: 8px 0 6px;
+}
+
+#confirmationModal.modal--success .sent-block-title {
+  margin: 0 0 4px;
+  font-weight: 700;
+}
+
+/* リストの行間/余白もコンパクトに */
+#confirmationModal.modal--success .sent-list {
+  margin: 0;
+  padding-left: 1em;
+}
+
+#confirmationModal.modal--success .sent-list li {
+  margin: 2px 0;
+  line-height: 1.28;
+}
+
+#confirmationModal.modal--success .sent-num {
+  color: #d33;
+}
+
+/* 添付写真：必ず“全体が見える”ように（枠は4:3） */
+#confirmationModal.modal--success .sent-thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+  min-height: 1px;
+}
+
+#confirmationModal.modal--success .sent-thumb {
+  display: block;
+  width: 156px;
+  /* 画像サイズ（大きく見せるなら 170〜188） */
+  aspect-ratio: 4 / 3;
+  /* 高さは比率で自動 */
+  border: 1px solid #e7e7e7;
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+}
+
+#confirmationModal.modal--success .sent-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  /* ← “全体が見える”表示 */
+  background: #fff;
+  display: block;
+}
+
+/* ボタンは下固定・大きく・全幅 */
+#confirmationModal.modal--success #confirmationBox .button-row {
+  position: sticky;
+  bottom: 0;
+  /* 本文が長いときも最下部に張り付く */
+  margin: 8px -16px 0;
+  /* 左右のパディング分を相殺して全幅に */
+  padding: 8px 16px 0;
+  background: #fff;
+  text-align: center;
+  box-shadow: 0 -6px 10px -8px rgba(0, 0, 0, .12);
+  /* 上に薄い影 */
+}
+
+#confirmationModal.modal--success #confirmationBox .button-row button {
+  display: block;
+  width: 100%;
+  padding: 18px 0;
+  /* ← ボタンの高さ（“元の大きい”感じ） */
+  font-size: 18px;
+  /* 20でもOK */
+  border-radius: 10px;
+}
+
+
+/* 全体の文字サイズと行間を控えめに */
+.sent-summary {
+  width: 100%;
+  line-height: 1.4;
+}
+
+/* 見出しの余白を小さく */
+.sent-title {
+  margin: 0 0 10px;
+  font-size: 42px;
+}
+
+.sent-meta {
+  margin: 0 0 8px;
+}
+
+.sent-meta>div {
+  display: grid;
+  grid-template-columns: 82px 1fr;
+  /* 左ラベル幅 */
+  column-gap: 8px;
+  margin: 2px 0;
+}
+
+.sent-meta dt {
+  color: #666;
+  font-weight: 600;
+}
+
+.sent-meta dd {
+  margin: 0;
+}
+
+.sent-block {
+  margin: 10px 0 6px;
+}
+
+  .sent-block-title {
+  font-weight: 600;
+  margin: 0 0 4px;
+  color: #333;
+}
+
+/* リストの行間・余白を小さく */
+.sent-list {
+  margin: 0;
+  padding-left: 1.2em;
+}
+
+.sent-list li {
+  margin: 2px 0;
+}
+
+/* 強調数値（人工/残業）の色 */
+.sent-num {
+  color: #d33;
+}
+
+/* サムネイルを小さく・詰めて表示 */
+.sent-thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  /* 画像の間隔 */
+  margin-top: 6px;
+}
+
+/* 1枚の箱サイズ（必要なら 96x72 をさらに小さく） */
+.sent-thumb {
+  width: 96px;
+  height: 72px;
+  border: 1px solid #e7e7e7;
+  border-radius: 8px;
+  background: #fafafa;
+  overflow: hidden;
+  display: block;
+}
+
+.sent-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* 余白なくトリミング */
+  display: block;
+}
+
+/* ========= エラー表示 ========= */
+.error-message {
+  color: red;
+  font-size: .9rem;
+  margin-top: .25rem;
+}
+
+.input-error {
+  border: 2px solid red !important;
+  background-color: #fff0f0;
+}
+
+
+.button-row {
+  text-align: right;
+}
+
+.button-row button {
+  margin-left: 1rem;
+}
+
+#confirmationBox .button-row button {
+  padding: 14px 28px;
+}
+
+.section-label {
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+input[type="checkbox"] {
+  width: 2rem;
+  height: 2rem;
+  margin: 0;
+}
+
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+
+
+#confirmationBox,
+#confirmationModal.modal--success #confirmationBox,
+#historyModal .modal-body {
+  width: 96vw !important;
+  /* 横幅を画面の96% */
+  height: 92vh !important;
+  /* 縦幅を画面の92% */
+  max-width: none !important;
+  max-height: none !important;
+  overflow: auto !important;
+  /* 内容が長いときはスクロール */
+  border-radius: 12px;
+  padding: 20px 24px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, .25);
+}
+
+</style>

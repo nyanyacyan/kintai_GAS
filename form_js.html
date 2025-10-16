@@ -331,3 +331,153 @@
   window.resetForm = resetForm;
   console.log('[form_js] exports done');
 </script>
+
+
+
+
+
+
+
+
+<style>
+.checkbox-wrapper {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .75rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 3.25rem;
+}
+
+.checkbox-wrapper span {
+  font-size: 3.25rem;
+  font-weight: normal;
+  white-space: nowrap;
+}
+
+.checkbox-wrapper input[type="checkbox"]:checked+span {
+  color: #0066cc;
+  font-size: 3.25rem;
+  font-weight: normal;
+  font-family: 'Noto Sans JP', sans-serif;
+  white-space: nowrap;
+}
+
+
+
+/* ====== 協力会社 役割3択（大きい枠・ラジオ左） ====== */
+.partner-role-wrap {
+  margin: 12px 0 6px;
+}
+
+.partner-role-title {
+  font-weight: 700;
+  margin: 0 0 8px;
+  font-size: 1.05rem;
+}
+
+.role-set {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.role-option input[type="radio"] {
+  margin: 0;
+  width: 20px;
+  height: 20px;
+}
+
+.role-option .text {
+  font-size: 1.2rem;
+  /* 大きめ文字 */
+  white-space: nowrap;
+}
+
+
+/* 1行のレイアウトを整える */
+.role-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+
+/* 左ラベル（☑ + 役割名）：全行で同じ幅・大きく太く */
+.role-row label {
+  flex: 0 0 clamp(160px, 28vw, 220px);
+  /* 画面に応じて 160〜220px で固定幅 */
+  font-size: 2rem;
+  /* ← 大きく */
+  font-weight: 700;
+  /* 太字 */
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  /* チェックボックスとの間 */
+}
+
+/* 右側（人工・残業）の器：残り幅を全部使って横並び均等 */
+.role-row .work-inputs {
+  flex: 1;
+  display: flex;
+  gap: 12px;
+  /* 人工と残業の間 */
+}
+
+/* 人工・残業の入力欄：均等幅で広げる（小さめフォントに上書き） */
+.role-row .work-inputs input[type="number"] {
+  flex: 1;
+  /* ← 均等幅 */
+  width: auto;
+  /* 以前の width:100px を打ち消し */
+  font-size: 2rem;
+  /* ← 入力文字は少し小さめ（全体4remより縮小） */
+  padding: 1.2rem 1.4rem;
+  text-align: center;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+/* プレースホルダも控えめに */
+.role-row .work-inputs input::placeholder {
+  font-size: 1.8rem;
+  color: #9a9a9a;
+}
+
+#dateToggleWrapper {
+  margin-top: 1rem;
+}
+
+.date-toggle-button {
+  display: inline-block;
+  font-weight: bold;
+  font-size: 2.25rem;
+  padding: .75rem 1rem;
+  border: 2px solid #0066cc;
+  color: #0066cc;
+  border-radius: 6px;
+  cursor: pointer;
+  background: #f0f8ff;
+  text-align: center;
+}
+
+.date-toggle-button:hover {
+  background: #e0f0ff;
+}
+
+.date-toggle-button input[type="checkbox"] {
+  display: none;
+}
+
+
+.date-toggle-button.checked {
+  background: #0066cc;
+  color: #fff;
+}
+</style>
