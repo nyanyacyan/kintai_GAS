@@ -1,402 +1,402 @@
 <script>
-/* =========================================================================
- *  Uploader（フロント）— 画像選択→変換→プレビュー→キュー格納
- *  - 使い方：DOMContentLoaded後に initUploaders() を呼ぶ
- *  - プレビューはデフォルトでカルーセル
- * ======================================================================= */
+  /* =========================================================================
+   *  Uploader（フロント）— 画像選択→変換→プレビュー→キュー格納
+   *  - 使い方：DOMContentLoaded後に initUploaders() を呼ぶ
+   *  - プレビューはデフォルトでカルーセル
+   * ======================================================================= */
 
-/** グローバルのアップロードキュー（送信用） */
-window.uploadQueue = window.uploadQueue || { modal: [], main: [], edit: [] };
+  /** グローバルのアップロードキュー（送信用） */
+  window.uploadQueue = window.uploadQueue || { modal: [], main: [], edit: [] };
 
-/* =========================
- * ユーティリティ群
- * =======================*/
+  /* =========================
+   * ユーティリティ群
+   * =======================*/
 
-/** 動画判定 */
-function isVideo(file) {
-  console.log('[isVideo] start:', { name: file?.name, type: file?.type });
-  const result = !!file && file.type?.startsWith('video/');
-  console.log('[isVideo] end ->', result);
-  return result;
-}
-
-/** 画像判定 */
-function isImage(file) {
-  console.log('[isImage] start:', { name: file?.name, type: file?.type });
-  const result = !!file && file.type?.startsWith('image/');
-  console.log('[isImage] end ->', result);
-  return result;
-}
-
-/** 禁則文字を置換して安全なファイル名ベースへ */
-function sanitizeBaseName(base) {
-  console.log('[sanitizeBaseName] start:', base);
-  const result = String(base || '画像').replace(/[\\/:*?"<>|]/g, '_').trim() || '画像';
-  console.log('[sanitizeBaseName] end ->', result);
-  return result;
-}
-
-/** 連番付きファイル名（例：出面日付_現場名_01.jpeg） */
-function buildNumberedFileName(base, index1based) {
-  console.log('[buildNumberedFileName] start:', { base, index1based });
-  const result = `${sanitizeBaseName(base)}_${String(index1based).padStart(2, '0')}.jpeg`;
-  console.log('[buildNumberedFileName] end ->', result);
-  return result;
-}
-
-/** File → DataURL */
-function fileToDataURL(file) {
-  console.log('[fileToDataURL] start:', { name: file?.name, type: file?.type });
-  return new Promise((resolve) => {
-    const fr = new FileReader();
-    fr.onload = () => {
-      console.log('[fileToDataURL] end -> (dataUrl length):', String(fr.result).length);
-      resolve(fr.result);
-    };
-    fr.readAsDataURL(file);
-  });
-}
-
-/** Blob → DataURL */
-function blobToDataURL(blob) {
-  console.log('[blobToDataURL] start:', { size: blob?.size, type: blob?.type });
-  return new Promise((resolve) => {
-    const fr = new FileReader();
-    fr.onload = () => {
-      console.log('[blobToDataURL] end -> (dataUrl length):', String(fr.result).length);
-      resolve(fr.result);
-    };
-    fr.readAsDataURL(blob);
-  });
-}
-
-/** File → HTMLImageElement */
-async function fileToImage(file) {
-  console.log('[fileToImage] start:', { name: file?.name, type: file?.type });
-  const url = await fileToDataURL(file);
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      console.log('[fileToImage] end ->', { width: img.naturalWidth, height: img.naturalHeight });
-      resolve(img);
-    };
-    img.onerror = (e) => {
-      console.error('[fileToImage] error:', e);
-      reject(e);
-    };
-    img.src = url;
-  });
-}
-
-/** Image → JPEG Blob（Canvas） */
-function imageToJpegBlob(img, quality = 0.9) {
-  console.log('[imageToJpegBlob] start:', { w: img?.naturalWidth, h: img?.naturalHeight, quality });
-  return new Promise((resolve) => {
-    const c = document.createElement('canvas');
-    c.width = img.naturalWidth;
-    c.height = img.naturalHeight;
-    const g = c.getContext('2d');
-    g.drawImage(img, 0, 0);
-    c.toBlob((b) => {
-      console.log('[imageToJpegBlob] end ->', { size: b?.size, type: b?.type });
-      resolve(b);
-    }, 'image/jpeg', quality);
-  });
-}
-
-/** あらゆる画像ファイルを JPEG DataURL へ */
-async function toJpegDataURLSmart(file) {
-  console.log('[toJpegDataURLSmart] start:', { name: file?.name, type: file?.type });
-  const type = (file?.type || '').toLowerCase();
-
-  try {
-    if (type.includes('heic') || type.includes('heif')) {
-      console.log('[toJpegDataURLSmart] HEIC/HEIF → heic2any 変換');
-      const blob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 });
-      const dataUrl = await blobToDataURL(blob);
-      console.log('[toJpegDataURLSmart] end(heic) -> (dataUrl length):', dataUrl.length);
-      return dataUrl;
-    }
-
-    if (type === 'image/jpeg' || type === 'image/jpg') {
-      console.log('[toJpegDataURLSmart] 既にJPEG → そのまま');
-      const dataUrl = await fileToDataURL(file);
-      console.log('[toJpegDataURLSmart] end(jpeg) -> (dataUrl length):', dataUrl.length);
-      return dataUrl;
-    }
-
-    console.log('[toJpegDataURLSmart] その他（PNG/WEBP…）→ CanvasでJPEG化');
-    const img = await fileToImage(file);
-    const jpegBlob = await imageToJpegBlob(img, 0.9);
-    const dataUrl = await blobToDataURL(jpegBlob);
-    console.log('[toJpegDataURLSmart] end(canvas) -> (dataUrl length):', dataUrl.length);
-    return dataUrl;
-  } catch (e) {
-    console.error('[toJpegDataURLSmart] error:', e);
-    throw e;
-  }
-}
-
-/* =========================
- * DOM 取得/初期化系
- * =======================*/
-
-/** ルートから必要要素を取ってくる */
-function getDomRefs(rootId) {
-  console.log('[getDomRefs] start:', rootId);
-  const root    = document.getElementById(rootId);
-  const input   = root?.querySelector('input[type="file"]');
-  const button  = root?.querySelector('.file-button');
-  const counter = root?.querySelector('.file-count');
-  const preview = root?.querySelector('.preview-grid');
-  const result  = { root, input, button, counter, preview };
-  console.log('[getDomRefs] end ->', result);
-  return result;
-}
-
-/** プレビュー領域をクリア */
-function clearPreview(previewEl) {
-  console.log('[clearPreview] start');
-  if (previewEl) previewEl.innerHTML = '';
-  console.log('[clearPreview] end');
-}
-
-/* =========================
- * カルーセル作成・制御
- * =======================*/
-
-/** カルーセル DOM を作成して各参照と制御関数を返す */
-function createCarousel(previewEl, slideCount) {
-  console.log('[createCarousel] start:', { slideCount });
-
-  // ラッパー
-  const carousel = document.createElement('div');
-  carousel.className = 'carousel';
-
-  // ビューポート & トラック
-  const viewport = document.createElement('div');
-  viewport.className = 'carousel-viewport';
-
-  const track = document.createElement('div');
-  track.className = 'carousel-track';
-
-  viewport.appendChild(track);
-  carousel.appendChild(viewport);
-  previewEl.appendChild(carousel);
-
-  // ナビ
-  const nav = document.createElement('div');
-  nav.className = 'carousel-nav';
-  const prevBtn = document.createElement('button'); prevBtn.textContent = '◀';
-  const nextBtn = document.createElement('button'); nextBtn.textContent = '▶';
-  nav.append(prevBtn, nextBtn);
-  previewEl.appendChild(nav);
-
-  // ドット
-  const dots = document.createElement('div');
-  dots.className = 'carousel-dots';
-  previewEl.appendChild(dots);
-
-  // スライド枠を先に作る
-  const slideImgs = [];
-  const dotEls = [];
-  for (let i = 0; i < slideCount; i++) {
-    const slide = document.createElement('div');
-    slide.className = 'carousel-slide';
-    const img = document.createElement('img');
-    img.alt = `${i + 1}枚目`;
-    slide.appendChild(img);
-    track.appendChild(slide);
-    slideImgs.push(img);
-
-    const dot = document.createElement('div');
-    dot.className = 'carousel-dot';
-    dots.appendChild(dot);
-    dotEls.push(dot);
+  /** 動画判定 */
+  function isVideo(file) {
+    console.log('[isVideo] start:', { name: file?.name, type: file?.type });
+    const result = !!file && file.type?.startsWith('video/');
+    console.log('[isVideo] end ->', result);
+    return result;
   }
 
-  // ステート/描画
-  let index = 0;
-  const total = slideCount;
-  const width = () => viewport.clientWidth;
-
-  function render() {
-    track.style.transform = `translateX(${-index * width()}px)`;
-    prevBtn.disabled = (index === 0);
-    nextBtn.disabled = (index === total - 1);
-    dotEls.forEach((d, i) => d.classList.toggle('active', i === index));
-  }
-  function goTo(n) {
-    index = Math.max(0, Math.min(total - 1, n));
-    render();
+  /** 画像判定 */
+  function isImage(file) {
+    console.log('[isImage] start:', { name: file?.name, type: file?.type });
+    const result = !!file && file.type?.startsWith('image/');
+    console.log('[isImage] end ->', result);
+    return result;
   }
 
-  // 操作イベント
-  prevBtn.addEventListener('click', () => goTo(index - 1));
-  nextBtn.addEventListener('click', () => goTo(index + 1));
-  window.addEventListener('resize', render);
-
-  // スワイプ
-  let startX = 0, currentX = 0, dragging = false;
-  viewport.addEventListener('touchstart', (e) => {
-    if (!total) return;
-    dragging = true;
-    startX = e.touches[0].clientX;
-    currentX = startX;
-  }, { passive: true });
-
-  viewport.addEventListener('touchmove', (e) => {
-    if (!dragging) return;
-    currentX = e.touches[0].clientX;
-    const dx = currentX - startX;
-    const base = -index * width();
-    track.style.transform = `translateX(${base + dx}px)`;
-  }, { passive: true });
-
-  viewport.addEventListener('touchend', () => {
-    if (!dragging) return;
-    dragging = false;
-    const dx = currentX - startX;
-    const threshold = width() * 0.25;
-    if (dx > threshold) goTo(index - 1);
-    else if (dx < -threshold) goTo(index + 1);
-    else render();
-  });
-
-  render();
-
-  const result = { slideImgs, render, goTo };
-  console.log('[createCarousel] end ->', result);
-  return result;
-}
-
-/* =========================
- * ベース名（出面日付_現場名）取得
- * =======================*/
-function buildUploadBaseName() {
-  console.log('[buildUploadBaseName] start');
-  const d = document.getElementById('customDate')?.value || new Date().toISOString().slice(0, 10);
-  const site = document.getElementById('site')?.selectedOptions?.[0]?.textContent || '現場';
-  const base = `${d}_${site}`;
-  console.log('[buildUploadBaseName] end ->', base);
-  return base;
-}
-
-/* =========================
- * ファイル選択→検証→変換→プレビュー→キュー
- * =======================*/
-async function handleFilesChange(inputEl, counterEl, previewEl, queueKey, max = 5) {
-  console.log('[handleFilesChange] start', { queueKey, max });
-
-  const picked = Array.from(inputEl.files || []);
-  console.log('[handleFilesChange] picked:', picked.map(f => ({ name: f.name, type: f.type, size: f.size })));
-
-  // 動画が混ざっていたらNG
-  if (picked.some(isVideo)) {
-    alert('動画はアップロードできません。画像のみ選択してください。');
-    inputEl.value = '';
-    console.log('[handleFilesChange] end (video detected)');
-    return;
+  /** 禁則文字を置換して安全なファイル名ベースへ */
+  function sanitizeBaseName(base) {
+    console.log('[sanitizeBaseName] start:', base);
+    const result = String(base || '画像').replace(/[\\/:*?"<>|]/g, '_').trim() || '画像';
+    console.log('[sanitizeBaseName] end ->', result);
+    return result;
   }
 
-  // 名前順に並べて最大 max
-  const sorted = picked.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
-  const limited = sorted.slice(0, max);
-  if (picked.length > max) {
-    alert(`写真は最大${max}枚です。先頭${max}枚のみ表示します。`);
+  /** 連番付きファイル名（例：出面日付_現場名_01.jpeg） */
+  function buildNumberedFileName(base, index1based) {
+    console.log('[buildNumberedFileName] start:', { base, index1based });
+    const result = `${sanitizeBaseName(base)}_${String(index1based).padStart(2, '0')}.jpeg`;
+    console.log('[buildNumberedFileName] end ->', result);
+    return result;
   }
-  if (counterEl) counterEl.textContent = `${limited.length} 枚`;
 
-  // プレビュー初期化／キュー初期化
-  clearPreview(previewEl);
-  window.uploadQueue[queueKey] = [];
-  console.log('[handleFilesChange] queue cleared:', queueKey);
+  /** File → DataURL */
+  function fileToDataURL(file) {
+    console.log('[fileToDataURL] start:', { name: file?.name, type: file?.type });
+    return new Promise((resolve) => {
+      const fr = new FileReader();
+      fr.onload = () => {
+        console.log('[fileToDataURL] end -> (dataUrl length):', String(fr.result).length);
+        resolve(fr.result);
+      };
+      fr.readAsDataURL(file);
+    });
+  }
 
-  // カルーセル生成
-  const { slideImgs } = createCarousel(previewEl, limited.length);
+  /** Blob → DataURL */
+  function blobToDataURL(blob) {
+    console.log('[blobToDataURL] start:', { size: blob?.size, type: blob?.type });
+    return new Promise((resolve) => {
+      const fr = new FileReader();
+      fr.onload = () => {
+        console.log('[blobToDataURL] end -> (dataUrl length):', String(fr.result).length);
+        resolve(fr.result);
+      };
+      fr.readAsDataURL(blob);
+    });
+  }
 
-  // ベース名
-  const rawBase = buildUploadBaseName();
-  const baseName = sanitizeBaseName(rawBase);
+  /** File → HTMLImageElement */
+  async function fileToImage(file) {
+    console.log('[fileToImage] start:', { name: file?.name, type: file?.type });
+    const url = await fileToDataURL(file);
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        console.log('[fileToImage] end ->', { width: img.naturalWidth, height: img.naturalHeight });
+        resolve(img);
+      };
+      img.onerror = (e) => {
+        console.error('[fileToImage] error:', e);
+        reject(e);
+      };
+      img.src = url;
+    });
+  }
 
-  // 1枚ずつ変換→キューへ→プレビュー反映
-  for (let i = 0; i < limited.length; i++) {
-    const file = limited[i];
-    if (!isImage(file)) continue;
+  /** Image → JPEG Blob（Canvas） */
+  function imageToJpegBlob(img, quality = 0.9) {
+    console.log('[imageToJpegBlob] start:', { w: img?.naturalWidth, h: img?.naturalHeight, quality });
+    return new Promise((resolve) => {
+      const c = document.createElement('canvas');
+      c.width = img.naturalWidth;
+      c.height = img.naturalHeight;
+      const g = c.getContext('2d');
+      g.drawImage(img, 0, 0);
+      c.toBlob((b) => {
+        console.log('[imageToJpegBlob] end ->', { size: b?.size, type: b?.type });
+        resolve(b);
+      }, 'image/jpeg', quality);
+    });
+  }
+
+  /** あらゆる画像ファイルを JPEG DataURL へ */
+  async function toJpegDataURLSmart(file) {
+    console.log('[toJpegDataURLSmart] start:', { name: file?.name, type: file?.type });
+    const type = (file?.type || '').toLowerCase();
 
     try {
-      const dataUrl = await toJpegDataURLSmart(file);
-      const name = buildNumberedFileName(baseName, i + 1);
-      window.uploadQueue[queueKey].push({ name, type: 'image/jpeg', dataUrl });
-      slideImgs[i].src = dataUrl;
-      console.log('[handleFilesChange] queued:', { idx: i, name, type: 'image/jpeg', length: dataUrl.length });
+      if (type.includes('heic') || type.includes('heif')) {
+        console.log('[toJpegDataURLSmart] HEIC/HEIF → heic2any 変換');
+        const blob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 });
+        const dataUrl = await blobToDataURL(blob);
+        console.log('[toJpegDataURLSmart] end(heic) -> (dataUrl length):', dataUrl.length);
+        return dataUrl;
+      }
+
+      if (type === 'image/jpeg' || type === 'image/jpg') {
+        console.log('[toJpegDataURLSmart] 既にJPEG → そのまま');
+        const dataUrl = await fileToDataURL(file);
+        console.log('[toJpegDataURLSmart] end(jpeg) -> (dataUrl length):', dataUrl.length);
+        return dataUrl;
+      }
+
+      console.log('[toJpegDataURLSmart] その他（PNG/WEBP…）→ CanvasでJPEG化');
+      const img = await fileToImage(file);
+      const jpegBlob = await imageToJpegBlob(img, 0.9);
+      const dataUrl = await blobToDataURL(jpegBlob);
+      console.log('[toJpegDataURLSmart] end(canvas) -> (dataUrl length):', dataUrl.length);
+      return dataUrl;
     } catch (e) {
-      console.error('[handleFilesChange] convert error:', { idx: i, name: file.name, type: file.type, error: e });
+      console.error('[toJpegDataURLSmart] error:', e);
+      throw e;
     }
   }
 
-  console.log('[handleFilesChange] end; queue size:', window.uploadQueue[queueKey].length);
-}
+  /* =========================
+   * DOM 取得/初期化系
+   * =======================*/
 
-/* =========================
- * 初期化（1アップローダー分）
- * =======================*/
-function setupUploader(rootId, { max = 5, queueKey } = {}) {
-  console.log('[setupUploader] start:', { rootId, max, queueKey });
-
-  // queueKey 自動推定（明示がなければ rootId から決める）
-  if (!queueKey) {
-    queueKey = (rootId === 'uploaderModal') ? 'modal'
-            : (rootId === 'uploaderMain')  ? 'main'
-            : 'edit';
+  /** ルートから必要要素を取ってくる */
+  function getDomRefs(rootId) {
+    console.log('[getDomRefs] start:', rootId);
+    const root = document.getElementById(rootId);
+    const input = root?.querySelector('input[type="file"]');
+    const button = root?.querySelector('.file-button');
+    const counter = root?.querySelector('.file-count');
+    const preview = root?.querySelector('.preview-grid');
+    const result = { root, input, button, counter, preview };
+    console.log('[getDomRefs] end ->', result);
+    return result;
   }
 
-  const { root, input, button, counter, preview } = getDomRefs(rootId);
-  if (!root || !input || !button || !counter || !preview) {
-    console.warn('[setupUploader] missing elements:', { root: !!root, input: !!input, button: !!button, counter: !!counter, preview: !!preview });
-    console.log('[setupUploader] end (missing elements)');
-    return;
+  /** プレビュー領域をクリア */
+  function clearPreview(previewEl) {
+    console.log('[clearPreview] start');
+    if (previewEl) previewEl.innerHTML = '';
+    console.log('[clearPreview] end');
   }
 
-  // ボタンクリックで input を開く
-  button.addEventListener('click', () => {
-    console.log('[setupUploader] button clicked -> open file dialog');
-    input.click();
+  /* =========================
+   * カルーセル作成・制御
+   * =======================*/
+
+  /** カルーセル DOM を作成して各参照と制御関数を返す */
+  function createCarousel(previewEl, slideCount) {
+    console.log('[createCarousel] start:', { slideCount });
+
+    // ラッパー
+    const carousel = document.createElement('div');
+    carousel.className = 'carousel';
+
+    // ビューポート & トラック
+    const viewport = document.createElement('div');
+    viewport.className = 'carousel-viewport';
+
+    const track = document.createElement('div');
+    track.className = 'carousel-track';
+
+    viewport.appendChild(track);
+    carousel.appendChild(viewport);
+    previewEl.appendChild(carousel);
+
+    // ナビ
+    const nav = document.createElement('div');
+    nav.className = 'carousel-nav';
+    const prevBtn = document.createElement('button'); prevBtn.textContent = '◀';
+    const nextBtn = document.createElement('button'); nextBtn.textContent = '▶';
+    nav.append(prevBtn, nextBtn);
+    previewEl.appendChild(nav);
+
+    // ドット
+    const dots = document.createElement('div');
+    dots.className = 'carousel-dots';
+    previewEl.appendChild(dots);
+
+    // スライド枠を先に作る
+    const slideImgs = [];
+    const dotEls = [];
+    for (let i = 0; i < slideCount; i++) {
+      const slide = document.createElement('div');
+      slide.className = 'carousel-slide';
+      const img = document.createElement('img');
+      img.alt = `${i + 1}枚目`;
+      slide.appendChild(img);
+      track.appendChild(slide);
+      slideImgs.push(img);
+
+      const dot = document.createElement('div');
+      dot.className = 'carousel-dot';
+      dots.appendChild(dot);
+      dotEls.push(dot);
+    }
+
+    // ステート/描画
+    let index = 0;
+    const total = slideCount;
+    const width = () => viewport.clientWidth;
+
+    function render() {
+      track.style.transform = `translateX(${-index * width()}px)`;
+      prevBtn.disabled = (index === 0);
+      nextBtn.disabled = (index === total - 1);
+      dotEls.forEach((d, i) => d.classList.toggle('active', i === index));
+    }
+    function goTo(n) {
+      index = Math.max(0, Math.min(total - 1, n));
+      render();
+    }
+
+    // 操作イベント
+    prevBtn.addEventListener('click', () => goTo(index - 1));
+    nextBtn.addEventListener('click', () => goTo(index + 1));
+    window.addEventListener('resize', render);
+
+    // スワイプ
+    let startX = 0, currentX = 0, dragging = false;
+    viewport.addEventListener('touchstart', (e) => {
+      if (!total) return;
+      dragging = true;
+      startX = e.touches[0].clientX;
+      currentX = startX;
+    }, { passive: true });
+
+    viewport.addEventListener('touchmove', (e) => {
+      if (!dragging) return;
+      currentX = e.touches[0].clientX;
+      const dx = currentX - startX;
+      const base = -index * width();
+      track.style.transform = `translateX(${base + dx}px)`;
+    }, { passive: true });
+
+    viewport.addEventListener('touchend', () => {
+      if (!dragging) return;
+      dragging = false;
+      const dx = currentX - startX;
+      const threshold = width() * 0.25;
+      if (dx > threshold) goTo(index - 1);
+      else if (dx < -threshold) goTo(index + 1);
+      else render();
+    });
+
+    render();
+
+    const result = { slideImgs, render, goTo };
+    console.log('[createCarousel] end ->', result);
+    return result;
+  }
+
+  /* =========================
+   * ベース名（出面日付_現場名）取得
+   * =======================*/
+  function buildUploadBaseName() {
+    console.log('[buildUploadBaseName] start');
+    const d = document.getElementById('customDate')?.value || new Date().toISOString().slice(0, 10);
+    const site = document.getElementById('site')?.selectedOptions?.[0]?.textContent || '現場';
+    const base = `${d}_${site}`;
+    console.log('[buildUploadBaseName] end ->', base);
+    return base;
+  }
+
+  /* =========================
+   * ファイル選択→検証→変換→プレビュー→キュー
+   * =======================*/
+  async function handleFilesChange(inputEl, counterEl, previewEl, queueKey, max = 5) {
+    console.log('[handleFilesChange] start', { queueKey, max });
+
+    const picked = Array.from(inputEl.files || []);
+    console.log('[handleFilesChange] picked:', picked.map(f => ({ name: f.name, type: f.type, size: f.size })));
+
+    // 動画が混ざっていたらNG
+    if (picked.some(isVideo)) {
+      alert('動画はアップロードできません。画像のみ選択してください。');
+      inputEl.value = '';
+      console.log('[handleFilesChange] end (video detected)');
+      return;
+    }
+
+    // 名前順に並べて最大 max
+    const sorted = picked.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+    const limited = sorted.slice(0, max);
+    if (picked.length > max) {
+      alert(`写真は最大${max}枚です。先頭${max}枚のみ表示します。`);
+    }
+    if (counterEl) counterEl.textContent = `${limited.length} 枚`;
+
+    // プレビュー初期化／キュー初期化
+    clearPreview(previewEl);
+    window.uploadQueue[queueKey] = [];
+    console.log('[handleFilesChange] queue cleared:', queueKey);
+
+    // カルーセル生成
+    const { slideImgs } = createCarousel(previewEl, limited.length);
+
+    // ベース名
+    const rawBase = buildUploadBaseName();
+    const baseName = sanitizeBaseName(rawBase);
+
+    // 1枚ずつ変換→キューへ→プレビュー反映
+    for (let i = 0; i < limited.length; i++) {
+      const file = limited[i];
+      if (!isImage(file)) continue;
+
+      try {
+        const dataUrl = await toJpegDataURLSmart(file);
+        const name = buildNumberedFileName(baseName, i + 1);
+        window.uploadQueue[queueKey].push({ name, type: 'image/jpeg', dataUrl });
+        slideImgs[i].src = dataUrl;
+        console.log('[handleFilesChange] queued:', { idx: i, name, type: 'image/jpeg', length: dataUrl.length });
+      } catch (e) {
+        console.error('[handleFilesChange] convert error:', { idx: i, name: file.name, type: file.type, error: e });
+      }
+    }
+
+    console.log('[handleFilesChange] end; queue size:', window.uploadQueue[queueKey].length);
+  }
+
+  /* =========================
+   * 初期化（1アップローダー分）
+   * =======================*/
+  function setupUploader(rootId, { max = 5, queueKey } = {}) {
+    console.log('[setupUploader] start:', { rootId, max, queueKey });
+
+    // queueKey 自動推定（明示がなければ rootId から決める）
+    if (!queueKey) {
+      queueKey = (rootId === 'uploaderModal') ? 'modal'
+        : (rootId === 'uploaderMain') ? 'main'
+          : 'edit';
+    }
+
+    const { root, input, button, counter, preview } = getDomRefs(rootId);
+    if (!root || !input || !button || !counter || !preview) {
+      console.warn('[setupUploader] missing elements:', { root: !!root, input: !!input, button: !!button, counter: !!counter, preview: !!preview });
+      console.log('[setupUploader] end (missing elements)');
+      return;
+    }
+
+    // ボタンクリックで input を開く
+    button.addEventListener('click', () => {
+      console.log('[setupUploader] button clicked -> open file dialog');
+      input.click();
+    });
+
+    // ファイル選択時の処理
+    input.addEventListener('change', async () => {
+      console.log('[setupUploader] input.change fired');
+      await handleFilesChange(input, counter, preview, queueKey, max);
+    });
+
+    console.log('[setupUploader] end');
+  }
+
+  /* =========================
+   * 複数アップローダーの一括初期化
+   * =======================*/
+  function initUploaders() {
+    console.log('[initUploaders] start');
+    setupUploader('uploaderModal', { max: 5, queueKey: 'modal' });
+    setupUploader('uploaderMain', { max: 5, queueKey: 'main' });
+    // 必要なら編集用も：
+    // setupUploader('uploaderEdit', { max: 5, queueKey: 'edit' });
+    console.log('[initUploaders] end');
+  }
+
+  /* =========================
+   * DOM 準備後に初期化を実行
+   * =======================*/
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log('[DOMContentLoaded] start');
+
+    // 必要なら外部からベース名ロジックを差し替えたい場合、
+    // buildUploadBaseName() を上書きしてもOK（今はこのまま使えます）
+    initUploaders();
+
+    console.log('[DOMContentLoaded] end');
   });
-
-  // ファイル選択時の処理
-  input.addEventListener('change', async () => {
-    console.log('[setupUploader] input.change fired');
-    await handleFilesChange(input, counter, preview, queueKey, max);
-  });
-
-  console.log('[setupUploader] end');
-}
-
-/* =========================
- * 複数アップローダーの一括初期化
- * =======================*/
-function initUploaders() {
-  console.log('[initUploaders] start');
-  setupUploader('uploaderModal', { max: 5, queueKey: 'modal' });
-  setupUploader('uploaderMain',  { max: 5, queueKey: 'main'  });
-  // 必要なら編集用も：
-  // setupUploader('uploaderEdit', { max: 5, queueKey: 'edit' });
-  console.log('[initUploaders] end');
-}
-
-/* =========================
- * DOM 準備後に初期化を実行
- * =======================*/
-document.addEventListener('DOMContentLoaded', () => {
-  console.log('[DOMContentLoaded] start');
-
-  // 必要なら外部からベース名ロジックを差し替えたい場合、
-  // buildUploadBaseName() を上書きしてもOK（今はこのまま使えます）
-  initUploaders();
-
-  console.log('[DOMContentLoaded] end');
-});
 </script>
 
 
@@ -409,227 +409,227 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 <style>
-/* ========= アップロード UI（共通） ========= */
-.file-button {
-  display: inline-flex;
-  align-items: center;
-  gap: .75rem;
-  padding: .9rem 1.4rem;
-  border: 1px solid #bbb;
-  border-radius: 10px;
-  font-size: 1.6rem;
-  background: #f8f8f8;
-  cursor: pointer;
-  user-select: none;
-}
-
-.file-button:hover {
-  background: #f1f1f1;
-}
-
-.file-button .file-count {
-  font-size: 1.2rem;
-  color: #666;
-}
-
-.preview-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.preview-card {
-  position: relative;
-  width: 150px;
-  height: 150px;
-}
-
-.preview-card img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-}
-
-.preview-badge {
-  position: absolute;
-  top: 4px;
-  left: 4px;
-  background: rgba(0, 0, 0, .7);
-  color: #fff;
-  font-size: .8rem;
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-
-@media (max-width: 560px) {
+  /* ========= アップロード UI（共通） ========= */
   .file-button {
-    width: 100%;
-    justify-content: center;
+    display: inline-flex;
+    align-items: center;
+    gap: .75rem;
+    padding: .9rem 1.4rem;
+    border: 1px solid #bbb;
+    border-radius: 10px;
+    font-size: 1.6rem;
+    background: #f8f8f8;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .file-button:hover {
+    background: #f1f1f1;
+  }
+
+  .file-button .file-count {
+    font-size: 1.2rem;
+    color: #666;
+  }
+
+  .preview-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
   }
 
   .preview-card {
-    width: 100px;
-    height: 100px;
+    position: relative;
+    width: 150px;
+    height: 150px;
   }
-}
 
-/* ========= 画像プレビュー：カルーセル ========= */
-/* ここが “横スライド1枚表示” を保証する中核 */
-.carousel {
-  width: 100%;
-  max-width: min(92vw, 680px);
-  /* モーダルより少し狭くして横スクロール抑止 */
-  margin: 10px auto 0;
-  box-sizing: border-box;
-}
+  .preview-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+  }
 
-.carousel-viewport {
-  position: relative;
-  overflow: hidden;
-  /* ★ 枠外は隠す */
-  width: 100%;
-  border: 1px solid #ccc;
-  border-radius: 10px;
-  background: #fff;
-}
+  .preview-badge {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    background: rgba(0, 0, 0, .7);
+    color: #fff;
+    font-size: .8rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
 
-.carousel-track {
-  display: flex;
-  flex-wrap: nowrap;
-  /* ★ 折り返し禁止 */
-  will-change: transform;
-  transition: transform .3s ease;
-  /* ★ JSで transform: translateX(...) する前提 */
-}
+  @media (max-width: 560px) {
+    .file-button {
+      width: 100%;
+      justify-content: center;
+    }
 
-.carousel-slide {
-  flex: 0 0 100%;
-  /* ★ 1枚が常に全幅を占有 */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  user-select: none;
-}
+    .preview-card {
+      width: 100px;
+      height: 100px;
+    }
+  }
 
-.carousel-slide img {
-  display: block;
-  max-width: 100%;
-  max-height: 60vh;
-  /* 画面高の6割で収める */
-  width: auto;
-  height: auto;
-  object-fit: contain;
-  /* 画像の切れ防止 */
-}
+  /* ========= 画像プレビュー：カルーセル ========= */
+  /* ここが “横スライド1枚表示” を保証する中核 */
+  .carousel {
+    width: 100%;
+    max-width: min(92vw, 680px);
+    /* モーダルより少し狭くして横スクロール抑止 */
+    margin: 10px auto 0;
+    box-sizing: border-box;
+  }
+
+  .carousel-viewport {
+    position: relative;
+    overflow: hidden;
+    /* ★ 枠外は隠す */
+    width: 100%;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    background: #fff;
+  }
+
+  .carousel-track {
+    display: flex;
+    flex-wrap: nowrap;
+    /* ★ 折り返し禁止 */
+    will-change: transform;
+    transition: transform .3s ease;
+    /* ★ JSで transform: translateX(...) する前提 */
+  }
+
+  .carousel-slide {
+    flex: 0 0 100%;
+    /* ★ 1枚が常に全幅を占有 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+  }
+
+  .carousel-slide img {
+    display: block;
+    max-width: 100%;
+    max-height: 60vh;
+    /* 画面高の6割で収める */
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    /* 画像の切れ防止 */
+  }
 
 
-/* 前/次ボタン：中央下に並べる（表現を変えたい場合は absolute 版に差替え可） */
-.carousel-nav {
-  display: flex;
-  /* 横並びにする */
-  justify-content: space-between;
-  /* 左右に押し広げる */
-  width: 100%;
-  /* 親要素いっぱいに広げる */
-  margin-top: 8px;
-  /* 上に少し余白 */
-  gap: 12px;
-}
+  /* 前/次ボタン：中央下に並べる（表現を変えたい場合は absolute 版に差替え可） */
+  .carousel-nav {
+    display: flex;
+    /* 横並びにする */
+    justify-content: space-between;
+    /* 左右に押し広げる */
+    width: 100%;
+    /* 親要素いっぱいに広げる */
+    margin-top: 8px;
+    /* 上に少し余白 */
+    gap: 12px;
+  }
 
-.carousel-nav button {
-  flex: 1;
-  /* 均等幅 */
-  padding: 20px 0;
-  /* 縦幅を倍に（以前10px → 20px） */
-  border: none;
-  background: #007bff;
-  /* 青 */
-  color: #fff;
-  /* 文字色は白に */
-  font-size: 18px;
-  /* 少し大きく */
-  cursor: pointer;
-  border-radius: 6px;
-  /* 角丸にするとタップしやすい */
-  max-width: 120px;
-  /* 横幅を少し狭める上限 */
-}
+  .carousel-nav button {
+    flex: 1;
+    /* 均等幅 */
+    padding: 20px 0;
+    /* 縦幅を倍に（以前10px → 20px） */
+    border: none;
+    background: #007bff;
+    /* 青 */
+    color: #fff;
+    /* 文字色は白に */
+    font-size: 18px;
+    /* 少し大きく */
+    cursor: pointer;
+    border-radius: 6px;
+    /* 角丸にするとタップしやすい */
+    max-width: 120px;
+    /* 横幅を少し狭める上限 */
+  }
 
-.carousel-nav button:first-child {
-  margin-right: 10px;
-  /* ボタン間に少し隙間 */
-}
+  .carousel-nav button:first-child {
+    margin-right: 10px;
+    /* ボタン間に少し隙間 */
+  }
 
-.carousel-nav button:last-child {
-  margin-left: 10px;
-}
+  .carousel-nav button:last-child {
+    margin-left: 10px;
+  }
 
-.carousel-dots {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  /* 縦方向も中央 */
-  width: 100%;
-  /* 横幅を親いっぱいに広げる */
-  gap: 6px;
-  margin: 8px 0 10px;
-}
+  .carousel-dots {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* 縦方向も中央 */
+    width: 100%;
+    /* 横幅を親いっぱいに広げる */
+    gap: 6px;
+    margin: 8px 0 10px;
+  }
 
-.carousel-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: #c4c4c4;
-  opacity: .6;
-}
+  .carousel-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: #c4c4c4;
+    opacity: .6;
+  }
 
-.carousel-dot.active {
-  background: #666;
-  opacity: 1;
-}
-
-.carousel-prev,
-.carousel-next {
-  appearance: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
-  border: none;
-  background: #0066cc;
-  color: #fff;
-  font-size: 1.2rem;
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, .15);
-}
-
-.carousel-prev:hover,
-.carousel-next:hover {
-  background: #0055aa;
-}
-
-.carousel-prev[disabled],
-.carousel-next[disabled] {
-  background: #d8d8d8;
-  color: #777;
-  cursor: not-allowed;
-  box-shadow: none;
-}
-
-@media (max-width: 560px) {
+  .carousel-dot.active {
+    background: #666;
+    opacity: 1;
+  }
 
   .carousel-prev,
   .carousel-next {
-    width: 40px;
-    height: 40px;
-    font-size: 1rem;
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    border: none;
+    background: #0066cc;
+    color: #fff;
+    font-size: 1.2rem;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, .15);
   }
-}
+
+  .carousel-prev:hover,
+  .carousel-next:hover {
+    background: #0055aa;
+  }
+
+  .carousel-prev[disabled],
+  .carousel-next[disabled] {
+    background: #d8d8d8;
+    color: #777;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  @media (max-width: 560px) {
+
+    .carousel-prev,
+    .carousel-next {
+      width: 40px;
+      height: 40px;
+      font-size: 1rem;
+    }
+  }
 
 
   /* アップローダは必ず表示 */
@@ -667,65 +667,62 @@ document.addEventListener('DOMContentLoaded', () => {
     overflow: visible !important;
   }
 
-/* アップローダ共通：横いっぱい */
-.upload-section,
-.uploader {
-  width: 100%;
-}
-
-.upload-section .file-button,
-.uploader .file-button {
-  display: flex;
-  /* 中身を中央寄せに */
-  align-items:center;
-  justify-content: center;
-  width: 100%;
-  /* 横いっぱい */
-  box-sizing: border-box;
-  /* パディング込みで幅計算 */
-  margin-top: 8px;
-  /* 上の要素と少しだけ余白 */
-  font-size: 20px;
-  /* ← 追加：文字サイズ */
-  font-weight: bold;
-  /* ← 追加：太字で見やすく */
-}
-
-/* 文字サイズ・高さが小さくなっていた場合の底上げ */
-.upload-section .file-button,
-.uploader .file-button {
-  min-height: 48px;
-  /* 押しやすい高さ */
-  font-size: 1.1rem;
-  /* ボタン文字の見やすさ */
-
-}
-
-/* プレビューも親幅で崩れないように */
-.upload-section .preview-grid,
-.uploader .preview-grid {
-  width: 100%;
-}
-
-/* スマホ時も常に横いっぱい（保険） */
-@media (max-width: 560px) {
+  /* アップローダ共通：横いっぱい */
+  .upload-section,
+  .uploader {
+    width: 100%;
+  }
 
   .upload-section .file-button,
   .uploader .file-button {
+    display: flex;
+    /* 中身を中央寄せに */
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    /* 横いっぱい */
+    box-sizing: border-box;
+    /* パディング込みで幅計算 */
+    margin-top: 8px;
+    /* 上の要素と少しだけ余白 */
+    font-size: 20px;
+    /* ← 追加：文字サイズ */
+    font-weight: bold;
+    /* ← 追加：太字で見やすく */
+  }
+
+  /* 文字サイズ・高さが小さくなっていた場合の底上げ */
+  .upload-section .file-button,
+  .uploader .file-button {
+    min-height: 48px;
+    /* 押しやすい高さ */
+    font-size: 1.1rem;
+    /* ボタン文字の見やすさ */
+
+  }
+
+  /* プレビューも親幅で崩れないように */
+  .upload-section .preview-grid,
+  .uploader .preview-grid {
     width: 100%;
   }
-}
 
-#uploaderEdit .file-button,
-#uploaderMain .file-button,
-.upload-section .file-button,
-.uploader .file-button {
-  font-size: 2rem !important;
-  /* ← 確実に大きく */
-  padding: 1.2rem 1.8rem !important;
-  font-weight: bold;
-}
+  /* スマホ時も常に横いっぱい（保険） */
+  @media (max-width: 560px) {
 
+    .upload-section .file-button,
+    .uploader .file-button {
+      width: 100%;
+    }
+  }
 
+  #uploaderEdit .file-button,
+  #uploaderMain .file-button,
+  .upload-section .file-button,
+  .uploader .file-button {
+    font-size: 2rem !important;
+    /* ← 確実に大きく */
+    padding: 1.2rem 1.8rem !important;
+    font-weight: bold;
+  }
 </style>
-

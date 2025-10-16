@@ -945,9 +945,10 @@
   }
 
   .time-inputs.show .work-input {
-  width: 100% !important;   /* ← これで上書き強制 */
-  flex: 1 1 auto !important;
-}
+    width: 100% !important;
+    /* ← これで上書き強制 */
+    flex: 1 1 auto !important;
+  }
 
   /* ====== 協力会社 役割3択（大きい枠・ラジオ左） ====== */
   .partner-role-wrap {
@@ -1237,32 +1238,35 @@
     box-shadow: 0 6px 24px rgba(0, 0, 0, .25);
   }
 
-/* ラジオボタン行全体 */
-.role-card {
-  display: flex;
-  align-items: center;        /* 縦方向の中央寄せ */
-  justify-content: center;    /* 横方向の中央寄せ */
-  gap: 10px;                  /* ボタンと文字の間 */
-  padding: 16px;
-  border: 1px solid #ccc;
-  border-radius: 10px;
-  background: #fff;
-  cursor: pointer;
-  width: 100%;
-  box-sizing: border-box;
-}
+  /* ラジオボタン行全体 */
+  .role-card {
+    display: flex;
+    align-items: center;
+    /* 縦方向の中央寄せ */
+    justify-content: center;
+    /* 横方向の中央寄せ */
+    gap: 10px;
+    /* ボタンと文字の間 */
+    padding: 16px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    background: #fff;
+    cursor: pointer;
+    width: 100%;
+    box-sizing: border-box;
+  }
 
-/* ラジオボタン */
-.role-card input[type="radio"] {
-  width: 20px;
-  height: 20px;
-}
+  /* ラジオボタン */
+  .role-card input[type="radio"] {
+    width: 20px;
+    height: 20px;
+  }
 
-/* ラベル文字 */
-.role-card span {
-  font-size: 1.35rem;   /* ← 2remの約2/3サイズ */
-  font-weight: bold;
-  text-align: center;
-}
-
+  /* ラベル文字 */
+  .role-card span {
+    font-size: 1.35rem;
+    /* ← 2remの約2/3サイズ */
+    font-weight: bold;
+    text-align: center;
+  }
 </style>
