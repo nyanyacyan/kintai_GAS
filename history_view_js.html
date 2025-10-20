@@ -929,7 +929,7 @@
   }
 
 
-  .checkbox-wrapper {
+  /* .checkbox-wrapper {
     display: flex;
     align-items: center;
     gap: .75rem;
@@ -953,12 +953,9 @@
     font-weight: normal;
     font-family: 'Noto Sans JP', sans-serif;
     white-space: nowrap;
-  }
+  } */
 
 
-  .partner-role-wrap {
-    margin: 12px 0 6px;
-  }
 
   /* 役割カード全体のレイアウト：2列並び + 自動折返し */
   .partner-role-grid {
@@ -975,12 +972,9 @@
   /* ラジオボタン行全体 */
   .role-card {
     display: flex;
-    align-items: center;
-    /* 縦方向の中央寄せ */
-    justify-content: center;
-    /* 横方向の中央寄せ */
-    gap: 10px;
-    /* ボタンと文字の間 */
+    align-items: center;        /* 縦方向の中央寄せ */
+    justify-content: center;    /* 横方向の中央寄せ */
+    gap: 10px;                  /* ボタンと文字の間 */
     padding: 16px;
     border: 1px solid #ccc;
     border-radius: 10px;
@@ -998,14 +992,13 @@
 
   /* ラベル文字 */
   .role-card span {
-    font-size: 1.35rem;
-    /* ← 2remの約2/3サイズ */
+    font-size: 1.35rem;    /* ← 2remの約2/3サイズ */
     font-weight: bold;
     text-align: center;
   }
 
   /* * 数値入力が大きすぎて列を押し広げないよう編集モーダル内で抑える */
-  */ #historyModal .work-input {
+  #historyModal .work-input {
     width: 120px;
     max-width: 100%;
     font-size: 18px;
@@ -1027,19 +1020,19 @@
 
 
   /* 人工・残業の入力欄：均等幅で広げる（小さめフォントに上書き） */
-  .role-row .work-inputs input[type="number"] {
-    flex: 1;
+  /* .role-row .work-inputs input[type="number"] {
+    flex: 1; */
     /* ← 均等幅 */
-    width: auto;
+    /* width: auto; */
     /* 以前の width:100px を打ち消し */
-    font-size: 2rem;
+    /* font-size: 2rem; */
     /* ← 入力文字は少し小さめ（全体4remより縮小） */
-    padding: 1.2rem 1.4rem;
+    /* padding: 1.2rem 1.4rem;
     text-align: center;
     border: 1px solid #ccc;
     border-radius: 8px;
     box-sizing: border-box;
-  }
+  } */
 
 
   #confirmationBox,

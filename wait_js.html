@@ -1,18 +1,20 @@
-<script>
-  //送信中のアニメーション処理追加。４~15行目・21行目・47.53行目
-  function showLoading() {
-    const overlay = document.getElementById('loadingOverlay');
-    if (!overlay) return;
-    overlay.style.display = 'flex';      // 表示
-  }
 
-  function hideLoading() {
+<script>
+  //--------------------------------------------------------------------
+      //ローディング　　４~15行目・21行目・47.53行目
+function showLoading() {
     const overlay = document.getElementById('loadingOverlay');
     if (!overlay) return;
-    overlay.style.display = 'none';       // 非表示
-  }
+  overlay.style.display = 'flex';      // 表示
+}
+
+function hideLoading() {　
+    const overlay = document.getElementById('loadingOverlay');
+    if (!overlay) return;
+  overlay.style.display = 'none';       // 非表示
+}
   // 確定送信（画像アップロード → スプレッドシート保存）
-  function confirmSend() {
+function confirmSend() {
     console.log('[confirmSend] start');
     console.log('[confirmSend] current formData =', JSON.parse(JSON.stringify(formData)));
     showLoading();
@@ -30,86 +32,316 @@
 
     // 画像キュー
     const files = [
-      ...(window.uploadQueue?.modal || []),
-      ...(window.uploadQueue?.main || [])
+        ...(window.uploadQueue?.modal || []),
+        ...(window.uploadQueue?.main || [])
     ];
     console.log('[confirmSend] files.length =', files.length);
 
     // 保存処理
     const runSave = () => {
-      console.log('[confirmSend] runSave() start');
-      google.script.run
+        console.log('[confirmSend] runSave() start');
+        google.script.run
         .withSuccessHandler(res => {
-          console.log('[confirmSend] saveFormResponse success', res);
-          hideLoading();
-          showSendSuccessScreen(formData); // ✅ 完了画面に切り替え
-          console.log('[confirmSend] runSave() end(success)');
+        console.log('[confirmSend] saveFormResponse success', res);
+        hideLoading();
+        showSendSuccessScreen(formData); // ✅ 完了画面に切り替え
+        console.log('[confirmSend] runSave() end(success)');
         })
         .withFailureHandler(err => {
-          console.error('[confirmSend] saveFormResponse failed', err);
-          hideLoading();
-          showSendErrorScreen(err);
-          console.log('[confirmSend] runSave() end(failed)');
+        console.error('[confirmSend] saveFormResponse failed', err);
+        hideLoading();
+        showSendErrorScreen(err);
+        console.log('[confirmSend] runSave() end(failed)');
         })
         .saveFormResponse(formData);
     };
 
     if (files.length > 0) {
-      showLoading();
-      console.log('[confirmSend] uploadImagesToDrive start');
-      google.script.run
+        showLoading();
+        console.log('[confirmSend] uploadImagesToDrive start');
+        google.script.run
         .withSuccessHandler(result => {
-          console.log('[confirmSend] uploadImagesToDrive success', result);
+        console.log('[confirmSend] uploadImagesToDrive success', result);
           formData.photos = result; // [{id,url,name}, ...]
-          hideLoading();
-          runSave();
+        hideLoading();
+        runSave();
         })
         .withFailureHandler(err => {
-          console.error('[confirmSend] uploadImagesToDrive failed', err);
-          hideLoading();
-          showSendErrorScreen(err);
+        console.error('[confirmSend] uploadImagesToDrive failed', err);
+        hideLoading();
+        showSendErrorScreen(err);
         })
         .uploadImagesToDrive(meta, files);
     } else {
-      runSave();
+        runSave();
     }
 
     console.log('[confirmSend] end');
-  }
+}
+
+
+
+
+
+//-----------------------------------------------------------------------
+//資格者情報チェック後に、人工・残業追加
+  // 協力会社マトリクス（一般/職長/有資格者 それぞれに check + 人工/残業）
+  // === 協力会社用：役割マトリクス（チェック＋人工/残業） ===
+function createPartnerRoleMatrix(nameKey) {
+  const wrap = document.createElement('div');
+  wrap.className = 'partner-role-matrix';
+  wrap.id = `matrix-${nameKey}`;
+  wrap.style.display = 'none'; // デフォルト非表示
+
+  wrap.innerHTML = `
+  <div class="role-row">
+    <label><input type="checkbox" name="${nameKey}-general-checked"> 一般作業員</label>
+    <div class="work-inputs">
+        <input type="number" step="0.25" min="0" placeholder="人工" name="${nameKey}-general-man" disabled>
+        <input type="number" step="0.25" min="0" placeholder="残業" name="${nameKey}-general-overtime" disabled>
+    </div>
+  </div> 
+  <div class="role-row">
+    <label><input type="checkbox" name="${nameKey}-leader-checked"> 職長</label>
+    <div class="work-inputs">
+        <input type="number" step="0.25" min="0" placeholder="人工" name="${nameKey}-leader-man" disabled>
+        <input type="number" step="0.25" min="0" placeholder="残業" name="${nameKey}-leader-overtime" disabled>
+    </div>
+  </div>
+  <div class="role-row">
+    <label><input type="checkbox" name="${nameKey}-qualified-checked"> 有資格者</label>
+    <div class="work-inputs">
+        <input type="number" step="0.25" min="0" placeholder="人工" name="${nameKey}-qualified-man" disabled>
+        <input type="number" step="0.25" min="0" placeholder="残業" name="${nameKey}-qualified-overtime" disabled>
+    </div>
+  </div> 
+`;
+
+// すべてのチェックボックスを探す
+const checkboxes = wrap.querySelectorAll('.role-row input[type="checkbox"]');
+
+// 1つずつ取り出して処理をつける
+checkboxes.forEach(function(cb) {
+  cb.addEventListener('change', function() {
+    // チェックボックスと同じ行を探す
+    const row = cb.closest('.role-row');
+
+    // その行の「人工」「残業」の入力欄を全部とる
+    const inputs = row.querySelectorAll('input[type="number"]');
+
+    // チェックが入っているかどうか調べる
+    if (cb.checked) {
+      // チェックされていたら → 入力できるようにする
+      inputs.forEach(function(input) {
+        input.disabled = false;
+      });
+    } else {
+      // チェックが外れたら → 入力できなくする
+      inputs.forEach(function(input) {
+        input.disabled = true;
+        input.value = "";
+      });
+    }
+  });
+});
+
+  return wrap;
+}
+
+// 役割を「会社名＋役割」に整形
+const roleSuffixMap = { only: '', leader: ' 職長', other: ' 有資格者' };
+function partnerDisplayName(name, role) {
+  return `${name}${roleSuffixMap[role] || ''}`;
+}
 
 </script>
 
 
 
 
-<style>
-  /* ========= ローディング ========= */
-  #loadingOverlay {
-    display: none;
-    position: fixed;
-    z-index: 10000;
-    inset: 0;
-    background: rgba(255, 255, 255, .7);
-    justify-content: center;
-    align-items: center;
-  }
 
-  .loader {
-    border: 6px solid #f3f3f3;
-    border-top: 6px solid #0066cc;
-    border-radius: 50%;
-    width: 48px;
-    height: 48px;
-    animation: spin 1s linear infinite;
-  }
+
+
+
+<style>
+/* ========= ローディング ========= */
+#loadingOverlay {
+  display: none;
+  position: fixed;
+  z-index: 10000;
+  inset: 0;
+  background: rgba(255, 255, 255, .7);
+  justify-content: center;
+  align-items: center;
+}
+
+.loader {
+  border: 6px solid #f3f3f3;
+  border-top: 6px solid #0066cc;
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  animation: spin 1s linear infinite;
+}
 
   @keyframes spin {
-    0% {
-      transform: rotate(0)
-    }
-
-    100% {
-      transform: rotate(360deg)
-    }
+  0% {
+    transform: rotate(0)
   }
+
+  100% {
+    transform: rotate(360deg)
+  }
+}
+
+
+
+
+
+/* ========= .role-row ========= */
+
+input[type="text"],
+input[type="date"],
+select,
+#partner,
+.partner-role-matrix {
+  width: 100%;          /* 画面いっぱい広がる */
+  max-width: 800px;     /* でも最大800pxまで */
+  margin: 0 auto;       /* 真ん中に寄せる */
+  box-sizing: border-box; /* 枠や余白も含めてサイズ計算 */
+}
+
+.role-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;              /* ← 変更: 行間を少し広く（狭くなった問題を戻す） */
+  width: 100%;
+  max-width: 800px;                 /* ← 変更: 可変＋最大800px */
+  margin-left: auto;                /* ← 追加: 中央寄せ */
+  margin-right: auto;               /* ← 追加: 中央寄せ */
+  margin-top: 1rem; 
+  margin-bottom: 0.6rem; 
+  box-sizing: border-box;
+}
+
+/* 左ラベル（☑ + 役割名）：全行で同じ幅・大きく太く */
+.role-row label {
+  flex: 0 0 clamp(160px, 25vw, 220px);
+  /* 画面に応じて 160〜220px で固定幅 */
+  font-size: 2rem;
+  /* ← 大きく */
+  font-weight: 700;
+  /* 太字 */
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  /* チェックボックスとの間 */
+}
+
+/* 右側（人工・残業）の器：残り幅を全部使って横並び均等 */
+.role-row .work-inputs {
+  flex: 1;
+  display: flex;
+  gap: 16px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.partner-role-matrix .work-inputs {
+  display: flex;
+  gap: 12px;
+  width: 100%;              /* フル幅を使う */
+  box-sizing: border-box;
+}
+
+/* 協力会社の人工・残業だけ幅をそろえる */
+.partner-role-matrix .work-inputs input[type="number"] {
+  flex:  1 1 0　;                        /* 残り幅を均等に分ける */
+  width: 100%  !important;         /* 固定幅を打ち消す */
+  max-width: none !important;     /* 120px制限をリセット */
+  font-size: 2rem;
+  padding: 1.2rem 1.4rem;
+  text-align: center;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+
+/* プレースホルダも控えめに */
+.role-row .work-inputs input::placeholder {
+  font-size: 1.8rem;
+  color: #9a9a9a;
+}
+
+
+/* 入力不可のときの見た目 */
+input:disabled {
+  background-color: #eee;   /* 灰色っぽく */
+  color: #999;              /* 文字も薄く */
+  cursor: not-allowed;      /* マウスカーソルを禁止マークに */
+}
+
+/* 有効化されたとき（disabledが外れたら） */
+input:enabled {
+  background-color: #fff;   /* 白背景 */
+  color: #000;              /* 黒文字 */
+  cursor: text;             /* 普通の入力カーソル */
+}
+
+
+
+
+
+
+/* 作業者・協力会社名の横幅を合わせる*/
+.checkbox-group {
+  width: 100%;            /* bodyのコンテンツ幅にフィット */
+  margin: 0;              /* 左右の余白を消す */
+  padding: 0;             /* グループ内の余計な内側余白を消す */
+  box-sizing: border-box; /* 枠線やpaddingを幅に含める */
+}
+
+
+.checkbox-wrapper {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .75rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 3.25rem;
+  width: 100%;          /* 親要素に合わせる */
+  width: 100%;            /* 親(checkbox-group)の幅いっぱい */
+  margin-left: 0;         /* 左右にはみ出さない */
+  margin-right: 0;
+  box-sizing: border-box;
+}
+
+.checkbox-wrapper span {
+  font-size: 3.25rem;
+  font-weight: 400 !important;
+  white-space: nowrap;
+}
+
+.checkbox-wrapper input[type="checkbox"]:checked+span {
+  color: #0066cc;
+  font-size: 3.25rem;
+  font-weight: 400 !important;
+  font-family: 'Noto Sans JP', sans-serif;
+  white-space: nowrap;
+}
+
+/* ====== 人工/残業の表示制御 ====== */
+/* デフォルトは非表示 */
+.time-inputs {
+  display: none;
+  margin-top: 16px;
+}
+
 </style>

@@ -250,44 +250,44 @@
   // ------------------------------------------
   // createPartnerRoleMatrix: 協力会社の役割単位入力行を生成する
   // ------------------------------------------
-  function createPartnerRoleMatrix(nameKey) {
-    const wrap = document.createElement('div');
-    wrap.className = 'partner-role-matrix';
-    wrap.id = `matrix-${nameKey}`;
-    wrap.style.display = 'none'; // デフォルト非表示
+  // function createPartnerRoleMatrix(nameKey) {
+  //   const wrap = document.createElement('div');
+  //   wrap.className = 'partner-role-matrix';
+  //   wrap.id = `matrix-${nameKey}`;
+  //   wrap.style.display = 'none'; // デフォルト非表示
 
-    wrap.innerHTML = `
-    <div class="role-row">
-      <label><input type="checkbox" name="${nameKey}-general-checked"> 一般作業員</label>
-      <input type="number" step="0.25" min="0" placeholder="人工" name="${nameKey}-general-man">
-      <input type="number" step="0.25" min="0" placeholder="残業" name="${nameKey}-general-overtime">
-    </div>
-    <div class="role-row">
-      <label><input type="checkbox" name="${nameKey}-leader-checked"> 職長</label>
-      <input type="number" step="0.25" min="0" placeholder="人工" name="${nameKey}-leader-man">
-      <input type="number" step="0.25" min="0" placeholder="残業" name="${nameKey}-leader-overtime">
-    </div>
-    <div class="role-row">
-      <label><input type="checkbox" name="${nameKey}-qualified-checked"> 有資格者</label>
-      <input type="number" step="0.25" min="0" placeholder="人工" name="${nameKey}-qualified-man">
-      <input type="number" step="0.25" min="0" placeholder="残業" name="${nameKey}-qualified-overtime">
-    </div>
-  `;
-    return wrap;
-  }
+  //   wrap.innerHTML = `
+  //   <div class="role-row">
+  //     <label><input type="checkbox" name="${nameKey}-general-checked"> 一般作業員</label>
+  //     <input type="number" step="0.25" min="0" placeholder="人工" name="${nameKey}-general-man">
+  //     <input type="number" step="0.25" min="0" placeholder="残業" name="${nameKey}-general-overtime">
+  //   </div>
+  //   <div class="role-row">
+  //     <label><input type="checkbox" name="${nameKey}-leader-checked"> 職長</label>
+  //     <input type="number" step="0.25" min="0" placeholder="人工" name="${nameKey}-leader-man">
+  //     <input type="number" step="0.25" min="0" placeholder="残業" name="${nameKey}-leader-overtime">
+  //   </div>
+  //   <div class="role-row">
+  //     <label><input type="checkbox" name="${nameKey}-qualified-checked"> 有資格者</label>
+  //     <input type="number" step="0.25" min="0" placeholder="人工" name="${nameKey}-qualified-man">
+  //     <input type="number" step="0.25" min="0" placeholder="残業" name="${nameKey}-qualified-overtime">
+  //   </div>
+  // `;
+  //   return wrap;
+  // }
 
 
-  // 役割を「会社名＋役割」に整形
-  const roleSuffixMap = { only: '', leader: ' 職長', other: ' 有資格者' };
+  // // 役割を「会社名＋役割」に整形
+  // const roleSuffixMap = { only: '', leader: ' 職長', other: ' 有資格者' };
 
 
 
   // ------------------------------------------
   // partnerDisplayName: 役割に応じた協力会社名の表示文字列を返す
   // ------------------------------------------
-  function partnerDisplayName(name, role) {
-    return `${name}${roleSuffixMap[role] || ''}`;
-  }
+  // function partnerDisplayName(name, role) {
+  //   return `${name}${roleSuffixMap[role] || ''}`;
+  // }
 
 
   // ------------------------------------------
@@ -340,7 +340,7 @@
 
 
 <style>
-  .checkbox-wrapper {
+  /* .checkbox-wrapper {
     display: flex;
     align-items: center;
     gap: .75rem;
@@ -350,9 +350,11 @@
     background: #fff;
     cursor: pointer;
     font-size: 3.25rem;
-  }
+    width: 100%;          /* 親要素に合わせる */
+/* } */ 
 
-  .checkbox-wrapper span {
+
+  /* .checkbox-wrapper span {
     font-size: 3.25rem;
     font-weight: normal;
     white-space: nowrap;
@@ -364,7 +366,7 @@
     font-weight: normal;
     font-family: 'Noto Sans JP', sans-serif;
     white-space: nowrap;
-  }
+  } */
 
 
 
@@ -399,56 +401,56 @@
 
 
   /* 1行のレイアウトを整える */
-  .role-row {
+  /* .role-row {
     display: flex;
     align-items: center;
     gap: 14px;
     margin-bottom: 10px;
-  }
+  } */
 
   /* 左ラベル（☑ + 役割名）：全行で同じ幅・大きく太く */
-  .role-row label {
-    flex: 0 0 clamp(160px, 28vw, 220px);
+  /* .role-row label {
+    flex: 0 0 clamp(160px, 28vw, 220px); */
     /* 画面に応じて 160〜220px で固定幅 */
-    font-size: 2rem;
+    /* font-size: 2rem; */
     /* ← 大きく */
-    font-weight: 700;
+    /* font-weight: 700; */
     /* 太字 */
-    white-space: nowrap;
-    display: flex;
+    /* white-space: nowrap; */
+    /* display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 10px; */
     /* チェックボックスとの間 */
-  }
+  /* } */
 
   /* 右側（人工・残業）の器：残り幅を全部使って横並び均等 */
-  .role-row .work-inputs {
+  /* .role-row .work-inputs {
     flex: 1;
     display: flex;
-    gap: 12px;
+    gap: 12px; */
     /* 人工と残業の間 */
-  }
+  /* } */
 
   /* 人工・残業の入力欄：均等幅で広げる（小さめフォントに上書き） */
-  .role-row .work-inputs input[type="number"] {
-    flex: 1;
+  /* .role-row .work-inputs input[type="number"] {
+    flex: 1; */
     /* ← 均等幅 */
-    width: auto;
+    /* width: auto; */
     /* 以前の width:100px を打ち消し */
-    font-size: 2rem;
+    /* font-size: 2rem; */
     /* ← 入力文字は少し小さめ（全体4remより縮小） */
-    padding: 1.2rem 1.4rem;
+    /* padding: 1.2rem 1.4rem;
     text-align: center;
     border: 1px solid #ccc;
     border-radius: 8px;
     box-sizing: border-box;
-  }
+  } */
 
   /* プレースホルダも控えめに */
-  .role-row .work-inputs input::placeholder {
+  /* .role-row .work-inputs input::placeholder {
     font-size: 1.8rem;
     color: #9a9a9a;
-  }
+  } */
 
   #dateToggleWrapper {
     margin-top: 1rem;
