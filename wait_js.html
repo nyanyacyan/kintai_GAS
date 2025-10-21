@@ -1,7 +1,6 @@
 
 <script>
-  //--------------------------------------------------------------------
-      //ローディング　　４~15行目・21行目・47.53行目
+  //-----------------ローディング　　４~15行目・21行目・47.53行目-------------------
 function showLoading() {
     const overlay = document.getElementById('loadingOverlay');
     if (!overlay) return;
@@ -83,10 +82,7 @@ function confirmSend() {
 
 
 
-//-----------------------------------------------------------------------
-//資格者情報チェック後に、人工・残業追加
-  // 協力会社マトリクス（一般/職長/有資格者 それぞれに check + 人工/残業）
-  // === 協力会社用：役割マトリクス（チェック＋人工/残業） ===
+//---------------------資格者情報チェック後に、人工・残業追加-------------------------------
 function createPartnerRoleMatrix(nameKey) {
   const wrap = document.createElement('div');
   wrap.className = 'partner-role-matrix';
@@ -154,6 +150,82 @@ function partnerDisplayName(name, role) {
   return `${name}${roleSuffixMap[role] || ''}`;
 }
 
+
+
+
+
+
+
+//---------------------履歴の協力会社・人工／残業幅設定-----------------------------
+//history_viwe.js  514,567行目　History追加
+function createPartnerRoleMatrixHistory(nameKey, usedRoles = new Set()) {
+  const wrap = document.createElement('div');
+  wrap.className = 'partner-role-matrix history';
+  wrap.id = `matrix-${nameKey}`;
+  wrap.style.display = 'none';
+
+  wrap.innerHTML = `
+  <div class="role-row" data-role="general">
+    <label><input type="checkbox" name="${nameKey}-general-checked"> 一般作業員</label>
+    <div class="work-inputs">
+      <input type="number" step="0.25" min="0" placeholder="人工" name="${nameKey}-general-man" disabled>
+      <input type="number" step="0.25" min="0" placeholder="残業" name="${nameKey}-general-overtime" disabled>
+    </div>
+  </div>
+  <div class="role-row" data-role="leader">
+    <label><input type="checkbox" name="${nameKey}-leader-checked"> 職長</label>
+    <div class="work-inputs">
+      <input type="number" step="0.25" min="0" placeholder="人工" name="${nameKey}-leader-man" disabled>
+      <input type="number" step="0.25" min="0" placeholder="残業" name="${nameKey}-leader-overtime" disabled>
+    </div>
+  </div>
+  <div class="role-row" data-role="qualified">
+    <label><input type="checkbox" name="${nameKey}-qualified-checked"> 有資格者</label>
+    <div class="work-inputs">
+      <input type="number" step="0.25" min="0" placeholder="人工" name="${nameKey}-qualified-man" disabled>
+      <input type="number" step="0.25" min="0" placeholder="残業" name="${nameKey}-qualified-overtime" disabled>
+    </div>
+  </div>
+`;
+
+  // 使用済みの役割は行ごと除去（= 入力UIを生成しない）
+  ['general', 'leader', 'qualified'].forEach(role => {
+    if (usedRoles.has(role)) {
+      const row = wrap.querySelector(`.role-row[data-role="${role}"]`);
+      if (row) row.remove();
+    }
+  });
+
+  const checkboxes = wrap.querySelectorAll('.role-row input[type="checkbox"]');
+
+// 1つずつ取り出して処理をつける
+checkboxes.forEach(function(cb) {
+  cb.addEventListener('change', function() {
+    // チェックボックスと同じ行を探す
+    const row = cb.closest('.role-row');
+
+    // その行の「人工」「残業」の入力欄を全部とる
+    const inputs = row.querySelectorAll('input[type="number"]');
+
+    // チェックが入っているかどうか調べる
+    if (cb.checked) {
+      // チェックされていたら → 入力できるようにする
+      inputs.forEach(function(input) {
+        input.disabled = false;
+      });
+    } else {
+      // チェックが外れたら → 入力できなくする
+      inputs.forEach(function(input) {
+        input.disabled = true;
+        input.value = "";
+      });
+    }
+  });
+});
+
+  return wrap;
+}
+
 </script>
 
 
@@ -215,24 +287,17 @@ select,
   display: flex;
   align-items: center;
   gap: 14px;
-  margin-bottom: 14px;              /* ← 変更: 行間を少し広く（狭くなった問題を戻す） */
   width: 100%;
   max-width: 800px;                 /* ← 変更: 可変＋最大800px */
-  margin-left: auto;                /* ← 追加: 中央寄せ */
-  margin-right: auto;               /* ← 追加: 中央寄せ */
-  margin-top: 1rem; 
-  margin-bottom: 0.6rem; 
+  margin: 1rem auto 0.6rem;
   box-sizing: border-box;
 }
 
 /* 左ラベル（☑ + 役割名）：全行で同じ幅・大きく太く */
 .role-row label {
   flex: 0 0 clamp(160px, 25vw, 220px);
-  /* 画面に応じて 160〜220px で固定幅 */
   font-size: 2rem;
-  /* ← 大きく */
   font-weight: 700;
-  /* 太字 */
   white-space: nowrap;
   display: flex;
   align-items: center;
@@ -246,7 +311,6 @@ select,
   display: flex;
   gap: 16px;
   width: 100%;
-  max-width: 100%;
   box-sizing: border-box;
 }
 
@@ -259,7 +323,7 @@ select,
 
 /* 協力会社の人工・残業だけ幅をそろえる */
 .partner-role-matrix .work-inputs input[type="number"] {
-  flex:  1 1 0　;                        /* 残り幅を均等に分ける */
+  flex:  1 1 0 ;                        /* 残り幅を均等に分ける */
   width: 100%  !important;         /* 固定幅を打ち消す */
   max-width: none !important;     /* 120px制限をリセット */
   font-size: 2rem;
@@ -316,8 +380,7 @@ input:enabled {
   background: #fff;
   cursor: pointer;
   font-size: 3.25rem;
-  width: 100%;          /* 親要素に合わせる */
-  width: 100%;            /* 親(checkbox-group)の幅いっぱい */
+  width: 100%;          /* 親要素に合わせる */          /* 親(checkbox-group)の幅いっぱい */
   margin-left: 0;         /* 左右にはみ出さない */
   margin-right: 0;
   box-sizing: border-box;
@@ -342,6 +405,32 @@ input:enabled {
 .time-inputs {
   display: none;
   margin-top: 16px;
+}
+
+.role-row.wide {
+  max-width: none !important;  /* 800px制限を解除 */
+  width: 100% !important;      /* フル幅 */
+}
+
+
+/* 追加入力 (#additionalPartnerInputs) */
+#additionalPartnerInputs .partner-role-matrix {
+  width: 100% !important;    
+  max-width: none !important;
+  box-sizing: border-box;
+}
+
+#historyModal .partner-role-matrix .role-row {
+  max-width: none !important;  /* 800px制限を解除 */
+  width: 100% !important;      /* モーダル幅いっぱい */
+  margin: 1rem 0.5rem;         /* 左右の余白を均等に少しだけ */
+  box-sizing: border-box;
+}
+
+#historyModal .partner-role-matrix .work-inputs input[type="number"] {
+  flex: 1 1 0;
+  width: 100% !important;
+  max-width: none !important;
 }
 
 </style>
