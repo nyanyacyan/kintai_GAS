@@ -144,6 +144,7 @@ checkboxes.forEach(function(cb) {
   return wrap;
 }
 
+
 // 役割を「会社名＋役割」に整形
 const roleSuffixMap = { only: '', leader: ' 職長', other: ' 有資格者' };
 function partnerDisplayName(name, role) {
@@ -226,6 +227,175 @@ checkboxes.forEach(function(cb) {
   return wrap;
 }
 
+
+
+//初期状態日付表示なしに変更--------------------------------------------------------------
+function toggleDateInput(el) {
+  console.log('[toggleDateInput] 開始', { checked: !!el?.checked }); // 処理開始ログ
+  const container = document.getElementById('dateContainer');
+    if (el.checked) {
+      container.style.display = 'block'; // 表示する
+    } else {
+      container.style.display = 'none';  // 非表示にする
+    }
+  }
+
+// ページを開いたときの初期設定
+  window.addEventListener("DOMContentLoaded", () => {
+    const cb = document.getElementById("customDateToggle");
+    const container = document.getElementById("dateContainer");
+    cb.checked = false;              // チェックを外す
+    container.style.display = "none"; // 最初は非表示
+  });
+
+
+
+
+
+
+//画像スライド---------------------------------------------------------------------------
+function enableCarouselPC(viewport, track, width, getIndex, goTo, render, total) {
+  let dragging = false, startX = 0, currentX = 0;
+
+  // マウス押下
+  viewport.addEventListener('mousedown', (e) => {
+    if (!total) return;
+    dragging = true;
+    startX = currentX = e.clientX;
+  });
+
+  // マウス移動
+  viewport.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    currentX = e.clientX;
+    const dx = currentX - startX;
+    const base = -getIndex() * width();
+    track.style.transform = `translateX(${base + dx}px)`;
+  });
+
+  // マウス離す（windowの方が安全）
+  window.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false;
+    const dx = currentX - startX;
+    const threshold = width() * 0.25;
+    if (dx > threshold) goTo(getIndex() - 1);
+    else if (dx < -threshold) goTo(getIndex() + 1);
+    else render();
+  });
+
+  // 外に出たとき
+  viewport.addEventListener('mouseleave', () => {
+    dragging = false;
+  });
+}
+
+function createCarousel(previewEl, slideCount) {
+    console.log('[createCarousel] start:', { slideCount });
+
+    // ラッパー
+    const carousel = document.createElement('div');
+    carousel.className = 'carousel';
+
+    // ビューポート & トラック
+    const viewport = document.createElement('div');
+    viewport.className = 'carousel-viewport';
+
+    const track = document.createElement('div');
+    track.className = 'carousel-track';
+
+    viewport.appendChild(track);
+    carousel.appendChild(viewport);
+    previewEl.appendChild(carousel);
+
+    // ナビ
+    const nav = document.createElement('div');
+    nav.className = 'carousel-nav';
+    const prevBtn = document.createElement('button'); prevBtn.textContent = '◀';
+    const nextBtn = document.createElement('button'); nextBtn.textContent = '▶';
+    nav.append(prevBtn, nextBtn);
+    previewEl.appendChild(nav);
+
+    // ドット
+    const dots = document.createElement('div');
+    dots.className = 'carousel-dots';
+    previewEl.appendChild(dots);
+
+    // スライド枠を先に作る
+    const slideImgs = [];
+    const dotEls = [];
+    for (let i = 0; i < slideCount; i++) {
+      const slide = document.createElement('div');
+      slide.className = 'carousel-slide';
+      const img = document.createElement('img');
+      img.alt = `${i + 1}枚目`;
+      slide.appendChild(img);
+      track.appendChild(slide);
+      slideImgs.push(img);
+
+      const dot = document.createElement('div');
+      dot.className = 'carousel-dot';
+      dots.appendChild(dot);
+      dotEls.push(dot);
+    }
+
+    // ステート/描画
+    let index = 0;
+    const total = slideCount;
+    const width = () => viewport.clientWidth;
+
+    function render() {
+      track.style.transform = `translateX(${-index * width()}px)`;
+      prevBtn.disabled = (index === 0);
+      nextBtn.disabled = (index === total - 1);
+      dotEls.forEach((d, i) => d.classList.toggle('active', i === index));
+    }
+    function goTo(n) {
+      index = Math.max(0, Math.min(total - 1, n));
+      render();
+    }
+
+    // 操作イベント
+    prevBtn.addEventListener('click', () => goTo(index - 1));
+    nextBtn.addEventListener('click', () => goTo(index + 1));
+    window.addEventListener('resize', render);
+
+    // スワイプ
+    let startX = 0, currentX = 0, dragging = false;
+    viewport.addEventListener('touchstart', (e) => {
+      if (!total) return;
+      dragging = true;
+      startX = e.touches[0].clientX;
+      currentX = startX;
+    }, { passive: true });
+
+    viewport.addEventListener('touchmove', (e) => {
+      if (!dragging) return;
+      currentX = e.touches[0].clientX;
+      const dx = currentX - startX;
+      const base = -index * width();
+      track.style.transform = `translateX(${base + dx}px)`;
+    }, { passive: true });
+
+    viewport.addEventListener('touchend', () => {
+      if (!dragging) return;
+      dragging = false;
+      const dx = currentX - startX;
+      const threshold = width() * 0.25;
+      if (dx > threshold) goTo(index - 1);
+      else if (dx < -threshold) goTo(index + 1);
+      else render();
+    });
+
+    render();
+
+    //PC用スライドの追加
+    enableCarouselPC(viewport, track, width, () => index, goTo, render, total);
+
+    const result = { slideImgs, render, goTo };
+    console.log('[createCarousel] end ->', result);
+    return result;
+  }
 </script>
 
 
@@ -273,7 +443,7 @@ checkboxes.forEach(function(cb) {
 /* ========= .role-row ========= */
 
 input[type="text"],
-input[type="date"],
+/* input[type="date"], */
 select,
 #partner,
 .partner-role-matrix {
@@ -432,5 +602,43 @@ input:enabled {
   width: 100% !important;
   max-width: none !important;
 }
+
+
+
+/* すべての date 入力を幅いっぱいにする */
+
+@media (max-width: 768px) {
+  /* 親コンテナも広げる */
+  #dateContainer,
+  #historyModal {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 両方の日付入力をまとめて指定 */
+  input[type="date"],
+  #customDate,
+  #modalHistoryDate {
+    display: block !important;
+    width: 100% !important;       /* 横幅いっぱい */
+    max-width: none !important;   /* 800px制限を解除 */
+    min-width: 0 !important;
+    margin: 0 auto !important;
+
+    box-sizing: border-box !important;
+    -webkit-appearance: none !important; /* iOS Safari リセット */
+    appearance: none !important;
+
+    font-size: 1.6rem !important;  /* スマホで見やすい文字サイズ */
+    padding: 1rem !important;      /* 指でタップしやすく */
+  }
+}
+
+
+
+
 
 </style>

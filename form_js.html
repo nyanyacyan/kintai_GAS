@@ -7,14 +7,14 @@
   // 過去日入力のON/OFF（トグル）に応じて日付入力欄の表示切替
   // ------------------------------------------
 
-  function toggleDateInput(el) {
-    console.log('[toggleDateInput] 開始', { checked: !!el?.checked }); // 処理開始ログ
-    const button = document.getElementById('dateToggleButton');
-    const checked = el.checked;
-    document.getElementById('dateContainer').style.display = checked ? 'block' : 'none';
-    button.classList.toggle('checked', checked);
-    console.log('[toggleDateInput] 終了', { dateContainer: document.getElementById('dateContainer')?.style.display }); // 処理終了ログ
-  }
+  // function toggleDateInput(el) {
+  //   console.log('[toggleDateInput] 開始', { checked: !!el?.checked }); // 処理開始ログ
+  //   const button = document.getElementById('dateToggleButton');
+  //   const checked = el.checked;
+  //   document.getElementById('dateContainer').style.display = checked ? 'block' : 'none';
+  //   button.classList.toggle('checked', checked);
+  //   console.log('[toggleDateInput] 終了', { dateContainer: document.getElementById('dateContainer')?.style.display }); // 処理終了ログ
+  // }
 
 
 

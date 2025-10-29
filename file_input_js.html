@@ -166,109 +166,112 @@
    * =======================*/
 
   /** カルーセル DOM を作成して各参照と制御関数を返す */
-  function createCarousel(previewEl, slideCount) {
-    console.log('[createCarousel] start:', { slideCount });
+  // function createCarousel(previewEl, slideCount) {
+  //   console.log('[createCarousel] start:', { slideCount });
 
-    // ラッパー
-    const carousel = document.createElement('div');
-    carousel.className = 'carousel';
+  //   // ラッパー
+  //   const carousel = document.createElement('div');
+  //   carousel.className = 'carousel';
 
-    // ビューポート & トラック
-    const viewport = document.createElement('div');
-    viewport.className = 'carousel-viewport';
+  //   // ビューポート & トラック
+  //   const viewport = document.createElement('div');
+  //   viewport.className = 'carousel-viewport';
 
-    const track = document.createElement('div');
-    track.className = 'carousel-track';
+  //   const track = document.createElement('div');
+  //   track.className = 'carousel-track';
 
-    viewport.appendChild(track);
-    carousel.appendChild(viewport);
-    previewEl.appendChild(carousel);
+  //   viewport.appendChild(track);
+  //   carousel.appendChild(viewport);
+  //   previewEl.appendChild(carousel);
 
-    // ナビ
-    const nav = document.createElement('div');
-    nav.className = 'carousel-nav';
-    const prevBtn = document.createElement('button'); prevBtn.textContent = '◀';
-    const nextBtn = document.createElement('button'); nextBtn.textContent = '▶';
-    nav.append(prevBtn, nextBtn);
-    previewEl.appendChild(nav);
+  //   // ナビ
+  //   const nav = document.createElement('div');
+  //   nav.className = 'carousel-nav';
+  //   const prevBtn = document.createElement('button'); prevBtn.textContent = '◀';
+  //   const nextBtn = document.createElement('button'); nextBtn.textContent = '▶';
+  //   nav.append(prevBtn, nextBtn);
+  //   previewEl.appendChild(nav);
 
-    // ドット
-    const dots = document.createElement('div');
-    dots.className = 'carousel-dots';
-    previewEl.appendChild(dots);
+  //   // ドット
+  //   const dots = document.createElement('div');
+  //   dots.className = 'carousel-dots';
+  //   previewEl.appendChild(dots);
 
-    // スライド枠を先に作る
-    const slideImgs = [];
-    const dotEls = [];
-    for (let i = 0; i < slideCount; i++) {
-      const slide = document.createElement('div');
-      slide.className = 'carousel-slide';
-      const img = document.createElement('img');
-      img.alt = `${i + 1}枚目`;
-      slide.appendChild(img);
-      track.appendChild(slide);
-      slideImgs.push(img);
+  //   // スライド枠を先に作る
+  //   const slideImgs = [];
+  //   const dotEls = [];
+  //   for (let i = 0; i < slideCount; i++) {
+  //     const slide = document.createElement('div');
+  //     slide.className = 'carousel-slide';
+  //     const img = document.createElement('img');
+  //     img.alt = `${i + 1}枚目`;
+  //     slide.appendChild(img);
+  //     track.appendChild(slide);
+  //     slideImgs.push(img);
 
-      const dot = document.createElement('div');
-      dot.className = 'carousel-dot';
-      dots.appendChild(dot);
-      dotEls.push(dot);
-    }
+  //     const dot = document.createElement('div');
+  //     dot.className = 'carousel-dot';
+  //     dots.appendChild(dot);
+  //     dotEls.push(dot);
+  //   }
 
-    // ステート/描画
-    let index = 0;
-    const total = slideCount;
-    const width = () => viewport.clientWidth;
+  //   // ステート/描画
+  //   let index = 0;
+  //   const total = slideCount;
+  //   const width = () => viewport.clientWidth;
 
-    function render() {
-      track.style.transform = `translateX(${-index * width()}px)`;
-      prevBtn.disabled = (index === 0);
-      nextBtn.disabled = (index === total - 1);
-      dotEls.forEach((d, i) => d.classList.toggle('active', i === index));
-    }
-    function goTo(n) {
-      index = Math.max(0, Math.min(total - 1, n));
-      render();
-    }
+  //   function render() {
+  //     track.style.transform = `translateX(${-index * width()}px)`;
+  //     prevBtn.disabled = (index === 0);
+  //     nextBtn.disabled = (index === total - 1);
+  //     dotEls.forEach((d, i) => d.classList.toggle('active', i === index));
+  //   }
+  //   function goTo(n) {
+  //     index = Math.max(0, Math.min(total - 1, n));
+  //     render();
+  //   }
 
-    // 操作イベント
-    prevBtn.addEventListener('click', () => goTo(index - 1));
-    nextBtn.addEventListener('click', () => goTo(index + 1));
-    window.addEventListener('resize', render);
+  //   // 操作イベント
+  //   prevBtn.addEventListener('click', () => goTo(index - 1));
+  //   nextBtn.addEventListener('click', () => goTo(index + 1));
+  //   window.addEventListener('resize', render);
 
-    // スワイプ
-    let startX = 0, currentX = 0, dragging = false;
-    viewport.addEventListener('touchstart', (e) => {
-      if (!total) return;
-      dragging = true;
-      startX = e.touches[0].clientX;
-      currentX = startX;
-    }, { passive: true });
+  //   // スワイプ
+  //   let startX = 0, currentX = 0, dragging = false;
+  //   viewport.addEventListener('touchstart', (e) => {
+  //     if (!total) return;
+  //     dragging = true;
+  //     startX = e.touches[0].clientX;
+  //     currentX = startX;
+  //   }, { passive: true });
 
-    viewport.addEventListener('touchmove', (e) => {
-      if (!dragging) return;
-      currentX = e.touches[0].clientX;
-      const dx = currentX - startX;
-      const base = -index * width();
-      track.style.transform = `translateX(${base + dx}px)`;
-    }, { passive: true });
+  //   viewport.addEventListener('touchmove', (e) => {
+  //     if (!dragging) return;
+  //     currentX = e.touches[0].clientX;
+  //     const dx = currentX - startX;
+  //     const base = -index * width();
+  //     track.style.transform = `translateX(${base + dx}px)`;
+  //   }, { passive: true });
 
-    viewport.addEventListener('touchend', () => {
-      if (!dragging) return;
-      dragging = false;
-      const dx = currentX - startX;
-      const threshold = width() * 0.25;
-      if (dx > threshold) goTo(index - 1);
-      else if (dx < -threshold) goTo(index + 1);
-      else render();
-    });
+  //   viewport.addEventListener('touchend', () => {
+  //     if (!dragging) return;
+  //     dragging = false;
+  //     const dx = currentX - startX;
+  //     const threshold = width() * 0.25;
+  //     if (dx > threshold) goTo(index - 1);
+  //     else if (dx < -threshold) goTo(index + 1);
+  //     else render();
+  //   });
 
-    render();
+  //   render();
 
-    const result = { slideImgs, render, goTo };
-    console.log('[createCarousel] end ->', result);
-    return result;
-  }
+  //   //PC用スライドの追加
+  //   enableCarouselPC(viewport, track, width, () => index, goTo, render, total);
+
+  //   const result = { slideImgs, render, goTo };
+  //   console.log('[createCarousel] end ->', result);
+  //   return result;
+  // }
 
   /* =========================
    * ベース名（出面日付_現場名）取得
