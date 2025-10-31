@@ -620,73 +620,65 @@
   // ------------------------------------------
   function showEditConfirmationModal() {
     isEditMode = true;
-    console.log('[showEditConfirmationModal] 開始'); // 処理開始ログ
+    console.log('[showEditConfirmationModal] 開始');
 
-    // 既存のバリデーション・エラークリア処理はこの前にある前提
-
-
-    // --- 1) 既存レコード（テーブル行）の収集 ---
     const records = [];
 
-    // 既存行
+    // --- 既存行を取得 ---
     (window.lastFetchedRecords || []).forEach((r, i) => {
       const man = parseFloat(document.getElementById(`edit-man-${i}`)?.value || 0);
       const ot = parseFloat(document.getElementById(`edit-overtime-${i}`)?.value || 0);
 
-      let role = undefined; // 作業者は role 不要
+      let role = undefined;
       if (r.type === '協力会社') {
         const safe = sanitize(r.name);
         const sel = document.querySelector(`input[name="edit-partner-${safe}-role"]:checked`);
-        role = sel ? sel.value : 'only'; // only | leader | other
+        role = sel ? sel.value : 'only';
       }
 
       records.push({ type: r.type, name: r.name, role, man, overtime: ot });
     });
 
-    // 追加の協力会社（マトリクス構造対応）
+    // --- 追加協力会社 ---
     document.querySelectorAll('.additional-partner:checked').forEach(cb => {
       const name = cb.value;
       const safe = sanitize(name);
       const key = `modal-partner-${safe}`;
 
-      // 役割ごとに check されている行だけ records に追加
       const roles = [
-        { key: 'general', value: 'only' }, // 一般作業員
-        { key: 'leader', value: 'leader' }, // 職長
-        { key: 'qualified', value: 'other' }  // 有資格者
+        { key: 'general', value: 'only' },
+        { key: 'leader', value: 'leader' },
+        { key: 'qualified', value: 'other' }
       ];
 
       roles.forEach(({ key: rkey, value: rvalue }) => {
         const chk = document.querySelector(`input[name="${key}-${rkey}-checked"]`);
         if (!chk || !chk.checked) return;
-
         const man = parseFloat(document.querySelector(`input[name="${key}-${rkey}-man"]`)?.value || 0);
         const ot = parseFloat(document.querySelector(`input[name="${key}-${rkey}-overtime"]`)?.value || 0);
-
-        records.push({
-          type: '協力会社',
-          name,
-          role: rvalue,         // 'only' | 'leader' | 'other'
-          man,
-          overtime: ot
-        });
+        records.push({ type: '協力会社', name, role: rvalue, man, overtime: ot });
       });
     });
+
+    // --- スタッフ情報 ---
+    const staffId = document.getElementById('staff').value;
+    const staffObj = masterData.staff.find(s => s.id === staffId);
 
     const meta = {
       date: document.getElementById('modalHistoryDate').value,
       companyId: document.getElementById('company').value,
-      staffId: document.getElementById('staff').value,
+      staffId,
       siteId: document.getElementById('site').value,
+      workType: staffObj?.workType || ''
     };
 
-    // ★ここで退避（submitEditFromModal はこれをそのまま送る）
-    pendingEditPayload = { meta, records };   // ← 保存用はコレを使う
+    // --- 保存用ペイロード退避 ---
+    pendingEditPayload = { meta, records };
 
-    // ---- ここから「表示用」formData を作る ----
+    // --- 表示用整形 ---
     const roleSuffixMap = {
-      only: '',            // 協力会社のみ → 会社名だけ
-      leader: ' 職長',      // フル幅の＋（半角+でもOK）
+      only: '',
+      leader: ' 職長',
       other: ' 有資格者'
     };
 
@@ -696,26 +688,27 @@
 
     const partnersDisp = records
       .filter(r => r.type === '協力会社')
-      .map(({ name, role, man, overtime }) => {
-        const suffix = roleSuffixMap[role] ?? '';
-        return { name: name + suffix, man, overtime };   // ← 会社名の後ろにだけ役割を付ける
-      });
+      .map(({ name, role, man, overtime }) => ({
+        name: name + (roleSuffixMap[role] ?? ''),
+        man,
+        overtime
+      }));
 
-    // showConfirmation が参照する形に揃える
     formData = {
       companyId: meta.companyId,
       staffId: meta.staffId,
       site: meta.siteId,
       date: meta.date,
       workers: workersDisp,
-      partners: partnersDisp
+      partners: partnersDisp,
+      workType: staffObj?.workType || ''
     };
-    console.log('[showEditConfirmationModal] formData for modal =',
-      JSON.parse(JSON.stringify(formData)));
 
+    console.log('[showEditConfirmationModal] formData for modal =', formData);
     console.log('[showEditConfirmationModal] 最終組み立て', { meta, records件数: records.length });
+
     showConfirmation(true);
-    console.log('[showEditConfirmationModal] 終了'); // 処理終了ログ
+    console.log('[showEditConfirmationModal] 終了');
   }
 
 
@@ -972,9 +965,12 @@
   /* ラジオボタン行全体 */
   .role-card {
     display: flex;
-    align-items: center;        /* 縦方向の中央寄せ */
-    justify-content: center;    /* 横方向の中央寄せ */
-    gap: 10px;                  /* ボタンと文字の間 */
+    align-items: center;
+    /* 縦方向の中央寄せ */
+    justify-content: center;
+    /* 横方向の中央寄せ */
+    gap: 10px;
+    /* ボタンと文字の間 */
     padding: 16px;
     border: 1px solid #ccc;
     border-radius: 10px;
@@ -992,7 +988,8 @@
 
   /* ラベル文字 */
   .role-card span {
-    font-size: 1.35rem;    /* ← 2remの約2/3サイズ */
+    font-size: 1.35rem;
+    /* ← 2remの約2/3サイズ */
     font-weight: bold;
     text-align: center;
   }
@@ -1022,12 +1019,12 @@
   /* 人工・残業の入力欄：均等幅で広げる（小さめフォントに上書き） */
   /* .role-row .work-inputs input[type="number"] {
     flex: 1; */
-    /* ← 均等幅 */
-    /* width: auto; */
-    /* 以前の width:100px を打ち消し */
-    /* font-size: 2rem; */
-    /* ← 入力文字は少し小さめ（全体4remより縮小） */
-    /* padding: 1.2rem 1.4rem;
+  /* ← 均等幅 */
+  /* width: auto; */
+  /* 以前の width:100px を打ち消し */
+  /* font-size: 2rem; */
+  /* ← 入力文字は少し小さめ（全体4remより縮小） */
+  /* padding: 1.2rem 1.4rem;
     text-align: center;
     border: 1px solid #ccc;
     border-radius: 8px;

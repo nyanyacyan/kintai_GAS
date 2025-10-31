@@ -112,6 +112,8 @@
     const workerGroup = document.getElementById('worker');
     const partnerGroup = document.getElementById('partner');
 
+    const staffObj = (masterData?.staff || []).find(s => s.id === staffSelect.value);
+
     // --- 必須チェック ---
     if (!companySelect.value) {
       document.getElementById('error-company').textContent = '※元請会社を選択してください。';
@@ -141,7 +143,8 @@
       site: siteSelect.value,
       date: customDateToggle.checked ? customDate.value : '',
       workers: [],
-      partners: []  // ← 協力会社はマトリクスで複数行（会社名＋役割×3）になり得る
+      partners: [],  // ← 協力会社はマトリクスで複数行（会社名＋役割×3）になり得る
+      workType: staffObj?.workType
     };
     console.log('[submitForm] base formData =', JSON.parse(JSON.stringify(formData)));
 

@@ -48,10 +48,10 @@ function getMasterData() {
     .map(([id, name]) => ({ id, name }));
 
   // TTC担当者名マスタの全データ
-  const staff = staffSheet.getRange(2, 1, staffSheet.getLastRow() - 1, 3).getValues()
-    .map(([id, name, companyIds]) => {
+  const staff = staffSheet.getRange(2, 1, staffSheet.getLastRow() - 1, 4).getValues()
+    .map(([id, name, companyIds, workType]) => {
       const companies = companyIds.split(',').map(c => c.trim());
-      return { id, name, companies };
+      return { id, name, companies, workType };
     });
 
   // 現場名マスタの全データ
@@ -401,21 +401,31 @@ function getOrCreateFolderByPath_(parentId, path) {
 function uploadImagesToDrive(meta, files) {
   Logger.log('--- uploadImagesToDrive 開始 ---');
   const SCRIPT_PROPS = PropertiesService.getScriptProperties();
-  const BASE_DIR_ID = SCRIPT_PROPS.getProperty('BASE_DIR_ID');
+  let baseDirId = SCRIPT_PROPS.getProperty('BASE_DIR_ID');
 
-  Logger.log('アップロードファイル数=%s 件', files.length);
-  Logger.log('メタ情報: %s', JSON.stringify(meta));
-
-  const parentId = BASE_DIR_ID;
-  if (!parentId) throw new Error('parentFolderId が指定されていません。');
-  Logger.log('親フォルダID: %s', parentId);
+  // 1️⃣ まずルートフォルダを確認
+  let baseFolder;
+  try {
+    if (baseDirId) {
+      baseFolder = DriveApp.getFolderById(baseDirId);
+    } else {
+      throw new Error('BASE_DIR_ID が未設定');
+    }
+  } catch (e) {
+    // 2️⃣ 無かったら自動で作る（My Drive 直下）
+    Logger.log('⚠ BASE_DIR_ID のフォルダが無かったので新規作成します: ' + e);
+    baseFolder = DriveApp.createFolder('GAS_アップロード');  // ← 好きな名前にしてOK
+    baseDirId = baseFolder.getId();
+    SCRIPT_PROPS.setProperty('BASE_DIR_ID', baseDirId);       // ← 今回のIDを保存しておく
+    Logger.log('✅ 新しく作成したフォルダID: ' + baseDirId);
+  }
 
   // === 階層を組み立てる ===
   // 例: 「美装/添付画像」 または 「揚重/添付画像」
   // meta.workType に "美装" or "揚重" が入っている想定
   const subPath = `${meta.workType}/添付画像`;
 
-  const targetFolder = getOrCreateFolderByPath_(parentId, subPath);
+  const targetFolder = getOrCreateFolderByPath_(baseDirId, subPath);
   const results = [];
 
   files.forEach((f, i) => {
