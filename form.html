@@ -10,12 +10,13 @@
 
   <!-- 各ファイル 読み込み -->
   <?!= include('style'); ?>
+
   <?!= include('check_js'); ?> <!-- sanitize / isValidQuarterHour など -->
   <?!= include('file_input_js'); ?> <!-- アップローダ -->
   <?!= include('form_js'); ?> <!-- 画面組立て / submitForm 定義 -->
-  <?!= include('wait_js'); ?> <!-- ローディングオーバーレイ -->
   <?!= include('send_js'); ?> <!-- 送信・モーダル表示など -->
   <?!= include('history_view_js'); ?>
+  <?!= include('wait_js'); ?> <!-- ローディングオーバーレイ -->
   <?!= include('init_js'); ?> <!-- 最後：イベント配線など -->
 
 

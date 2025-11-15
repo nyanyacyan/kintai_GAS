@@ -9,6 +9,25 @@
     console.log('[submitEditFromModal] 開始'); // 処理開始ログ
     document.getElementById('loadingOverlay').style.display = 'flex';
 
+
+    // ✅ 先にハンドラー定義を置く
+    const onOK = (res) => {
+      console.log('[submitEditFromModal] server result:', res);
+      document.getElementById('loadingOverlay').style.display = 'none';
+      document.getElementById('confirmationText').textContent =
+        '✅ 送信が完了しました！\n別の場所をタップしてフォームに戻ってください。';
+      const buttonRow = document.querySelector('#confirmationBox .button-row');
+      if (buttonRow) buttonRow.innerHTML = '<button onclick="closeConfirmation()">閉じる</button>';
+      try { document.getElementById('historyModal').style.display = 'none'; } catch (e) { }
+      console.log('[submitEditFromModal] 終了 (成功)');
+    };
+
+    const onErr = (err) => {
+      console.error('[submitEditFromModal] server error:', err);
+      document.getElementById('loadingOverlay').style.display = 'none';
+      alert('更新に失敗しました：' + (err && err.message ? err.message : err));
+    };
+
     // ★ここで協力会社の状態をダンプ
     __debugDumpPartners();
 
@@ -90,12 +109,32 @@
       });
     });
 
+    const companySelect = document.getElementById('company');
+    const staffSelect = document.getElementById('staff');
+    const siteSelect = document.getElementById('site');
+    const companyObj = (window.masterData?.company || []).find(c =>
+      c.id === companySelect.value || c.name === companySelect.value
+    );
+    const siteObj = (window.masterData?.site || []).find(s =>
+      s.id === siteSelect.value || s.name === siteSelect.value
+    );
+    const staffObj = (window.masterData?.staff || []).find(s =>
+      s.id === staffSelect.value || s.name === staffSelect.value
+    );
+
     const meta = {
-      date: document.getElementById('modalHistoryDate').value, // yyyy-MM-dd
-      companyId: document.getElementById('company').value,
-      staffId: document.getElementById('staff').value,
-      siteId: document.getElementById('site').value,
+      // ID系（updateEditedRecordsで使う）
+      companyId: companySelect.value,
+      staffId: staffSelect.value,
+      siteId: siteSelect.value,
+
+      // 名前系（uploadImagesToDriveで使う）
+      companyName: companyObj?.name || '',
+      siteName: siteObj?.name || siteSelect.value || '',
+      workType: siteObj?.workType || staffObj?.workType || 'その他',
+      reportDate: document.getElementById('modalHistoryDate')?.value || new Date().toISOString().slice(0, 10),
     };
+    console.log('[submitEditFromModal] meta =', meta);
 
     // 可視化（必ずプレーンなJSONで）
     console.log('[submitEditFromModal] meta =', JSON.parse(JSON.stringify(meta))); // 送信メタ情報
@@ -107,25 +146,42 @@
       alert('更新対象がありません。');
       return;
     }
+    // === 画像アップロード処理を追加 ===
+    const uploader = document.querySelector('#uploaderEdit input[type="file"]');
+    const files = uploader?.files ? Array.from(uploader.files) : [];
 
-    const onOK = (res) => {
-      console.log('[submitEditFromModal] server result:', res);
-      document.getElementById('loadingOverlay').style.display = 'none';
-      // 成功UI
-      document.getElementById('confirmationText').textContent =
-        '✅ 送信が完了しました！\n別の場所をタップしてフォームに戻ってください。';
-      const buttonRow = document.querySelector('#confirmationBox .button-row');
-      if (buttonRow) buttonRow.innerHTML = '<button onclick="closeConfirmation()">閉じる</button>';
-      // 履歴モーダル閉じる
-      try { document.getElementById('historyModal').style.display = 'none'; } catch (e) { }
-      console.log('[submitEditFromModal] 終了 (成功)');
-    };
+    if (files.length > 0) {
+      console.log(`📸 画像 ${files.length} 枚を検出`);
 
-    const onErr = (err) => {
-      console.error('[submitEditFromModal] server error:', err);
-      document.getElementById('loadingOverlay').style.display = 'none';
-      alert('更新に失敗しました：' + (err && err.message ? err.message : err));
-    };
+      const readers = files.map(file => new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onload = e => resolve({
+          name: file.name,
+          type: file.type,
+          dataUrl: e.target.result
+        });
+        reader.readAsDataURL(file);
+      }));
+
+      Promise.all(readers).then(base64Files => {
+        console.log('[submitEditFromModal] uploadImagesToDrive 呼び出し開始');
+        google.script.run
+          .withSuccessHandler(res => {
+            console.log('✅ 画像アップロード完了:', res);
+            // resには [{id,url,name}, …] が返る
+            // 必要なら meta に添付URLなどを追加してから updateEditedRecords() を呼ぶ
+            google.script.run
+              .withSuccessHandler(onOK)
+              .withFailureHandler(onErr)
+              .updateEditedRecords(meta, edited);
+          })
+          .withFailureHandler(onErr)
+          .uploadImagesToDrive(meta, base64Files);
+      });
+      return; // upload完了後に updateEditedRecords を実行するためここでreturn
+    }
+    // === 画像アップロード処理ここまで ===
+
 
     google.script.run
       .withSuccessHandler(onOK)

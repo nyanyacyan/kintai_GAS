@@ -262,7 +262,7 @@ function updateEditedRecords(meta, records) {
     const siteMap = getMapFromSheet(ss.getSheetByName(SHEETS.SITE));
     const staffMap = getMapFromSheet(ss.getSheetByName(SHEETS.STAFF));
 
-    const dateStr = String(meta.date || ''); // yyyy-MM-dd
+    const dateStr = String(meta.reportDate || meta.date || ''); // ← 両対応
     const companyName = companyMap[meta.companyId];
     const siteName = siteMap[meta.siteId];
     const staffName = staffMap[meta.staffId];
@@ -398,12 +398,16 @@ function getOrCreateFolderByPath_(parentId, path) {
 // --------------------------------------------------------------------------
 // Driveへ画像をアップロードする関数
 
+/**
+ * 画像を Drive にアップロード
+ * 保存パス例：22期/美装/2025-10-31_伊勢崎工場_01.jpeg
+ */
 function uploadImagesToDrive(meta, files) {
   Logger.log('--- uploadImagesToDrive 開始 ---');
   const SCRIPT_PROPS = PropertiesService.getScriptProperties();
   let baseDirId = SCRIPT_PROPS.getProperty('BASE_DIR_ID');
 
-  // 1️⃣ まずルートフォルダを確認
+  // ルートフォルダを確認 or 作成
   let baseFolder;
   try {
     if (baseDirId) {
@@ -412,22 +416,25 @@ function uploadImagesToDrive(meta, files) {
       throw new Error('BASE_DIR_ID が未設定');
     }
   } catch (e) {
-    // 2️⃣ 無かったら自動で作る（My Drive 直下）
     Logger.log('⚠ BASE_DIR_ID のフォルダが無かったので新規作成します: ' + e);
-    baseFolder = DriveApp.createFolder('GAS_アップロード');  // ← 好きな名前にしてOK
+    baseFolder = DriveApp.createFolder('GAS_アップロード');
     baseDirId = baseFolder.getId();
-    SCRIPT_PROPS.setProperty('BASE_DIR_ID', baseDirId);       // ← 今回のIDを保存しておく
+    SCRIPT_PROPS.setProperty('BASE_DIR_ID', baseDirId);
     Logger.log('✅ 新しく作成したフォルダID: ' + baseDirId);
   }
 
-  // === 階層を組み立てる ===
-  // 例: 「美装/添付画像」 または 「揚重/添付画像」
-  // meta.workType に "美装" or "揚重" が入っている想定
-  const subPath = `${meta.workType}/添付画像`;
+  // === フォルダ階層を組み立てる ===
+  // 例: 「22期/美装」
+  const { term } = getWarekiAndTerm_(meta.date || meta.reportDate);
+  const subPath = `${term}/${meta.workType}`;
+  Logger.log(`📁 保存パス: ${subPath}`);
 
+  // フォルダ作成（存在しなければ自動生成）
   const targetFolder = getOrCreateFolderByPath_(baseDirId, subPath);
+
   const results = [];
 
+  // === ファイルアップロード ===
   files.forEach((f, i) => {
     const base64 = String(f.dataUrl).split(',')[1] || '';
     const bytes = Utilities.base64Decode(base64);
@@ -437,21 +444,45 @@ function uploadImagesToDrive(meta, files) {
     const baseName = `${meta.reportDate}_${meta.siteName}`;
     const fileName = `${baseName}_${String(i + 1).padStart(2, '0')}.jpeg`;
 
-    // Blob 作成
     const blob = Utilities.newBlob(bytes, mime, fileName);
     const file = targetFolder.createFile(blob);
 
-    Logger.log('アップロード完了: %s (ID=%s)',
-      'https://drive.google.com/uc?id=' + file.getId(),
-      file.getId()
-    );
+    Logger.log(`アップロード完了: ${fileName} (ID=${file.getId()})`);
     results.push({
       id: file.getId(),
       url: 'https://drive.google.com/uc?id=' + file.getId(),
-      name: file.getName()
+      name: file.getName(),
     });
   });
 
   Logger.log('--- uploadImagesToDrive 終了 ---');
   return results;
+}
+
+
+/**
+ * 対象日 (YYYY-MM-DD) から和暦と期を算出
+ * 例: 2025-10-31 → { wareki: "R7", term: "22期", month: 10 }
+ */
+function getWarekiAndTerm_(targetDate) {
+  if (!targetDate) throw new Error('targetDate が未指定です');
+
+  const target = new Date(targetDate);
+  if (isNaN(target.getTime())) {
+    throw new Error(`不正な日付形式: ${targetDate}`);
+  }
+
+  const year = target.getFullYear();
+  const month = target.getMonth() + 1;
+
+  // 和暦（令和元年=2019年）
+  const wareki = 'R' + (year - 2018);
+
+  // 期数計算（8月で期が切り替わる）
+  const termYear = month < 8 ? year - 1 : year;
+  const termNum = termYear - 2003 + 1; // 2004年→1期
+  const term = `${termNum}期`;
+
+  Logger.log(`[getWarekiAndTerm_] ${targetDate} → ${wareki} / ${term} / ${month}月`);
+  return { wareki, term, month };
 }
