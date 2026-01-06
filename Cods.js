@@ -14,8 +14,11 @@ function doGet(e) {
 /** =========================
  * 集中管理：スプレッドシート
  * ========================= */
-const SHEET_ID = '1R1QHdj1ZVtXwInZqvHBzX57Pumm70wvZDLO2hYt1bpM'; //
-const SHEETS = {
+
+//! デプロイできなかった際にはメインアカウントより再度デプロイを試みること
+const SHEET_ID = '1OoZtC72FW3CqwsSGaj39Rh-Mli19I-lrNg1W3wdJxao'; // 本番用
+// const SHEET_ID = '1R1QHdj1ZVtXwInZqvHBzX57Pumm70wvZDLO2hYt1bpM'; // テスト用
+
   RESPONSES: '回答',
   COMPANY: '元請会社マスタ',
   STAFF: 'TTC担当者名マスタ',
