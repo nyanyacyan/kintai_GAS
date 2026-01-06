@@ -3,11 +3,18 @@
 
   // 送信内容の要約HTMLを組み立て（モーダル内に表示）
   function renderSentSummaryHTML(fd) {
-    console.log('[renderSentSummaryHTML] start', JSON.parse(JSON.stringify(fd || {})));
-    const company = masterData.company.find(c => c.id === fd.companyId)?.name || '（未選択）';
-    const staff = masterData.staff.find(s => s.id === fd.staffId)?.name || '（未選択）';
-    const site = masterData.site.find(s => s.id === fd.site)?.name || '（未選択）';
-    const date = fd.date || new Date().toLocaleDateString('ja-JP');
+    console.log(
+      "[renderSentSummaryHTML] start",
+      JSON.parse(JSON.stringify(fd || {}))
+    );
+    const company =
+      masterData.company.find((c) => c.id === fd.companyId)?.name ||
+      "（未選択）";
+    const staff =
+      masterData.staff.find((s) => s.id === fd.staffId)?.name || "（未選択）";
+    const site =
+      masterData.site.find((s) => s.id === fd.site)?.name || "（未選択）";
+    const date = fd.date || new Date().toLocaleDateString("ja-JP");
 
     let html = `
       <div class="sent-summary">
@@ -15,29 +22,44 @@
     `;
 
     if (fd.workers?.length) {
-      const rows = fd.workers.map(w =>
-        `<li>${w.name}（人工：<b class="sent-num">${w.man || 0}</b> / 残業：<b class="sent-num">${w.overtime || 0}</b>h）</li>`
-      ).join('');
+      const rows = fd.workers
+        .map(
+          (w) =>
+            `<li>${w.name}（人工：<b class="sent-num">${
+              w.man || 0
+            }</b> / 残業：<b class="sent-num">${w.overtime || 0}</b>h）</li>`
+        )
+        .join("");
       html += `<div class="sent-block"><div class="sent-block-title">作業者</div><ul class="sent-list">${rows}</ul></div>`;
     }
 
     if (fd.partners?.length) {
-      const rows = fd.partners.map(p =>
-        `<li>${p.name}（人工：<b class="sent-num">${p.man || 0}</b> / 残業：<b class="sent-num">${p.overtime || 0}</b>h）</li>`
-      ).join('');
+      const rows = fd.partners
+        .map(
+          (p) =>
+            `<li>${p.name}（人工：<b class="sent-num">${
+              p.man || 0
+            }</b> / 残業：<b class="sent-num">${p.overtime || 0}</b>h）</li>`
+        )
+        .join("");
       html += `<div class="sent-block"><div class="sent-block-title">協力会社</div><ul class="sent-list">${rows}</ul></div>`;
     }
 
     // ✅ Driveのサムネイルを使って軽量表示（クリックで原寸URLへ）
     if (fd.photos?.length) {
-      const imgs = fd.photos.map(ph => {
-        const thumb = "https://drive.google.com/thumbnail?id=" + ph.id + "&sz=w200";
-        const href = ph.url || ("https://drive.google.com/uc?id=" + ph.id);
-        return `
-          <a class="sent-thumb" href="${href}" target="_blank" rel="noopener" title="${ph.name || ''}">
-            <img src="${thumb}" alt="${ph.name || ''}">
+      const imgs = fd.photos
+        .map((ph) => {
+          const thumb =
+            "https://drive.google.com/thumbnail?id=" + ph.id + "&sz=w200";
+          const href = ph.url || "https://drive.google.com/uc?id=" + ph.id;
+          return `
+          <a class="sent-thumb" href="${href}" target="_blank" rel="noopener" title="${
+            ph.name || ""
+          }">
+            <img src="${thumb}" alt="${ph.name || ""}">
           </a>`;
-      }).join('');
+        })
+        .join("");
       html += `<div class="sent-block">
         <div class="sent-block-title">添付写真</div>
         <div class="sent-thumbs">${imgs}</div>
@@ -45,94 +67,106 @@
     }
 
     html += `</div>`;
-    console.log('[renderSentSummaryHTML] end');
+    console.log("[renderSentSummaryHTML] end");
     return html;
   }
 
   // 成功画面に切り替え
   function showSendSuccessScreen(fd) {
-    console.log('[showSendSuccessScreen] start');
-    const modal = document.getElementById('confirmationModal');
-    const box = document.getElementById('confirmationBox');
-    const text = document.getElementById('confirmationText');
-    const row = document.querySelector('#confirmationBox .button-row');
+    console.log("[showSendSuccessScreen] start");
+    const modal = document.getElementById("confirmationModal");
+    const box = document.getElementById("confirmationBox");
+    const text = document.getElementById("confirmationText");
+    const row = document.querySelector("#confirmationBox .button-row");
     // ✅ 成功時だけ専用クラスを追加
-    modal.classList.add('modal--success');
+    modal.classList.add("modal--success");
 
     text.innerHTML = renderSentSummaryHTML(fd);
     row.innerHTML = `<button onclick="closeConfirmation()">閉じる</button>`;
-    modal.style.display = 'flex';
+    modal.style.display = "flex";
 
     // コンパクト表示をON
-    box.classList.add('compact');
+    box.classList.add("compact");
 
-    console.log('[showSendSuccessScreen] end');
+    console.log("[showSendSuccessScreen] end");
   }
-
-
-
 
   // 失敗画面に切り替え
   function showSendErrorScreen(err) {
-    console.log('[showSendErrorScreen] start', err);
-    const modal = document.getElementById('confirmationModal');
-    const text = document.getElementById('confirmationText');
-    const row = document.querySelector('#confirmationBox .button-row');
+    console.log("[showSendErrorScreen] start", err);
+    const modal = document.getElementById("confirmationModal");
+    const text = document.getElementById("confirmationText");
+    const row = document.querySelector("#confirmationBox .button-row");
     text.innerHTML = `
       <h3 style="margin-top:0;color:#d00;">送信に失敗しました</h3>
-      <div style="white-space:pre-wrap;color:#444;">${(err && (err.message || err)) || '不明なエラー'}</div>
+      <div style="white-space:pre-wrap;color:#444;">${
+        (err && (err.message || err)) || "不明なエラー"
+      }</div>
     `;
     row.innerHTML = `<button onclick="closeConfirmation()">閉じる</button>`;
-    modal.style.display = 'flex';
-    console.log('[showSendErrorScreen] end');
+    modal.style.display = "flex";
+    console.log("[showSendErrorScreen] end");
   }
-
 
   /***** ========== 入力 → 確認まで ========== *****/
 
   // 入力値の検証と formData の組み立て、確認モーダル表示
   // 入力値の検証と formData の組み立て、確認モーダル表示
   function submitForm() {
-    console.log('[submitForm] start');
+    console.log("[submitForm] start");
 
     // --- 既存エラー表示のリセット ---
-    document.querySelectorAll('.error-message').forEach(div => div.textContent = '');
-    document.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
+    document
+      .querySelectorAll(".error-message")
+      .forEach((div) => (div.textContent = ""));
+    document
+      .querySelectorAll(".input-error")
+      .forEach((el) => el.classList.remove("input-error"));
 
     let hasError = false;
     let firstErrorElement = null;
 
     // --- 入力要素参照 ---
-    const companySelect = document.getElementById('company');
-    const staffSelect = document.getElementById('staff');
-    const siteSelect = document.getElementById('site');
-    const customDateToggle = document.getElementById('customDateToggle');
-    const customDate = document.getElementById('customDate');
+    const companySelect = document.getElementById("company");
+    const staffSelect = document.getElementById("staff");
+    const siteSelect = document.getElementById("site");
+    const customDateToggle = document.getElementById("customDateToggle");
+    const customDate = document.getElementById("customDate");
 
-    const workerGroup = document.getElementById('worker');
-    const partnerGroup = document.getElementById('partner');
+    const workerGroup = document.getElementById("worker");
+    const partnerGroup = document.getElementById("partner");
 
-    const staffObj = (masterData?.staff || []).find(s => s.id === staffSelect.value);
+    const staffObj = (masterData?.staff || []).find(
+      (s) => s.id === staffSelect.value
+    );
 
     // --- 必須チェック ---
     if (!companySelect.value) {
-      document.getElementById('error-company').textContent = '※元請会社を選択してください。';
-      companySelect.classList.add('input-error'); hasError = true;
+      document.getElementById("error-company").textContent =
+        "※元請会社を選択してください。";
+      companySelect.classList.add("input-error");
+      hasError = true;
       if (!firstErrorElement) firstErrorElement = companySelect;
     }
     if (!staffSelect.value) {
-      document.getElementById('error-staff').textContent = '※TTC担当者を選択してください。';
-      staffSelect.classList.add('input-error'); hasError = true;
+      document.getElementById("error-staff").textContent =
+        "※TTC担当者を選択してください。";
+      staffSelect.classList.add("input-error");
+      hasError = true;
       if (!firstErrorElement) firstErrorElement = staffSelect;
     }
     if (!siteSelect.value) {
-      document.getElementById('error-site').textContent = '※現場名を選択してください。';
-      siteSelect.classList.add('input-error'); hasError = true;
+      document.getElementById("error-site").textContent =
+        "※現場名を選択してください。";
+      siteSelect.classList.add("input-error");
+      hasError = true;
       if (!firstErrorElement) firstErrorElement = siteSelect;
     }
     if (customDateToggle.checked && !customDate.value) {
-      document.getElementById('error-date').textContent = '※出面日付を入力してください。';
-      customDate.classList.add('input-error'); hasError = true;
+      document.getElementById("error-date").textContent =
+        "※出面日付を入力してください。";
+      customDate.classList.add("input-error");
+      hasError = true;
       if (!firstErrorElement) firstErrorElement = customDate;
     }
 
@@ -141,12 +175,15 @@
       companyId: companySelect.value,
       staffId: staffSelect.value,
       site: siteSelect.value,
-      date: customDateToggle.checked ? customDate.value : '',
+      date: customDateToggle.checked ? customDate.value : "",
       workers: [],
-      partners: [],  // ← 協力会社はマトリクスで複数行（会社名＋役割×3）になり得る
-      workType: staffObj?.workType
+      partners: [], // ← 協力会社はマトリクスで複数行（会社名＋役割×3）になり得る
+      workType: staffObj?.workType,
     };
-    console.log('[submitForm] base formData =', JSON.parse(JSON.stringify(formData)));
+    console.log(
+      "[submitForm] base formData =",
+      JSON.parse(JSON.stringify(formData))
+    );
 
     // 選択チェックの有無
     let workerChecked = false;
@@ -155,14 +192,14 @@
     // =========================================================
     // 作業者（単一の人工／残業）収集
     // =========================================================
-    document.querySelectorAll("input[name='worker']:checked").forEach(cb => {
+    document.querySelectorAll("input[name='worker']:checked").forEach((cb) => {
       workerChecked = true;
       const name = cb.value;
       const safe = sanitize(name);
       const prefix = `worker-${safe}`;
 
       // 入力値取得
-      const inputs = ['man', 'overtime'].map(type => {
+      const inputs = ["man", "overtime"].map((type) => {
         const el = document.querySelector(`input[name='${prefix}-${type}']`);
         return { el, value: parseFloat(el?.value || 0) };
       });
@@ -173,23 +210,27 @@
       inputs.forEach(({ el, value }) => {
         total += value;
         if (value && !isValidQuarterHour(value)) {
-          el?.classList.add('input-error');
+          el?.classList.add("input-error");
           invalid = true;
         }
       });
 
       if (total === 0 || invalid) {
-        document.getElementById('error-worker').textContent =
-          invalid ? '※勤務時間は0.25単位で入力してください。'
-            : '※作業者の勤務時間を入力してください。';
-        workerGroup.classList.add('input-error');
+        document.getElementById("error-worker").textContent = invalid
+          ? "※勤務時間は0.25単位で入力してください。"
+          : "※作業者の勤務時間を入力してください。";
+        workerGroup.classList.add("input-error");
         hasError = true;
         if (!firstErrorElement) firstErrorElement = workerGroup;
-        console.warn('[worker] invalid or zero total', { name, inputs });
+        console.warn("[worker] invalid or zero total", { name, inputs });
         return;
       }
 
-      formData.workers.push({ name, man: inputs[0].value, overtime: inputs[1].value });
+      formData.workers.push({
+        name,
+        man: inputs[0].value,
+        overtime: inputs[1].value,
+      });
     });
 
     // =========================================================
@@ -197,160 +238,223 @@
     //   会社チェックON → 3役割（一般/職長/有資格者）の
     //   個別チェック＋人工/残業を複数行として formData.partners に追加
     // =========================================================
-    document.querySelectorAll(`input[name="partner"]:checked`).forEach(cb => {
+    document.querySelectorAll(`input[name="partner"]:checked`).forEach((cb) => {
       partnerChecked = true;
 
-      const companyName = cb.value;            // 保存は会社名そのまま
+      const companyName = cb.value; // 保存は会社名そのまま
       const safe = sanitize(companyName);
       const key = `partner-${safe}`;
       const matrix = document.getElementById(`matrix-${key}`);
 
-      console.log('[partner] company=', companyName, 'key=', key, 'hasMatrix=', !!matrix);
+      console.log(
+        "[partner] company=",
+        companyName,
+        "key=",
+        key,
+        "hasMatrix=",
+        !!matrix
+      );
       if (!matrix) {
-        console.warn('[partner] matrix not found', key);
+        console.warn("[partner] matrix not found", key);
         return;
       }
 
       // UIロール → サーバ内部ロール
       const roleMap = {
-        general: 'only',    // 一般作業員
-        leader: 'leader',  // 職長
-        qualified: 'other'    // 有資格者
+        general: "only", // 一般作業員
+        leader: "leader", // 職長
+        qualified: "other", // 有資格者
       };
 
-      const roles = ['general', 'leader', 'qualified'];
+      const roles = ["general", "leader", "qualified"];
       let anyRoleChecked = false;
       const debugItems = [];
 
-      roles.forEach(uiRole => {
-        const chk = matrix.querySelector(`input[name="${key}-${uiRole}-checked"]`);
+      roles.forEach((uiRole) => {
+        const chk = matrix.querySelector(
+          `input[name="${key}-${uiRole}-checked"]`
+        );
         if (!chk || !chk.checked) return;
 
         anyRoleChecked = true;
 
-        const manEl = matrix.querySelector(`input[name="${key}-${uiRole}-man"]`);
-        const otEl = matrix.querySelector(`input[name="${key}-${uiRole}-overtime"]`);
+        const manEl = matrix.querySelector(
+          `input[name="${key}-${uiRole}-man"]`
+        );
+        const otEl = matrix.querySelector(
+          `input[name="${key}-${uiRole}-overtime"]`
+        );
         const man = parseFloat(manEl?.value || 0);
         const ot = parseFloat(otEl?.value || 0);
 
         // 0.25刻み検証
         let invalid = false;
-        [manEl, otEl].forEach(el => {
+        [manEl, otEl].forEach((el) => {
           const v = parseFloat(el?.value || 0);
           if (el?.value && !isValidQuarterHour(v)) {
-            el.classList.add('input-error');
+            el.classList.add("input-error");
             invalid = true;
           }
         });
 
         if (man + ot <= 0 || invalid) {
-          document.getElementById('error-partner').textContent =
-            invalid ? '※勤務時間は0.25単位で入力してください。'
-              : '※協力会社の勤務時間を入力してください。';
-          partnerGroup.classList.add('input-error');
+          document.getElementById("error-partner").textContent = invalid
+            ? "※勤務時間は0.25単位で入力してください。"
+            : "※協力会社の勤務時間を入力してください。";
+          partnerGroup.classList.add("input-error");
           hasError = true;
           if (!firstErrorElement) firstErrorElement = matrix || partnerGroup;
-          console.warn('[partner] invalid values', { companyName, uiRole, man, ot });
+          console.warn("[partner] invalid values", {
+            companyName,
+            uiRole,
+            man,
+            ot,
+          });
           return;
         }
 
         const role = roleMap[uiRole]; // 'only'|'leader'|'other'
         formData.partners.push({
-          name: companyName,  // 会社名そのまま（サーバ側で必要に応じて表示名に役割サフィックスを付与）
+          name: companyName, // 会社名そのまま（サーバ側で必要に応じて表示名に役割サフィックスを付与）
           role,
           man,
-          overtime: ot
+          overtime: ot,
         });
         debugItems.push({ uiRole, role, man, ot });
       });
 
       if (!anyRoleChecked) {
-        document.getElementById('error-partner').textContent = '※協力会社の役割を1つ以上選択してください。';
-        partnerGroup.classList.add('input-error');
+        document.getElementById("error-partner").textContent =
+          "※協力会社の役割を1つ以上選択してください。";
+        partnerGroup.classList.add("input-error");
         hasError = true;
         if (!firstErrorElement) firstErrorElement = matrix || partnerGroup;
-        console.warn('[partner] no role selected', companyName);
+        console.warn("[partner] no role selected", companyName);
       } else {
-        console.log('[partner] appended items =', debugItems);
+        console.log("[partner] appended items =", debugItems);
       }
     });
 
-    console.log('[submitForm] collected workers =', JSON.parse(JSON.stringify(formData.workers)));
-    console.log('[submitForm] collected partners =', JSON.parse(JSON.stringify(formData.partners)));
+    console.log(
+      "[submitForm] collected workers =",
+      JSON.parse(JSON.stringify(formData.workers))
+    );
+    console.log(
+      "[submitForm] collected partners =",
+      JSON.parse(JSON.stringify(formData.partners))
+    );
 
     // --- どちらも無選択の最終ガード ---
     if (!workerChecked && !partnerChecked) {
-      document.getElementById('error-worker').textContent = '※作業者または協力会社を1件以上選択してください。';
-      document.getElementById('error-partner').textContent = '※作業者または協力会社を1件以上選択してください。';
-      workerGroup.classList.add('input-error');
-      partnerGroup.classList.add('input-error');
+      document.getElementById("error-worker").textContent =
+        "※作業者または協力会社を1件以上選択してください。";
+      document.getElementById("error-partner").textContent =
+        "※作業者または協力会社を1件以上選択してください。";
+      workerGroup.classList.add("input-error");
+      partnerGroup.classList.add("input-error");
       if (!firstErrorElement) firstErrorElement = workerGroup;
       hasError = true;
     }
 
     if (hasError) {
-      console.warn('[submitForm] validation error. firstErrorElement=', firstErrorElement?.id);
-      firstErrorElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      console.warn(
+        "[submitForm] validation error. firstErrorElement=",
+        firstErrorElement?.id
+      );
+      firstErrorElement?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
       return;
     }
 
     // --- 確認モーダルを表示 ---
     showConfirmation(false);
-    console.log('[submitForm] end');
+    console.log("[submitForm] end");
   }
 
-
   function showConfirmation(isEdit = false) {
-    console.log('[showConfirmation] start isEdit=', isEdit);
+    console.log("[showConfirmation] start isEdit=", isEdit);
 
     // ← ここでローカルに定義（これで必ず見える）
     const styleValueWithLabel = (label, value, isOvertime = false) => {
-      const unit = isOvertime ? 'h' : '人工';
+      const unit = isOvertime ? "h" : "人工";
       const v = Number(value) || 0;
-      const display = v > 0
-        ? `<span style="color:#d33;font-weight:700;">${v}${unit}</span>`
-        : `<span style="color:#999;">0${unit}</span>`;
+      const display =
+        v > 0
+          ? `<span style="color:#d33;font-weight:700;">${v}${unit}</span>`
+          : `<span style="color:#999;">0${unit}</span>`;
       return `${label}：${display}`;
     };
 
     const roleSuffix = {
-      only: '',         // 一般作業員 → サフィックスなし
-      leader: ' 職長',
-      other: ' 有資格者'
+      only: "", // 一般作業員 → サフィックスなし
+      leader: " 職長",
+      other: " 有資格者",
     };
 
-    const box = document.getElementById('confirmationBox');
-    box.classList.remove('compact');
+    const box = document.getElementById("confirmationBox");
+    box.classList.remove("compact");
     isEditMode = isEdit;
 
-    const company = masterData.company.find(c => c.id === formData.companyId)?.name || '（未選択）';
-    const staff = masterData.staff.find(s => s.id === formData.staffId)?.name || '（未選択）';
-    const site = masterData.site.find(s => s.id === formData.site)?.name || '（未選択）';
+    const company =
+      masterData.company.find((c) => c.id === formData.companyId)?.name ||
+      "（未選択）";
+    const staff =
+      masterData.staff.find((s) => s.id === formData.staffId)?.name ||
+      "（未選択）";
+    const site =
+      masterData.site.find((s) => s.id === formData.site)?.name || "（未選択）";
 
-    let message = `出面日付：${formData.date || new Date().toLocaleDateString('ja-JP')}<br>
-元請会社：${company}<br>
-TTC担当者：${staff}<br>
-現場名：${site}`;
+    // 合計工数（人工/残業）を集計
+    const totals = { man: 0, overtime: 0 };
+    (formData.workers || []).forEach((w) => {
+      totals.man += Number(w.man) || 0;
+      totals.overtime += Number(w.overtime) || 0;
+    });
+    (formData.partners || []).forEach((p) => {
+      totals.man += Number(p.man) || 0;
+      totals.overtime += Number(p.overtime) || 0;
+    });
+
+    let message = `出面日付：${
+      formData.date || new Date().toLocaleDateString("ja-JP")
+    }<br>
+    元請会社：${company}<br>
+    TTC担当者：${staff}<br>
+    現場名：${site}`;
 
     if (formData.workers?.length) {
       message += `<br><br><strong>作業者：</strong>`;
-      formData.workers.forEach(w => {
-        message += `<br>　${w.name}（${styleValueWithLabel('人工', w.man)} ${styleValueWithLabel('残業', w.overtime, true)}）`;
+      formData.workers.forEach((w) => {
+        message += `<br>　${w.name}（${styleValueWithLabel(
+          "人工",
+          w.man
+        )} ${styleValueWithLabel("残業", w.overtime, true)}）`;
       });
     }
 
     if (formData.partners?.length) {
       message += `<br><br><strong>協力会社：</strong>`;
-      formData.partners.forEach(p => {
-        const displayName = `${p.name}${roleSuffix[p.role] ?? ''}`;
-        message += `<br>　${displayName}（${styleValueWithLabel('人工', p.man)} ${styleValueWithLabel('残業', p.overtime, true)}）`;
+      formData.partners.forEach((p) => {
+        const displayName = `${p.name}${roleSuffix[p.role] ?? ""}`;
+        message += `<br>　${displayName}（${styleValueWithLabel(
+          "人工",
+          p.man
+        )} ${styleValueWithLabel("残業", p.overtime, true)}）`;
       });
     }
 
-    document.getElementById('confirmationText').innerHTML = message;
-    document.getElementById('confirmationModal').style.display = 'flex';
+    // 合計表示
+    message += `<br><br><strong>合計：</strong><br>　${styleValueWithLabel(
+      "人工",
+      totals.man
+    )}　${styleValueWithLabel("残業", totals.overtime, true)}`;
 
-    const buttonRow = document.querySelector('#confirmationBox .button-row');
+    document.getElementById("confirmationText").innerHTML = message;
+    document.getElementById("confirmationModal").style.display = "flex";
+
+    const buttonRow = document.querySelector("#confirmationBox .button-row");
     buttonRow.innerHTML = isEdit
       ? `
       <button type="button" onclick="submitEditFromModal()">✅ 確定して編集内容を送信</button>
@@ -361,7 +465,7 @@ TTC担当者：${staff}<br>
       <button onclick="closeConfirmation()">戻る</button>
     `;
 
-    console.log('[showConfirmation] end');
+    console.log("[showConfirmation] end");
   }
 
   /***** ========== 送信 ========== *****/
@@ -432,62 +536,57 @@ TTC担当者：${staff}<br>
   //   console.log('[confirmSend] end');
   // }
 
-
   /***** ========== モーダル制御 ========== *****/
 
   // モーダル外クリックで閉じる（編集中は履歴モーダルへ戻す）
   function handleModalClickOutside(event) {
-    console.log('[handleModalClickOutside] start');
-    const confirmationBox = document.getElementById('confirmationBox');
+    console.log("[handleModalClickOutside] start");
+    const confirmationBox = document.getElementById("confirmationBox");
     if (!confirmationBox.contains(event.target)) {
-      const confirmationText = document.getElementById('confirmationText').textContent;
-      const isSent = confirmationText.includes('✅ 送信が完了しました！');
-      document.getElementById('confirmationModal').style.display = 'none';
+      const confirmationText =
+        document.getElementById("confirmationText").textContent;
+      const isSent = confirmationText.includes("✅ 送信が完了しました！");
+      document.getElementById("confirmationModal").style.display = "none";
       if (isSent) {
         if (!isEditMode) resetForm();
       } else if (isEditMode) {
-        document.getElementById('historyModal').style.display = 'flex';
+        document.getElementById("historyModal").style.display = "flex";
       }
     }
-    console.log('[handleModalClickOutside] end');
+    console.log("[handleModalClickOutside] end");
   }
 
   // 送信確認モーダルを閉じる
   function closeConfirmation() {
-    console.log('[closeConfirmation] start');
-    const confirmationText = document.getElementById('confirmationText').textContent;
-    const isSent = confirmationText.includes('✅ 送信が完了しました！');
-    document.getElementById('confirmationModal').style.display = 'none';
+    console.log("[closeConfirmation] start");
+    const confirmationText =
+      document.getElementById("confirmationText").textContent;
+    const isSent = confirmationText.includes("✅ 送信が完了しました！");
+    document.getElementById("confirmationModal").style.display = "none";
     if (isSent) {
       if (!isEditMode) resetForm();
     } else {
       if (isEditMode) {
-        document.getElementById('historyModal').style.display = 'flex';
+        document.getElementById("historyModal").style.display = "flex";
       }
     }
-    console.log('[closeConfirmation] end, isSent=', isSent, 'isEditMode=', isEditMode);
+    console.log(
+      "[closeConfirmation] end, isSent=",
+      isSent,
+      "isEditMode=",
+      isEditMode
+    );
   }
-  console.log('[send_js] exporting handlers to window');
+  console.log("[send_js] exporting handlers to window");
   window.submitForm = submitForm;
   window.showConfirmation = showConfirmation;
   window.confirmSend = confirmSend;
   window.submitEditFromModal = submitEditFromModal;
   window.closeConfirmation = closeConfirmation;
   window.handleModalClickOutside = handleModalClickOutside;
-  console.log('[send_js] exports done');
+  console.log("[send_js] exports done");
   /***** ========== ここまで ========== *****/
 </script>
-
-
-
-
-
-
-
-
-
-
-
 
 <style>
   /* ===== モーダル内をスクロール可能に ===== */
@@ -501,8 +600,6 @@ TTC担当者：${staff}<br>
     background: rgba(0, 0, 0, 0.5);
     z-index: 9999;
   }
-
-
 
   /* さらに詰めたいときの“超コンパクト”オプション（必要なら .compact を #confirmationBox に付与） */
   #confirmationBox.compact {
@@ -519,7 +616,6 @@ TTC担当者：${staff}<br>
     height: 63px;
   }
 
-
   /* ===== モーダル内をスクロール可能に ===== */
   #confirmationModal {
     display: none;
@@ -531,7 +627,6 @@ TTC担当者：${staff}<br>
     background: rgba(0, 0, 0, 0.5);
     z-index: 9999;
   }
-
 
   /* スクロールバーを少し細く */
   #confirmationBox::-webkit-scrollbar {
@@ -562,9 +657,8 @@ TTC担当者：${staff}<br>
     border-radius: 12px;
     /* ← 角丸を少し残す（完全四角でも可） */
     background: #fff;
-    box-shadow: 0 6px 24px rgba(0, 0, 0, .25);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
   }
-
 
   /* ===== 送信 成功モーダルだけ調整 ===== */
   #confirmationModal.modal--success {
@@ -572,7 +666,7 @@ TTC担当者：${staff}<br>
     /* JSでflexに */
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, .5);
+    background: rgba(0, 0, 0, 0.5);
     z-index: 9999;
     align-items: center;
     justify-content: center;
@@ -593,7 +687,7 @@ TTC担当者：${staff}<br>
     /* ← タイトル上下の“余白”はここで詰める */
     border-radius: 14px;
     background: #fff;
-    box-shadow: 0 6px 22px rgba(0, 0, 0, .2);
+    box-shadow: 0 6px 22px rgba(0, 0, 0, 0.2);
     line-height: 1.28;
     /* 全体の行間（詰め気味） */
     box-sizing: border-box;
@@ -628,7 +722,7 @@ TTC担当者：${staff}<br>
     /* 上下のブロック間隔 */
   }
 
-  #confirmationModal.modal--success .sent-meta>div {
+  #confirmationModal.modal--success .sent-meta > div {
     display: grid;
     grid-template-columns: 120px 1fr;
     /* ← ラベル列の幅。狭めたい：110〜120 */
@@ -718,7 +812,7 @@ TTC担当者：${staff}<br>
     padding: 8px 16px 0;
     background: #fff;
     text-align: center;
-    box-shadow: 0 -6px 10px -8px rgba(0, 0, 0, .12);
+    box-shadow: 0 -6px 10px -8px rgba(0, 0, 0, 0.12);
     /* 上に薄い影 */
   }
 
@@ -731,7 +825,6 @@ TTC担当者：${staff}<br>
     /* 20でもOK */
     border-radius: 10px;
   }
-
 
   /* 全体の文字サイズと行間を控えめに */
   .sent-summary {
@@ -749,7 +842,7 @@ TTC担当者：${staff}<br>
     margin: 0 0 8px;
   }
 
-  .sent-meta>div {
+  .sent-meta > div {
     display: grid;
     grid-template-columns: 82px 1fr;
     /* 左ラベル幅 */
@@ -822,15 +915,14 @@ TTC担当者：${staff}<br>
   /* ========= エラー表示 ========= */
   .error-message {
     color: red;
-    font-size: .9rem;
-    margin-top: .25rem;
+    font-size: 0.9rem;
+    margin-top: 0.25rem;
   }
 
   .input-error {
     border: 2px solid red !important;
     background-color: #fff0f0;
   }
-
 
   .button-row {
     text-align: right;
@@ -861,7 +953,6 @@ TTC担当者：${staff}<br>
     gap: .5rem;
   } */
 
-
   #confirmationBox,
   #confirmationModal.modal--success #confirmationBox,
   #historyModal .modal-body {
@@ -875,6 +966,6 @@ TTC担当者：${staff}<br>
     /* 内容が長いときはスクロール */
     border-radius: 12px;
     padding: 20px 24px;
-    box-shadow: 0 6px 24px rgba(0, 0, 0, .25);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
   }
 </style>
