@@ -406,16 +406,10 @@
     const site =
       masterData.site.find((s) => s.id === formData.site)?.name || "（未選択）";
 
-    // 合計工数（人工/残業）を集計
-    const totals = { man: 0, overtime: 0 };
-    (formData.workers || []).forEach((w) => {
-      totals.man += Number(w.man) || 0;
-      totals.overtime += Number(w.overtime) || 0;
-    });
-    (formData.partners || []).forEach((p) => {
-      totals.man += Number(p.man) || 0;
-      totals.overtime += Number(p.overtime) || 0;
-    });
+    // ▼▼▼ 総合計用の変数を初期化 ▼▼▼
+    let grandTotalMan = 0;
+    let grandTotalOvertime = 0;
+    // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
     let message = `出面日付：${
       formData.date || new Date().toLocaleDateString("ja-JP")
@@ -425,6 +419,18 @@
     現場名：${site}`;
 
     if (formData.workers?.length) {
+      const totalMan = formData.workers.reduce(
+        (sum, w) => sum + (Number(w.man) || 0),
+        0
+      );
+      const totalOvertime = formData.workers.reduce(
+        (sum, w) => sum + (Number(w.overtime) || 0),
+        0
+      );
+
+      grandTotalMan += totalMan;
+      grandTotalOvertime += totalOvertime;
+
       message += `<br><br><strong>作業者：</strong>`;
       formData.workers.forEach((w) => {
         message += `<br>　${w.name}（${styleValueWithLabel(
@@ -435,6 +441,18 @@
     }
 
     if (formData.partners?.length) {
+      const totalMan = formData.partners.reduce(
+        (sum, p) => sum + (Number(p.man) || 0),
+        0
+      );
+      const totalOvertime = formData.partners.reduce(
+        (sum, p) => sum + (Number(p.overtime) || 0),
+        0
+      );
+
+      grandTotalMan += totalMan;
+      grandTotalOvertime += totalOvertime;
+
       message += `<br><br><strong>協力会社：</strong>`;
       formData.partners.forEach((p) => {
         const displayName = `${p.name}${roleSuffix[p.role] ?? ""}`;
@@ -445,11 +463,16 @@
       });
     }
 
-    // 合計表示
-    message += `<br><br><strong>合計：</strong><br>　${styleValueWithLabel(
-      "人工",
-      totals.man
-    )}　${styleValueWithLabel("残業", totals.overtime, true)}`;
+    // ▼▼▼ 総合計の表示 ▼▼▼
+    if (grandTotalMan > 0 || grandTotalOvertime > 0) {
+      message += `<br><br><hr>`;
+      message += `<div style="text-align: right; font-size: 1.1em;">`;
+      message += `<strong>総合計（${styleValueWithLabel(
+        "人工",
+        grandTotalMan
+      )} ${styleValueWithLabel("残業", grandTotalOvertime, true)}）</strong>`;
+      message += `</div>`;
+    }
 
     document.getElementById("confirmationText").innerHTML = message;
     document.getElementById("confirmationModal").style.display = "flex";
